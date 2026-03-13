@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="520" viewBox="0 0 980 520" role="img">
+<rect x="0.0" y="0.0" width="980.0" height="520.0" fill="#f8f7f4" />
+<rect x="40.0" y="40.0" width="900.0" height="440.0" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" rx="18" ry="18" />
+<text x="70.0" y="85.0" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#1e293b" text-anchor="start">Canonical Childcare Scenario Intervals</text>
+<text x="70.0" y="110.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#64748b" text-anchor="start">Median marketization-price intervals by outsourcing share for the canonical sample/spec</text>
+<line x1="110.0" y1="420.0" x2="920.0" y2="420.0" stroke="#1e293b" stroke-width="2" />
+<line x1="110.0" y1="140.0" x2="110.0" y2="420.0" stroke="#1e293b" stroke-width="2" />
+<line x1="110.0" y1="420.0" x2="920.0" y2="420.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="98.0" y="424.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="end">8,110</text>
+<line x1="110.0" y1="350.0" x2="920.0" y2="350.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="98.0" y="354.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="end">8,501</text>
+<line x1="110.0" y1="280.0" x2="920.0" y2="280.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="98.0" y="284.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="end">8,893</text>
+<line x1="110.0" y1="210.0" x2="920.0" y2="210.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="98.0" y="214.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="end">9,284</text>
+<line x1="110.0" y1="140.0" x2="920.0" y2="140.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="98.0" y="144.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="end">9,676</text>
+<line x1="110.0" y1="400.7" x2="920.0" y2="400.7" stroke="#94a3b8" stroke-width="2" stroke-dasharray="8 6" />
+<text x="920.0" y="390.7" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#94a3b8" text-anchor="end">Median baseline price 8,218</text>
+<line x1="110.0" y1="400.7" x2="110.0" y2="400.7" stroke="#d97706" stroke-width="3" />
+<line x1="100.0" y1="400.7" x2="120.0" y2="400.7" stroke="#d97706" stroke-width="3" />
+<line x1="100.0" y1="400.7" x2="120.0" y2="400.7" stroke="#d97706" stroke-width="3" />
+<circle cx="110.0" cy="400.7" r="6.0" fill="#d97706" />
+<text x="110.0" y="448.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#1e293b" text-anchor="middle">marginal</text>
+<line x1="312.5" y1="381.5" x2="312.5" y2="368.7" stroke="#0d9488" stroke-width="3" />
+<line x1="302.5" y1="381.5" x2="322.5" y2="381.5" stroke="#0d9488" stroke-width="3" />
+<line x1="302.5" y1="368.7" x2="322.5" y2="368.7" stroke="#0d9488" stroke-width="3" />
+<circle cx="312.5" cy="380.7" r="6.0" fill="#0d9488" />
+<text x="312.5" y="448.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#1e293b" text-anchor="middle">0.10</text>
+<line x1="515.0" y1="354.2" x2="515.0" y2="322.6" stroke="#0d9488" stroke-width="3" />
+<line x1="505.0" y1="354.2" x2="525.0" y2="354.2" stroke="#0d9488" stroke-width="3" />
+<line x1="505.0" y1="322.6" x2="525.0" y2="322.6" stroke="#0d9488" stroke-width="3" />
+<circle cx="515.0" cy="352.1" r="6.0" fill="#0d9488" />
+<text x="515.0" y="448.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#1e293b" text-anchor="middle">0.25</text>
+<line x1="717.5" y1="311.8" x2="717.5" y2="244.7" stroke="#0d9488" stroke-width="3" />
+<line x1="707.5" y1="311.8" x2="727.5" y2="311.8" stroke="#0d9488" stroke-width="3" />
+<line x1="707.5" y1="244.7" x2="727.5" y2="244.7" stroke="#0d9488" stroke-width="3" />
+<circle cx="717.5" cy="307.8" r="6.0" fill="#0d9488" />
+<text x="717.5" y="448.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#1e293b" text-anchor="middle">0.50</text>
+<line x1="920.0" y1="243.4" x2="920.0" y2="159.3" stroke="#0d9488" stroke-width="3" />
+<line x1="910.0" y1="243.4" x2="930.0" y2="243.4" stroke="#0d9488" stroke-width="3" />
+<line x1="910.0" y1="159.3" x2="930.0" y2="159.3" stroke="#0d9488" stroke-width="3" />
+<circle cx="920.0" cy="238.5" r="6.0" fill="#0d9488" />
+<text x="920.0" y="448.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#1e293b" text-anchor="middle">1.00</text>
+<polyline points="110.0,400.7 312.5,380.7 515.0,352.1 717.5,307.8 920.0,238.5" fill="none" stroke="#0d9488" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="580" viewBox="0 0 980 580" role="img">
+<rect x="0.0" y="0.0" width="980.0" height="580.0" fill="#f8f7f4" />
+<rect x="40.0" y="40.0" width="900.0" height="500.0" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" rx="18" ry="18" />
+<text x="70.0" y="85.0" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#1e293b" text-anchor="start">Scenario Specification Comparison</text>
+<text x="70.0" y="110.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#64748b" text-anchor="start">Demand holdout diagnostics and scenario interval width by specification</text>
+<text x="280.0" y="138.0" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1e293b" text-anchor="start">Holdout R²</text>
+<text x="610.0" y="138.0" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1e293b" text-anchor="start">Alpha interval width (median)</text>
+<rect x="55.0" y="162.0" width="850.0" height="48.0" fill="#eef6f1" rx="10" ry="10" />
+<rect x="55.0" y="242.0" width="850.0" height="48.0" fill="#ffffff" rx="10" ry="10" />
+<rect x="55.0" y="322.0" width="850.0" height="48.0" fill="#ffffff" rx="10" ry="10" />
+<rect x="55.0" y="402.0" width="850.0" height="48.0" fill="#ffffff" rx="10" ry="10" />
+<line x1="280.0" y1="172.0" x2="280.0" y2="444.0" stroke="#e2e8f0" stroke-width="1.5" />
+<text x="280.0" y="168.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">-0.10</text>
+<line x1="405.0" y1="172.0" x2="405.0" y2="444.0" stroke="#e2e8f0" stroke-width="1.5" />
+<text x="405.0" y="168.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">0.01</text>
+<line x1="530.0" y1="172.0" x2="530.0" y2="444.0" stroke="#e2e8f0" stroke-width="1.5" />
+<text x="530.0" y="168.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">0.13</text>
+<line x1="610.0" y1="172.0" x2="610.0" y2="444.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="610.0" y="168.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">0.00</text>
+<line x1="686.7" y1="172.0" x2="686.7" y2="444.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="686.7" y="168.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">71.92</text>
+<line x1="763.3" y1="172.0" x2="763.3" y2="444.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="763.3" y="168.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">143.83</text>
+<line x1="840.0" y1="172.0" x2="840.0" y2="444.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="840.0" y="168.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">215.75</text>
+<text x="70.0" y="184.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#0d9488" text-anchor="start">household parsimonious</text>
+<text x="70.0" y="202.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">canonical</text>
+<line x1="280.0" y1="186.0" x2="530.0" y2="186.0" stroke="#e2e8f0" stroke-width="1" />
+<circle cx="282.8" cy="186.0" r="5.5" fill="#3b82f6" />
+<circle cx="388.3" cy="186.0" r="5.5" fill="#d97706" />
+<text x="546.0" y="184.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#3b82f6" text-anchor="start">-0.097</text>
+<text x="546.0" y="199.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#d97706" text-anchor="start">-0.000</text>
+<rect x="610.0" y="176.0" width="229.3" height="20.0" fill="#0d9488" rx="8" ry="8" />
+<text x="849.3" y="191.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="start">215.096</text>
+<text x="70.0" y="264.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#94a3b8" text-anchor="start">instrument only</text>
+<text x="70.0" y="282.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">quarantined</text>
+<line x1="280.0" y1="266.0" x2="530.0" y2="266.0" stroke="#e2e8f0" stroke-width="1" />
+<circle cx="308.5" cy="266.0" r="5.5" fill="#3b82f6" />
+<circle cx="347.7" cy="266.0" r="5.5" fill="#d97706" />
+<text x="546.0" y="264.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#3b82f6" text-anchor="start">-0.074</text>
+<text x="546.0" y="279.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#d97706" text-anchor="start">-0.038</text>
+<rect x="610.0" y="256.0" width="0.0" height="20.0" fill="#94a3b8" rx="8" ry="8" />
+<text x="620.0" y="271.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="start">0.000</text>
+<text x="70.0" y="344.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#94a3b8" text-anchor="start">labor parsimonious</text>
+<text x="70.0" y="362.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">sensitivity</text>
+<line x1="280.0" y1="346.0" x2="530.0" y2="346.0" stroke="#e2e8f0" stroke-width="1" />
+<circle cx="298.1" cy="346.0" r="5.5" fill="#3b82f6" />
+<circle cx="401.7" cy="346.0" r="5.5" fill="#d97706" />
+<text x="546.0" y="344.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#3b82f6" text-anchor="start">-0.083</text>
+<text x="546.0" y="359.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#d97706" text-anchor="start">0.012</text>
+<rect x="610.0" y="336.0" width="230.0" height="20.0" fill="#94a3b8" rx="8" ry="8" />
+<text x="850.0" y="351.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="start">215.752</text>
+<text x="70.0" y="424.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#94a3b8" text-anchor="start">full controls</text>
+<text x="70.0" y="442.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">quarantined</text>
+<line x1="280.0" y1="426.0" x2="530.0" y2="426.0" stroke="#e2e8f0" stroke-width="1" />
+<circle cx="343.7" cy="426.0" r="5.5" fill="#3b82f6" />
+<circle cx="530.0" cy="426.0" r="5.5" fill="#d97706" />
+<text x="546.0" y="424.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#3b82f6" text-anchor="start">-0.041</text>
+<text x="546.0" y="439.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#d97706" text-anchor="start">0.130</text>
+<rect x="610.0" y="416.0" width="0.0" height="20.0" fill="#94a3b8" rx="8" ry="8" />
+<text x="620.0" y="431.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="start">0.000</text>
+<circle cx="170.0" cy="516.0" r="5.5" fill="#3b82f6" />
+<text x="183.0" y="521.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="start">LOO state</text>
+<circle cx="270.0" cy="516.0" r="5.5" fill="#d97706" />
+<text x="283.0" y="521.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="start">LOO year</text>
+</svg>

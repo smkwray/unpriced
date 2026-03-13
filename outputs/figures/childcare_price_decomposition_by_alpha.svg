@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="580" viewBox="0 0 980 580" role="img">
+<rect x="0.0" y="0.0" width="980.0" height="580.0" fill="#f8f7f4" />
+<rect x="40.0" y="40.0" width="900.0" height="490.0" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" rx="18" ry="18" />
+<text x="70.0" y="85.0" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#1e293b" text-anchor="start">Childcare Price Decomposition by Alpha</text>
+<text x="70.0" y="110.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#64748b" text-anchor="start">Gross price split into direct-care and non-direct-care components</text>
+<line x1="110.0" y1="450.0" x2="900.0" y2="450.0" stroke="#1e293b" stroke-width="2" />
+<line x1="110.0" y1="150.0" x2="110.0" y2="450.0" stroke="#1e293b" stroke-width="2" />
+<line x1="110.0" y1="450.0" x2="900.0" y2="450.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="98.0" y="454.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">0</text>
+<line x1="110.0" y1="375.0" x2="900.0" y2="375.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="98.0" y="379.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">2,281</text>
+<line x1="110.0" y1="300.0" x2="900.0" y2="300.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="98.0" y="304.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">4,563</text>
+<line x1="110.0" y1="225.0" x2="900.0" y2="225.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="98.0" y="229.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">6,844</text>
+<line x1="110.0" y1="150.0" x2="900.0" y2="150.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="98.0" y="154.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">9,125</text>
+<rect x="139.0" y="173.8" width="100.0" height="60.4" fill="#d97706" stroke="#0d9488" stroke-width="1" rx="10" ry="10" />
+<rect x="139.0" y="234.2" width="100.0" height="215.8" fill="#0d9488" stroke="#0d9488" stroke-width="1" rx="10" ry="10" />
+<text x="189.0" y="478.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">baseline</text>
+<text x="189.0" y="165.8" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">8,218</text>
+<text x="189.0" y="496.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#0d9488" text-anchor="middle">wage-side 6,564</text>
+<rect x="297.0" y="170.6" width="100.0" height="61.0" fill="#d97706" stroke="#e2e8f0" stroke-width="1" rx="10" ry="10" />
+<rect x="297.0" y="231.6" width="100.0" height="218.4" fill="#0d9488" stroke="#e2e8f0" stroke-width="1" rx="10" ry="10" />
+<text x="347.0" y="478.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">alpha=0.10</text>
+<text x="347.0" y="162.6" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">8,330</text>
+<text x="347.0" y="496.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#0d9488" text-anchor="middle">wage-side 6,643</text>
+<rect x="455.0" y="166.0" width="100.0" height="62.0" fill="#d97706" stroke="#e2e8f0" stroke-width="1" rx="10" ry="10" />
+<rect x="455.0" y="228.0" width="100.0" height="222.0" fill="#0d9488" stroke="#e2e8f0" stroke-width="1" rx="10" ry="10" />
+<text x="505.0" y="478.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">alpha=0.25</text>
+<text x="505.0" y="158.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">8,490</text>
+<text x="505.0" y="496.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#0d9488" text-anchor="middle">wage-side 6,753</text>
+<rect x="613.0" y="156.9" width="100.0" height="63.5" fill="#d97706" stroke="#0d9488" stroke-width="1" rx="10" ry="10" />
+<rect x="613.0" y="220.4" width="100.0" height="229.6" fill="#0d9488" stroke="#0d9488" stroke-width="1" rx="10" ry="10" />
+<text x="663.0" y="478.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">alpha=0.50</text>
+<text x="663.0" y="148.9" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">8,737</text>
+<text x="663.0" y="496.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#0d9488" text-anchor="middle">wage-side 6,984</text>
+<rect x="771.0" y="143.5" width="100.0" height="66.3" fill="#d97706" stroke="#e2e8f0" stroke-width="1" rx="10" ry="10" />
+<rect x="771.0" y="209.8" width="100.0" height="240.2" fill="#0d9488" stroke="#e2e8f0" stroke-width="1" rx="10" ry="10" />
+<text x="821.0" y="478.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">alpha=1.00</text>
+<text x="821.0" y="135.5" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">9,125</text>
+<text x="821.0" y="496.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#0d9488" text-anchor="middle">wage-side 7,306</text>
+<rect x="120.0" y="510.0" width="18.0" height="18.0" fill="#0d9488" />
+<text x="146.0" y="524.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="start">Direct-care-equivalent component</text>
+<rect x="360.0" y="510.0" width="18.0" height="18.0" fill="#d97706" />
+<text x="386.0" y="524.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="start">Residual non-direct-care component</text>
+</svg>

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="460" viewBox="0 0 980 460" role="img">
+<rect x="0.0" y="0.0" width="980.0" height="460.0" fill="#f8f7f4" />
+<rect x="40.0" y="40.0" width="900.0" height="380.0" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" rx="18" ry="18" />
+<text x="70.0" y="85.0" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#1e293b" text-anchor="start">Childcare Sample Ladder</text>
+<text x="70.0" y="110.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#64748b" text-anchor="start">Headline sample balances observed support with usable state-year coverage</text>
+<rect x="70.0" y="154.0" width="560.0" height="28.0" fill="#f8f7f4" stroke="#e2e8f0" stroke-width="1" rx="8" ry="8" />
+<rect x="70.0" y="154.0" width="560.0" height="28.0" fill="#94a3b8" rx="8" ry="8" />
+<text x="620.0" y="174.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#ffffff" text-anchor="end">228 rows</text>
+<text x="650.0" y="166.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#94a3b8" text-anchor="start">Broad complete</text>
+<text x="650.0" y="184.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">22 states · 15 years</text>
+<text x="70.0" y="204.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#3b82f6" text-anchor="start">LOO state R² -0.092</text>
+<text x="240.0" y="204.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#d97706" text-anchor="start">LOO year R² -2.592</text>
+<rect x="55.0" y="232.0" width="870.0" height="84.0" fill="#f0fdfa" rx="12" ry="12" />
+<rect x="70.0" y="244.0" width="560.0" height="28.0" fill="#f8f7f4" stroke="#e2e8f0" stroke-width="1" rx="8" ry="8" />
+<rect x="70.0" y="244.0" width="341.4" height="28.0" fill="#0d9488" rx="8" ry="8" />
+<text x="401.4" y="264.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#ffffff" text-anchor="end">139 rows</text>
+<text x="650.0" y="256.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#0d9488" text-anchor="start">Observed core</text>
+<text x="650.0" y="274.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">21 states · 8 years</text>
+<text x="70.0" y="294.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#3b82f6" text-anchor="start">LOO state R² -0.097</text>
+<text x="240.0" y="294.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#d97706" text-anchor="start">LOO year R² -0.000</text>
+<rect x="792.0" y="241.0" width="68.8" height="21.0" fill="#f0fdfa" stroke="#0d9488" stroke-width="1" rx="10.5" ry="10.5" />
+<text x="800.0" y="256.0" font-family="Arial, sans-serif" font-size="11" font-weight="600" fill="#0d9488" text-anchor="start">headline</text>
+<rect x="70.0" y="334.0" width="560.0" height="28.0" fill="#f8f7f4" stroke="#e2e8f0" stroke-width="1" rx="8" ry="8" />
+<rect x="70.0" y="334.0" width="135.1" height="28.0" fill="#94a3b8" rx="8" ry="8" />
+<text x="195.1" y="354.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#ffffff" text-anchor="end">55 rows</text>
+<text x="650.0" y="346.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#94a3b8" text-anchor="start">Low-impute</text>
+<text x="650.0" y="364.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">13 states · 8 years</text>
+<text x="70.0" y="384.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#3b82f6" text-anchor="start">LOO state R² -0.248</text>
+<text x="240.0" y="384.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#d97706" text-anchor="start">LOO year R² -0.107</text>
+</svg>

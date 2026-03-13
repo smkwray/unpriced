@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="620" viewBox="0 0 980 620" role="img">
+<rect x="0.0" y="0.0" width="980.0" height="620.0" fill="#f8f7f4" />
+<rect x="40.0" y="40.0" width="900.0" height="540.0" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" rx="18" ry="18" />
+<text x="70.0" y="85.0" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#1e293b" text-anchor="start">Piecewise Supply Demo</text>
+<text x="70.0" y="110.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#64748b" text-anchor="start">Constant vs one-kink supply curve on the high-labor-support observed-core subset</text>
+<line x1="120.0" y1="480.0" x2="610.0" y2="480.0" stroke="#1e293b" stroke-width="2" />
+<line x1="120.0" y1="130.0" x2="120.0" y2="480.0" stroke="#1e293b" stroke-width="2" />
+<text x="52.0" y="305.0" font-family="Arial, sans-serif" font-size="14" font-weight="400" fill="#64748b" text-anchor="middle">Price</text>
+<line x1="120.0" y1="130.0" x2="120.0" y2="480.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="120.0" y="498.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">0.00M</text>
+<line x1="242.5" y1="130.0" x2="242.5" y2="480.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="242.5" y="498.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">5.64M</text>
+<line x1="365.0" y1="130.0" x2="365.0" y2="480.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="365.0" y="498.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">11.28M</text>
+<line x1="487.5" y1="130.0" x2="487.5" y2="480.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="487.5" y="498.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">16.92M</text>
+<line x1="610.0" y1="130.0" x2="610.0" y2="480.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="610.0" y="498.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">22.55M</text>
+<line x1="120.0" y1="480.0" x2="610.0" y2="480.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="108.0" y="484.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">6,146</text>
+<line x1="120.0" y1="392.5" x2="610.0" y2="392.5" stroke="#e2e8f0" stroke-width="1" />
+<text x="108.0" y="396.5" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">7,786</text>
+<line x1="120.0" y1="305.0" x2="610.0" y2="305.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="108.0" y="309.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">9,426</text>
+<line x1="120.0" y1="217.5" x2="610.0" y2="217.5" stroke="#e2e8f0" stroke-width="1" />
+<text x="108.0" y="221.5" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">11,067</text>
+<line x1="120.0" y1="130.0" x2="610.0" y2="130.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="108.0" y="134.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">12,707</text>
+<text x="365.0" y="518.0" font-family="Arial, sans-serif" font-size="14" font-weight="400" fill="#64748b" text-anchor="middle">Quantity of paid childcare</text>
+<polyline points="159.7,455.9 162.5,449.6 165.5,443.3 168.7,437.0 172.1,430.7 175.6,424.4 179.2,418.1 183.1,411.9 187.1,405.6 191.4,399.3 195.8,393.0 200.4,386.7 205.3,380.4 210.3,374.1 215.6,367.9 221.1,361.6 226.8,355.3 232.8,349.0 239.0,342.7 245.5,336.4 252.2,330.1 259.2,323.9 266.4,317.6 274.0,311.3 281.8,305.0 289.9,298.7 298.3,292.4 307.1,286.1 316.1,279.9 325.5,273.6 335.2,267.3 345.2,261.0 355.6,254.7 366.3,248.4 377.4,242.1 388.9,235.9 400.7,229.6 412.9,223.3 425.5,217.0 438.6,210.7 452.0,204.4 465.8,198.1 480.1,191.9 494.8,185.6 509.9,179.3 525.5,173.0 541.6,166.7 558.1,160.4 575.1,154.1" fill="none" stroke="#94a3b8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+<polyline points="139.3,455.9 141.5,449.6 143.8,443.3 146.4,437.0 149.2,430.7 152.2,424.4 155.5,418.1 159.0,411.9 162.8,405.6 167.0,399.3 171.5,393.0 176.3,386.7 181.5,380.4 187.0,374.1 193.0,367.9 199.5,361.6 206.4,355.3 213.8,349.0 221.7,342.7 230.2,336.4 239.2,330.1 248.9,323.9 259.2,317.6 270.1,311.3 281.8,305.0 287.1,298.7 292.5,292.4 298.0,286.1 303.6,279.9 309.4,273.6 315.2,267.3 321.1,261.0 327.2,254.7 333.4,248.4 339.6,242.1 346.0,235.9 352.5,229.6 359.1,223.3 365.9,217.0 372.7,210.7 379.7,204.4 386.8,198.1 394.0,191.9 401.3,185.6 408.7,179.3 416.3,173.0 423.9,166.7 431.7,160.4 439.6,154.1" fill="none" stroke="#0d9488" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+<circle cx="281.8" cy="305.0" r="6.0" fill="#ffffff" stroke="#1e293b" stroke-width="2" />
+<line x1="281.8" y1="305.0" x2="281.8" y2="480.0" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 6" />
+<line x1="120.0" y1="305.0" x2="281.8" y2="305.0" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 6" />
+<rect x="352.0" y="212.9" width="86.2" height="23.0" fill="#ffffff" stroke="#0d9488" stroke-width="1" rx="11.5" ry="11.5" />
+<text x="360.0" y="229.9" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#0d9488" text-anchor="start">Piecewise</text>
+<rect x="394.9" y="236.9" width="78.4" height="23.0" fill="#ffffff" stroke="#94a3b8" stroke-width="1" rx="11.5" ry="11.5" />
+<text x="402.9" y="253.9" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#94a3b8" text-anchor="start">Constant</text>
+<rect x="197.4" y="270.0" width="78.4" height="23.0" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" rx="11.5" ry="11.5" />
+<text x="267.8" y="287.0" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="end">Baseline</text>
+<rect x="660.0" y="136.0" width="230.0" height="160.0" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" rx="12" ry="12" />
+<text x="676.0" y="160.0" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#1e293b" text-anchor="start">Demo subset</text>
+<text x="676.0" y="184.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">107 state-years · 17 states</text>
+<text x="676.0" y="212.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#0d9488" text-anchor="start">η below = 5.955</text>
+<text x="676.0" y="232.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#0d9488" text-anchor="start">η above = 2.595</text>
+<text x="676.0" y="252.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#94a3b8" text-anchor="start">η constant = 3.942</text>
+<text x="676.0" y="276.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="start">Fallback on either side: 86.5%</text>
+<rect x="660.0" y="320.0" width="230.0" height="86.0" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" rx="12" ry="12" />
+<text x="676.0" y="344.0" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#1e293b" text-anchor="start">Price effect vs constant (median)</text>
+<text x="676.0" y="370.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="start">α = 0.50</text>
+<text x="810.0" y="370.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#d97706" text-anchor="start">+291.24</text>
+<text x="676.0" y="390.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="start">α = 1.00</text>
+<text x="810.0" y="390.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#d97706" text-anchor="start">+564.79</text>
+<text x="70.0" y="542.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="start">Wider price band shown than the actual alpha shock to make curve-shape differences visible.</text>
+</svg>

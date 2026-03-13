@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="680" viewBox="0 0 980 680" role="img">
+<rect x="0.0" y="0.0" width="980.0" height="680.0" fill="#f8f7f4" />
+<rect x="40.0" y="40.0" width="900.0" height="600.0" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" rx="18" ry="18" />
+<text x="70.0" y="85.0" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#1e293b" text-anchor="start">Local IV-Informed Marketization Demo</text>
+<text x="70.0" y="110.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#64748b" text-anchor="start">Treated-state median baseline using canonical demand elasticity and local IV supply elasticity</text>
+<line x1="120.0" y1="500.0" x2="880.0" y2="500.0" stroke="#1e293b" stroke-width="2" />
+<line x1="120.0" y1="120.0" x2="120.0" y2="500.0" stroke="#1e293b" stroke-width="2" />
+<text x="52.0" y="310.0" font-family="Arial, sans-serif" font-size="16" font-weight="400" fill="#1e293b" text-anchor="middle">Price</text>
+<line x1="120.0" y1="120.0" x2="120.0" y2="500.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="120.0" y="518.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">0.00M</text>
+<line x1="310.0" y1="120.0" x2="310.0" y2="500.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="310.0" y="518.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">5.93M</text>
+<line x1="500.0" y1="120.0" x2="500.0" y2="500.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="500.0" y="518.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">11.87M</text>
+<line x1="690.0" y1="120.0" x2="690.0" y2="500.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="690.0" y="518.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">17.80M</text>
+<line x1="880.0" y1="120.0" x2="880.0" y2="500.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="880.0" y="518.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">23.73M</text>
+<line x1="120.0" y1="500.0" x2="880.0" y2="500.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="108.0" y="504.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">5,567</text>
+<line x1="120.0" y1="405.0" x2="880.0" y2="405.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="108.0" y="409.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">5,878</text>
+<line x1="120.0" y1="310.0" x2="880.0" y2="310.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="108.0" y="314.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">6,190</text>
+<line x1="120.0" y1="215.0" x2="880.0" y2="215.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="108.0" y="219.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">6,501</text>
+<line x1="120.0" y1="120.0" x2="880.0" y2="120.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="108.0" y="124.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">6,813</text>
+<text x="500.0" y="538.0" font-family="Arial, sans-serif" font-size="14" font-weight="400" fill="#64748b" text-anchor="middle">Quantity of paid childcare</text>
+<polyline points="134.1,473.8 135.2,468.2 136.3,462.7 137.5,457.1 138.8,451.6 140.2,446.0 141.7,440.5 143.3,434.9 145.0,429.4 146.8,423.8 148.8,418.3 150.9,412.7 153.1,407.2 155.5,401.6 158.0,396.1 160.8,390.5 163.7,385.0 166.8,379.4 170.1,373.9 173.6,368.3 177.4,362.7 181.5,357.2 185.8,351.6 190.4,346.1 195.3,340.5 200.5,335.0 206.1,329.4 212.0,323.9 218.3,318.3 225.1,312.8 232.2,307.2 239.9,301.7 248.0,296.1 256.7,290.6 265.9,285.0 275.8,279.5 286.2,273.9 297.3,268.4 309.2,262.8 321.7,257.3 335.1,251.7 349.4,246.1 364.5,240.6 380.6,235.0 397.6,229.5 415.8,223.9 435.1,218.4 455.5,212.8 477.3,207.3 500.4,201.7 524.9,196.2 550.9,190.6 578.5,185.1 607.8,179.5 638.8,174.0 671.8,168.4 706.7,162.9 743.8,157.3 783.1,151.8 824.7,146.2" fill="none" stroke="#0d9488" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+<polyline points="212.1,473.8 212.1,468.2 212.1,462.7 212.1,457.1 212.1,451.6 212.1,446.0 212.1,440.5 212.1,434.9 212.1,429.4 212.1,423.8 212.1,418.3 212.1,412.7 212.1,407.2 212.1,401.6 212.1,396.1 212.0,390.5 212.0,385.0 212.0,379.4 212.0,373.9 212.0,368.3 212.0,362.7 212.0,357.2 212.0,351.6 212.0,346.1 212.0,340.5 212.0,335.0 212.0,329.4 212.0,323.9 212.0,318.3 212.0,312.8 212.0,307.2 212.0,301.7 212.0,296.1 211.9,290.6 211.9,285.0 211.9,279.5 211.9,273.9 211.9,268.4 211.9,262.8 211.9,257.3 211.9,251.7 211.9,246.1 211.9,240.6 211.9,235.0 211.9,229.5 211.9,223.9 211.9,218.4 211.9,212.8 211.9,207.3 211.9,201.7 211.9,196.2 211.8,190.6 211.8,185.1 211.8,179.5 211.8,174.0 211.8,168.4 211.8,162.9 211.8,157.3 211.8,151.8 211.8,146.2" fill="none" stroke="#3b82f6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+<circle cx="212.0" cy="323.9" r="6.0" fill="#ffffff" stroke="#1e293b" stroke-width="2" />
+<line x1="212.0" y1="323.9" x2="212.0" y2="500.0" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 6" />
+<line x1="120.0" y1="323.9" x2="212.0" y2="323.9" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 6" />
+<rect x="224.1" y="452.8" width="62.8" height="23.0" fill="#ffffff" stroke="#3b82f6" stroke-width="1" rx="11.5" ry="11.5" />
+<text x="232.1" y="469.8" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#3b82f6" text-anchor="start">Demand</text>
+<rect x="826.7" y="125.2" width="62.8" height="23.0" fill="#ffffff" stroke="#0d9488" stroke-width="1" rx="11.5" ry="11.5" />
+<text x="834.7" y="142.2" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#0d9488" text-anchor="start">Supply</text>
+<rect x="127.6" y="288.9" width="78.4" height="23.0" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" rx="11.5" ry="11.5" />
+<text x="198.0" y="305.9" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="end">Baseline</text>
+<rect x="585.0" y="330.0" width="290.0" height="132.0" fill="#f8f7f4" stroke="#e2e8f0" stroke-width="1" rx="14" ry="14" />
+<text x="601.0" y="354.0" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1e293b" text-anchor="start">Alpha examples</text>
+<text x="601.0" y="382.0" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#0d9488" text-anchor="start">α=0.50: 6,190 (+45.2)</text>
+<text x="601.0" y="406.0" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#d97706" text-anchor="start">α=1.00: 6,229 (+84.3)</text>
+<text x="601.0" y="438.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">Treated states: 22, 30, 51</text>
+<text x="601.0" y="456.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">Secondary local-IV demo only</text>
+<text x="120.0" y="558.0" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#3b82f6" text-anchor="start">Demand elasticity = -0.021</text>
+<text x="380.0" y="558.0" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#0d9488" text-anchor="start">Local IV supply elasticity = 22.477</text>
+<text x="690.0" y="558.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#64748b" text-anchor="start">Baseline = 6,144</text>
+<text x="70.0" y="598.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="start">Local treated-state demo using IV-informed supply and canonical demand; not a canonical or national structural curve.</text>
+</svg>

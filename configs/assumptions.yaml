@@ -1,0 +1,39 @@
+childcare:
+  sample_ladder:
+    low_impute_threshold: 0.25
+  direct_care:
+    hours_per_year: 2080.0
+    fringe_multiplier_default: 1.3763
+    staffing_children_per_worker:
+      center:
+        infant: 4.0
+        toddler: 7.0
+        preschool: 10.0
+      home:
+        infant: 2.0
+        toddler: 4.0
+        preschool: 6.0
+  fallbacks:
+    market_hours_per_child_per_week: 18.24
+  sensitivity:
+    staffing_scale_cases:
+      low: 0.90
+      base: 1.00
+      high: 1.10
+    fringe_cases:
+      low: 1.2387
+      base: 1.3763
+      high: 1.5139
+  demos:
+    piecewise_supply_labor_support_threshold: 0.99
+home_maintenance:
+  fallbacks:
+    cbsa_unemployment_base: 0.05
+    cbsa_unemployment_storm_slope: 0.10
+solver:
+  price_search:
+    lower_bound_ratio: 0.25
+    upper_bound_base_ratio: 1.50
+  bootstrap:
+    n_boot: 100
+    seed: 42

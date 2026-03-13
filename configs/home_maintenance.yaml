@@ -1,0 +1,22 @@
+sector: home_maintenance
+canonical_geography:
+  core: cbsa_wave
+panel_features:
+  outsourced_price:
+    - predicted_job_cost
+    - construction_wage
+    - provider_density
+    - storm_exposure
+    - housing_vintage
+    - home_value
+  switching:
+    - job_diy
+    - predicted_job_cost
+    - household_income
+    - tenure
+    - cbsa_unemployment_rate
+scenario_alphas:
+  - 0.10
+  - 0.25
+  - 0.50
+  - 1.00

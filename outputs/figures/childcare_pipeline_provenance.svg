@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="562" viewBox="0 0 980 562" role="img">
+<rect x="0.0" y="0.0" width="980.0" height="562.0" fill="#f8f7f4" />
+<rect x="40.0" y="40.0" width="900.0" height="482.0" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" rx="18" ry="18" />
+<text x="70.0" y="85.0" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#1e293b" text-anchor="start">Pipeline Provenance</text>
+<text x="70.0" y="110.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#64748b" text-anchor="start">Observed-source coverage in the current build</text>
+<text x="70.0" y="148.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#1e293b" text-anchor="start">State births</text>
+<rect x="220.0" y="130.0" width="460.0" height="22.0" fill="#f8f7f4" stroke="#e2e8f0" stroke-width="1" rx="6" ry="6" />
+<rect x="220.0" y="130.0" width="305.3" height="22.0" fill="#0d9488" rx="6" ry="6" />
+<text x="694.0" y="147.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#1e293b" text-anchor="start">371 / 559 (66%)</text>
+<text x="70.0" y="200.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#1e293b" text-anchor="start">State controls</text>
+<rect x="220.0" y="182.0" width="460.0" height="22.0" fill="#f8f7f4" stroke="#e2e8f0" stroke-width="1" rx="6" ry="6" />
+<rect x="220.0" y="182.0" width="254.3" height="22.0" fill="#0d9488" rx="6" ry="6" />
+<text x="694.0" y="199.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#1e293b" text-anchor="start">309 / 559 (55%)</text>
+<text x="70.0" y="252.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#1e293b" text-anchor="start">County ACS</text>
+<rect x="220.0" y="234.0" width="460.0" height="22.0" fill="#f8f7f4" stroke="#e2e8f0" stroke-width="1" rx="6" ry="6" />
+<rect x="220.0" y="234.0" width="441.4" height="22.0" fill="#0d9488" rx="6" ry="6" />
+<text x="694.0" y="251.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#1e293b" text-anchor="start">34,150 / 35,588 (96%)</text>
+<text x="70.0" y="304.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#1e293b" text-anchor="start">County wages</text>
+<rect x="220.0" y="286.0" width="460.0" height="22.0" fill="#f8f7f4" stroke="#e2e8f0" stroke-width="1" rx="6" ry="6" />
+<rect x="220.0" y="286.0" width="283.2" height="22.0" fill="#0d9488" rx="6" ry="6" />
+<text x="694.0" y="303.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#1e293b" text-anchor="start">21,911 / 35,588 (62%)</text>
+<text x="70.0" y="356.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#1e293b" text-anchor="start">County jobs</text>
+<rect x="220.0" y="338.0" width="460.0" height="22.0" fill="#f8f7f4" stroke="#e2e8f0" stroke-width="1" rx="6" ry="6" />
+<rect x="220.0" y="338.0" width="283.2" height="22.0" fill="#0d9488" rx="6" ry="6" />
+<text x="694.0" y="355.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#1e293b" text-anchor="start">21,911 / 35,588 (62%)</text>
+<text x="70.0" y="408.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#1e293b" text-anchor="start">County LAUS</text>
+<rect x="220.0" y="390.0" width="460.0" height="22.0" fill="#f8f7f4" stroke="#e2e8f0" stroke-width="1" rx="6" ry="6" />
+<rect x="220.0" y="390.0" width="458.3" height="22.0" fill="#0d9488" rx="6" ry="6" />
+<text x="694.0" y="407.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#1e293b" text-anchor="start">35,453 / 35,588 (100%)</text>
+<rect x="220.0" y="472.0" width="18.0" height="18.0" fill="#0d9488" />
+<text x="246.0" y="486.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#1e293b" text-anchor="start">Observed public-data support</text>
+<rect x="470.0" y="472.0" width="18.0" height="18.0" fill="#f8f7f4" stroke="#e2e8f0" stroke-width="1" />
+<text x="496.0" y="486.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#1e293b" text-anchor="start">Fallback or synthetic component</text>
+</svg>

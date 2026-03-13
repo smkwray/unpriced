@@ -1,0 +1,26 @@
+sector: childcare
+canonical_geography:
+  causal_core: state_year
+  simulation_layer: county_year
+panel_features:
+  county_price_surface:
+    - annual_price
+    - childcare_worker_wage
+    - provider_density
+    - median_income
+    - under5_population
+    - unemployment_rate
+    - head_start_capacity
+    - public_school_option_index
+  state_causal_core:
+    - state_price_index
+    - parent_employment_rate
+    - single_parent_share
+    - median_income
+    - unemployment_rate
+    - births
+scenario_alphas:
+  - 0.10
+  - 0.25
+  - 0.50
+  - 1.00

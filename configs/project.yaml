@@ -1,0 +1,18 @@
+project_name: unpaidwork
+default_mode: sample
+alpha_grid:
+  - 0.10
+  - 0.25
+  - 0.50
+  - 1.00
+paths:
+  raw: data/raw
+  interim: data/interim
+  processed: data/processed
+  registry: data/registry/source_registry.parquet
+sectors:
+  flagship: childcare
+  second: home_maintenance
+survey_rules:
+  atus_2020_sensitivity: true
+  use_weights: true

@@ -1,0 +1,394 @@
+# Unpriced
+
+Reproducible estimates of what unpaid household work would cost at market prices, built entirely from free public data. The flagship module is childcare.
+
+Satellite accounts usually value unpaid work by multiplying unpaid hours by today's market replacement price. That is transparent, it is standard, and this project produces exactly that benchmark. But replacement cost treats the observed price as though it could be applied unchanged to any volume of market substitution. It takes a marginal price and extrapolates it linearly into an inframarginal valuation. For childcare, where labor supply is constrained, capacity is regulated, and quality standards bind, that is a strong assumption and often an implausible one.
+
+So this project produces two things. First, a marginal replacement-cost satellite account, which is the standard accounting benchmark done carefully. Second, and more ambitiously, a counterfactual marketization price: the price at which the childcare sector would need to clear if some share of unpaid care were actually shifted into the paid market at scale. The marketization price is scale-sensitive, elasticity-informed, and closer to the object that policymakers actually need when they ask about formalization, subsidization, or expanding care provision.
+
+Replacement cost is useful for saying what unpaid care is worth if purchased one unit at a time at current prices. But policy does not operate one unit at a time. Real policy asks what happens when many households shift behavior together. At that point, prices, wages, and capacity matter. Replacement cost prices unpaid care as if markets were passive. Marketization price asks what happens when markets have to absorb it. One is a spot price. The other is a transition price.
+
+Both products are demonstration-grade: honest about their limitations, transparent about their assumptions, and fully reproducible from public data.
+
+---
+
+## National satellite account benchmark
+
+Latest benchmark year: **2022**. This is a partial-equilibrium accounting identity. It values unpaid childcare at the current marginal replacement price, with no equilibrium adjustment for what would happen if that care actually entered the market.
+
+```
+value = marginal replacement price × unpaid child-equivalent quantity
+```
+
+The preferred benchmark uses the **direct-care-equivalent** replacement price, which isolates the labor component. The gross-market benchmark is retained as an upper bound, and the residual is shown explicitly rather than buried.
+
+| Measure | Value | Unit |
+|---------|-------|------|
+| Preferred benchmark: direct-care value | $41.38B | annual national value |
+| Gross-market upper benchmark | $50.35B | annual national value |
+| Excluded non-direct residual | $8.97B | annual national value |
+| Direct-care-equivalent price | $8,762 | per child-equivalent year |
+| Gross market price | $10,660 | per child-equivalent year |
+| Unpaid child-equivalent quantity | 4.72M | annual slots |
+| Average unpaid childcare hours | 457.9 | per child-year |
+| Price-support population share | 89.0% | of national under-5 population |
+
+The full annual series is in [outputs/reports/childcare_satellite_account.md](outputs/reports/childcare_satellite_account.md) and [outputs/tables/childcare_satellite_account_annual.csv](outputs/tables/childcare_satellite_account_annual.csv).
+
+<details>
+<summary><strong>How the price decomposition works</strong></summary>
+
+The direct-care-equivalent price splits the gross market price into a labor component and a non-direct-care residual (facilities, administration, meals):
+
+```
+direct_care_price = (wage × fringe_multiplier × annual_hours) / children_per_worker
+```
+
+where `wage` is the observed or imputed childcare-worker hourly wage from QCEW, weighted by the state-year provider-type and age mix from ACS. The implied wage is back-solved: `wage = direct_care_price × children_per_worker / (fringe_multiplier × annual_hours)`. The raw labor-equivalent price is clipped at the gross market price — direct-care cannot exceed the total.
+
+This is **not cost accounting** — it is a transparent assumption-based decomposition.
+
+| Assumption | Value | Source | Note |
+|-----------|-------|--------|------|
+| Fringe multiplier | 1.3763 (`26.48 / 19.24`) | BLS ECEC Table 4, June 2025 | Compensation-to-wages benchmark for private-industry service occupations in health care and social assistance — not a childcare-specific estimate. |
+| Annual hours | 2,080 (`52 × 40`) | BLS OEWS Technical Notes | FTE annualization convention, not a claim about realized worker hours. |
+| Center staffing (children/worker) | 4 / 7 / 10 | ACF/NCECQA Brief #1, Table 4 (2014) | Most-common state licensing ratios (infant/toddler/preschool). Toddler is a midpoint of the brief's 18- and 35-month ratios. |
+| Home staffing (children/worker) | 2 / 4 / 6 | Head Start 45 C.F.R. §1302.23 | Benchmark mapping — official sources distinguish family and group homes in ways the model does not. |
+| Market hours/child/week | 18.24 | NCES ECPP 2019 + Digest 202.30 | `(12,594 / 21,195) × 30.7` — market-size proxy, not direct enrollment. |
+
+All values are centralized in [`configs/assumptions.yaml`](configs/assumptions.yaml) and machine-auditable via [`outputs/reports/model_assumption_audit.json`](outputs/reports/model_assumption_audit.json).
+
+<details>
+<summary>Source citations</summary>
+
+1. **BLS ECEC** — U.S. Bureau of Labor Statistics, "Employer Costs for Employee Compensation," Table 4, June 2025. [bls.gov/news.release/ecec.t04.htm](https://www.bls.gov/news.release/ecec.t04.htm)
+2. **BLS OEWS** — Occupational Employment and Wage Statistics Technical Notes. [bls.gov/oes/oes_ques.htm](https://www.bls.gov/oes/oes_ques.htm)
+3. **ACF/NCECQA** — Research Brief #1, Table 4 (2014). [childcareta.acf.hhs.gov](https://childcareta.acf.hhs.gov/sites/default/files/new-occ/resource/files/center_licensing_trends_brief_2014.pdf)
+4. **Head Start** — 45 C.F.R. §1302.23. [eclkc.ohs.acf.hhs.gov](https://eclkc.ohs.acf.hhs.gov/policy/45-cfr-chap-xiii/1302-23-family-child-care-option)
+5. **NCES ECPP** — "Early Childhood Program Participation: 2019" (NCES 2020-075REV). [nces.ed.gov](https://nces.ed.gov/pubs2020/2020075REV.pdf)
+6. **NCES Digest** — Table 202.30. [nces.ed.gov](https://nces.ed.gov/programs/digest/d22/tables/dt22_202.30.asp)
+
+</details>
+
+<details>
+<summary>Sensitivity design</summary>
+
+The decomposition sensitivity sweep applies a bounded ±10% stress envelope around the canonical values:
+
+- Staffing scale: 0.90 / 1.00 / 1.10
+- Fringe: 1.24 / 1.38 / 1.51
+
+These are design constants for a bounded stress test, not alternative source estimates. They do not affect canonical outputs.
+
+Direct-care price range: $5,371–$7,787. Implied wage range: $9.56–$9.75. The wage stability makes it a useful anchor even when the price-level decomposition is uncertain.
+
+</details>
+
+</details>
+
+---
+
+## Counterfactual marketization price demo
+
+This is the headline research product. If some share of currently unpaid childcare entered the paid market, what price would the sector clear at?
+
+There is no single answer. It depends on how much care gets outsourced, how supply and demand respond to price, and what the existing market looks like in each state and year. This project builds the machinery to answer that question under explicit, adjustable assumptions, then reports honestly how much the answer depends on those assumptions.
+
+Canonical sample: `observed_core`, `household_parsimonious`, **21 states**, **2014–2022**, **556 scenario rows** inside observed price support. Prices here are medians across 21 states and 9 years, so they are lower than the 2022-only national figures in the satellite account table above.
+
+| Measure | Value | Unit |
+|---------|-------|------|
+| Gross market price | $8,218 | per child per year |
+| Direct-care-equivalent price | $6,564 | per child per year |
+| Non-direct-care residual | $1,836 | per child per year |
+| Implied direct-care wage | $9.75 | per hour |
+| Marketization price (alpha = 0.50) | $8,737 | per child per year |
+| Marketization price (alpha = 1.00) | $9,125 | per child per year |
+| Demand elasticity | -0.021 | at mean |
+| Supply elasticity | 4.078 | weighted median |
+| LOO state R² | -0.097 | held-out fit |
+| LOO year R² | -0.000 | held-out fit |
+
+This is a **demonstration-grade sectoral counterfactual**, not a full-economy GE model. The small alpha-price response is driven mainly by the fitted elasticities: demand is very steep and supply is fairly elastic, so outsourcing shifts move mostly through quantity rather than price.
+
+<details>
+<summary><strong>What is alpha?</strong></summary>
+
+Alpha is the outsourcing share — the fraction of currently-unpaid childcare hours hypothetically shifted into the paid market.
+
+- **alpha = 0** is the status quo
+- **alpha = 0.10** means 10% of unpaid hours enter the market
+- **alpha = 0.50** means half
+- **alpha = 1.00** means all unpaid childcare is outsourced
+
+Higher alpha pushes more demand into the market, raising the equilibrium price. With the current elasticities (very elastic supply at 4.078, inelastic demand at -0.021), price increases are modest — the elastic supply curve means the market absorbs additional quantity mainly through expanded provision rather than higher prices.
+
+</details>
+
+## How the model works
+
+![Childcare Marketization Diagram](outputs/figures/childcare_marketization_diagram.svg)
+
+The observed market price (**P₀**) is where current paid supply meets current paid demand. When a share **alpha** of unpaid childcare hours enters the paid market, demand shifts right. The solver finds the new equilibrium price **P(α)** using estimated supply and demand elasticities. The shaded region shows the additional volume of paid care under outsourcing.
+
+**How each component is estimated:**
+
+- **Baseline price P₀** — the state-year median of county-level annual childcare prices from the National Database of Childcare Prices (NDCP), covering center-based and family-based care.
+- **Baseline quantity Q₀** — a state-year market-quantity proxy, currently constructed from under-5 population scaled by a configured weekly-hours assumption. This is not a direct estimate of paid-care enrollment or utilization.
+- **Unpaid quantity** — hours of unpaid childcare per state-year from the American Time Use Survey (ATUS), converted to full-time-equivalent childcare slots.
+- **Demand elasticity (-0.021)** — estimated via two-stage least squares at the state-year level. The instrument is the state birth rate (lagged), which shifts the number of children needing care without directly affecting price. The specification controls for parent employment rate and single-parent share. The signed elasticity is negative: higher prices reduce quantity demanded.
+- **Supply elasticity (4.078)** — the employment-weighted median of county-level log-log slopes of provider density on annual price within each state-year cell. This is a reduced-form price-quantity gradient, not a structural supply function. A multi-state licensing-shock IV demo is documented below but is not used in the canonical estimates.
+
+### Solver mechanics and supply curve extensions
+
+![Solver-Implied Childcare Curves](outputs/figures/childcare_solver_implied_curves.svg)
+
+The solver constructs constant-elasticity curves through the observed baseline:
+
+```
+Demand:  Qd(P) = Q₀ × (P / P₀)^(-|εd|)     εd = -0.021
+Supply:  Qs(P) = Q₀ × (P / P₀)^(εs)          εs = 4.078
+```
+
+Both curves pass through the baseline point (Q₀, P₀) by construction. The demand curve is very steep (highly inelastic) and supply is flatter (highly elastic), so outsourcing demand shifts are absorbed mainly through quantity increases with modest price effects. At α = 0.50 the price rises ~$519; at α = 1.00, ~$907. These are **solver-implied curves from the canonical elasticities**, not nonparametric empirical schedules.
+
+The solver finds each marketization price by bisection: for a given α, it solves `Qd(P) + α × U₀ = Qs(P)` where U₀ is the unpaid quantity proxy.
+
+---
+
+![Piecewise Supply Demo](outputs/figures/childcare_piecewise_supply_demo.svg)
+
+The constant-elasticity assumption can be relaxed. This piecewise-supply demo estimates separate reduced-form county price-density slopes **below** and **above** the observed baseline state price, then solves the same outsourcing counterfactual with a one-kink local supply curve:
+
+```
+Qs(P) = Q₀ × (P / P₀)^(η_below)    for P ≤ P₀
+Qs(P) = Q₀ × (P / P₀)^(η_above)    for P > P₀
+```
+
+Both branches equal Q₀ at P = P₀, so the curve is continuous with a kink. In the current data, η_below (5.96) is larger than η_above (2.60), meaning supply responds less elastically above the baseline than below it. This slightly raises predicted marketization prices relative to the constant benchmark (median effect: +$291 at α = 0.50, +$565 at α = 1.00) because the stiffer above-baseline supply requires more price increase to provide additional slots.
+
+**Key caveat:** Only 22 of 107 eligible state-years have directly estimated positive slopes on both sides. Most rows borrow a pooled fallback on at least one side (79.4%). This is a methodology demonstration, not a richly estimated state-by-state piecewise supply system.
+
+### Supply IV pilot: licensing-shock identification
+
+![Supply IV Pilot](outputs/figures/childcare_supply_iv_pilot.svg)
+
+The canonical supply elasticity has no instrument — it is a price-quantity gradient, not a causal estimate. This demo asks: can real changes in childcare regulations identify how supply responds to price?
+
+The idea is simple. When a state tightens staffing or group-size rules for childcare centers, it raises the cost of providing care. Counties with more center-based providers are hit harder than counties with fewer. That differential exposure creates a natural experiment: compare price and provider-density changes in more-exposed vs. less-exposed counties within the same state and year.
+
+The current shock panel uses three real licensing reforms — Virginia's 2018 group-size caps, Montana's 2018 group-size guidance, and Louisiana's post-2017 group-size requirements. South Carolina stays in the panel as control/overlap support (its ratio changes produce no shock variation in the index). Results across 4 states (206 counties, 824 rows, 2017–2022):
+
+- Tighter regulation **raises prices** (first-stage β = 1.78, F = 83.3)
+- More providers per capita appear in response (reduced-form β = 40.03), yielding a local IV supply elasticity of 22.48
+- No effect on the number of employer establishments — the shock affects how intensively existing providers operate, not whether new ones enter
+
+**This is a methodology demo, not a national supply-IV estimate.** It shows that licensing-shock data can be sourced, normalized, and run through a standard exposure design. The result rests on 3 treated states with 4 state clusters — stronger than a single-state pilot, but still not enough for robust generalization.
+
+---
+
+![Local IV Marketization Demo](outputs/figures/childcare_local_iv_marketization_demo.svg)
+
+What would the outsourcing counterfactual look like if we used the local IV supply elasticity instead of the canonical reduced-form estimate? The chart above pairs the canonical demand elasticity (-0.021) with the local IV supply elasticity (22.48), anchored on the treated-state median baseline price ($6,144). Because the IV supply is far more elastic than the canonical (22.48 vs 4.08), the market absorbs outsourced demand almost entirely through quantity expansion — price effects are minimal (+$45 at α = 0.50, +$84 at α = 1.00). This is a **non-canonical demo** showing sensitivity to the supply estimate, not a replacement for the headline results.
+
+## Price concepts
+
+<details>
+<summary><strong>Price concept definitions</strong> (the project produces several related but distinct price estimates)</summary>
+
+**Gross market price** — the observed annual price of center-based or family-based childcare in a state-year cell from NDCP county data aggregated to the state. This is the **canonical price series**. All other concepts are derived from or compared against it.
+
+**Direct-care-equivalent price** — the labor component of the gross price, computed from observed wages, source-backed staffing ratios, and a BLS compensation benchmark. Clipped at the gross price. See the [decomposition details](#national-satellite-account-benchmark) above for the formula and assumption values.
+
+**Implied direct-care wage** — the hourly wage back-solved from the direct-care-equivalent price. More stable than the price split (sensitivity range: $9.56–$9.75) because it is anchored to observed QCEW wage data.
+
+**Benchmark replacement cost / satellite account** — what it would cost to value unpaid childcare at a current marginal replacement price, ignoring how prices would change if millions of families entered the market. Pure accounting, no equilibrium adjustment.
+
+**Marginal shadow price** — the equilibrium price from outsourcing one additional increment of unpaid care. Computed by the same solver at an infinitesimal alpha. Typically very close to the baseline gross price.
+
+**Marketization price** — the equilibrium price when a share alpha of unpaid hours enters the paid market. Reported with bootstrap 10th-to-90th percentile uncertainty intervals over the demand and supply elasticities.
+
+</details>
+
+![Childcare Alpha Examples](outputs/figures/childcare_alpha_examples.svg)
+
+Each card shows three price layers at a given alpha. **Gross price** is the solver-implied equilibrium. **Direct-care** is the labor-equivalent component of that gross price, computed with the formula above using the equilibrium wage at that alpha. **Implied wage** is the back-solved hourly rate. The baseline card (alpha = 0) shows the observed market values; subsequent cards show how each layer responds to outsourcing.
+
+![Childcare Price Decomposition](outputs/figures/childcare_price_decomposition_by_alpha.svg)
+
+Stacked bars show the gross price split into direct-care (teal) and non-direct-care (amber) at each alpha. The direct-care component grows with alpha because the equilibrium wage rises as more care enters the market. The non-direct-care residual (gross minus direct-care) also rises slightly. The wage-side labels below each bar report the direct-care component in dollars.
+
+## Data and sample
+
+All inputs are free public data. The pipeline joins six sources into county-year and state-year panels.
+
+<details>
+<summary><strong>Source details and coverage</strong></summary>
+
+![Pipeline Provenance](outputs/figures/childcare_pipeline_provenance.svg)
+
+The pipeline assembles county-year and state-year panels from six public sources. Green bars show observed-data coverage; beige shows synthetic fallbacks. **State births** (66%) come from CDC WONDER natality data used as the demand instrument. **State controls** (55%) are ACS demographic variables at the state level. **County ACS** (96%) provides household demographics. **County wages** and **county jobs** (~65% each) come from QCEW; the remaining ~35% are imputed from price-derived fallbacks for counties without QCEW childcare-sector data.
+
+| Source | Provides | Geography | Years |
+|--------|----------|-----------|-------|
+| NDCP | County-year childcare prices | ~1,200 counties | 2008-2022 |
+| ATUS | Unpaid childcare hours | State-year | 2003-2024 |
+| ACS | Demographics, household structure | County and state | 2009-2023 |
+| QCEW | Childcare wages and employment | County and state | 2014-2024 |
+| CDC WONDER | Birth counts (demand instrument) | State-year | varies |
+| State licensing agencies | Licensing shock panel (supply IV demo) | County (VA, MT, LA, SC) | 2017-2022 |
+| SIPP, CE | Validation benchmarks | National | 2020-2024 |
+
+</details>
+
+![Observed Price Support Window](outputs/figures/childcare_support_boundary.svg)
+
+All canonical scenario rows stay within the NDCP observed-price window (2008–2022). The headline sample uses 2014–2022 only. No post-2022 nowcasts are included.
+
+![Childcare Sample Ladder](outputs/figures/childcare_sample_ladder.svg)
+
+Three samples are tested. The **observed core** (green) is the headline: 139 state-year rows, 21 states, restricted to years with observed NDCP prices and QCEW labor coverage above 94%. The broader and stricter samples are retained as comparison/sensitivity results.
+
+**LOO state R²** and **LOO year R²** are leave-one-out cross-validation diagnostics: each state (or year) is held out in turn, the model is re-estimated on the remainder, and R² is computed on the held-out predictions. Negative values mean the model predicts worse than a simple mean when any state or year is removed. This confirms the build is **demonstration-grade**.
+
+## Scenario results
+
+How much does the marketization price rise as the outsourcing share grows?
+
+![Canonical Scenario Intervals](outputs/figures/childcare_alpha_intervals.svg)
+
+Each point is the median marketization price across canonical scenario rows at a given alpha. Vertical bars are bootstrap 10th-to-90th percentile intervals from resampling the demand and supply elasticities. The **marginal** point (amber) is the shadow price at an infinitesimal outsourcing increment. Intervals widen as alpha grows because larger demand shifts amplify elasticity uncertainty. At α = 1.00, the median price rises ~11% from the baseline.
+
+### Specification comparison
+
+![Scenario Specification Comparison](outputs/figures/childcare_scenario_specification_comparison.svg)
+
+Four demand specifications are compared. The left panel shows holdout R² (leave-one-out by state in blue, by year in amber). The right panel shows the median alpha-interval width — how much the marketization price varies across the alpha range. The canonical **household parsimonious** specification uses parent employment rate and single-parent share as controls. **Labor parsimonious** adds unemployment. **Instrument only** (no controls beyond the birth-rate IV) and **full controls** (adding median income) are quarantined because they produce positive demand elasticities — economically inadmissible.
+
+| Specification | Elasticity | LOO state R² | LOO year R² | Status |
+|--------------|-----------|----------------|---------------|--------|
+| household_parsimonious | -0.021 | -0.097 | -0.000 | canonical |
+| instrument_only | +0.007 | -0.074 | -0.038 | quarantined |
+| labor_parsimonious | -0.020 | -0.083 | +0.012 | sensitivity |
+| full_controls | +0.797 | -0.041 | +0.130 | quarantined |
+
+<details>
+<summary><strong>Price decomposition sensitivity</strong></summary>
+
+The direct-care price split depends on staffing-ratio and fringe assumptions. A 3×3 sensitivity sweep applies a bounded +/-10% stress envelope around the source-backed canonical staffing table and fringe multiplier:
+
+- Direct-care price range: $5,371 to $7,787
+- Implied wage range: $9.56 to $9.75
+
+The wage stability makes it a useful anchor even when the price-level decomposition is uncertain.
+
+</details>
+
+## Limitations
+
+This section is the most important part of the documentation.
+
+**The satellite account is still partial-equilibrium.** Even the preferred direct-care benchmark is an accounting construct, not a GE valuation. It says what unpaid childcare would be worth at a current marginal replacement price, not what would happen if all unpaid childcare actually moved into the paid market. That is precisely the gap the marketization metric is designed to address, but the marketization estimate itself is demonstration-grade.
+
+**Causal identification is weak.** The demand elasticity is estimated with birth-rate instruments that have plausible exclusion-restriction stories but limited statistical power in a 21-state panel. The negative leave-one-out diagnostics confirm the model does not generalize well out of sample. The canonical supply elasticity has no instrument — a multi-state licensing-shock demo exists but does not feed into the canonical estimates. This is the primary limitation.
+
+**Geography mismatch.** Prices are observed at the county level (NDCP), but the causal core is estimated at the state level (ATUS). County-to-state aggregation loses real variation.
+
+**Constant-elasticity assumption.** The solver assumes log-linear supply and demand. Real markets have kinks, capacity constraints, and regime changes. The piecewise supply demo shows how this can be partially relaxed, but that extension is itself limited by data support.
+
+**Price decomposition is benchmark-driven.** The direct-care / non-direct-care split depends on source-backed staffing and compensation benchmarks plus a clipped decomposition rule; it is not literal cost accounting estimated from repo data. The preferred benchmark nets out the residual jointly, but does not separately identify markup, transport, administration, advertising, or profits.
+
+**Temporal coverage.** NDCP prices end in 2022. The project does not extrapolate.
+
+**Coverage is not full national price support.** The 2022 national benchmark uses price support for about 89% of the national under-5 population. That is strong enough for a benchmark, but still not full coverage.
+
+**Sample size.** 139 state-year rows is sufficient for demonstration, not robust inference.
+
+**No behavioral response.** Scenarios assume families and providers respond only through price — no quality changes, informal-care substitution, parental labor-supply responses, or policy feedback.
+
+<details>
+<summary><strong>What the numbers do not mean</strong></summary>
+
+- The gross market price is not "what it costs to raise a child." It is the annual price of a childcare slot.
+- The direct-care-equivalent price is not a verified cost-accounting split.
+- The marketization prices are not forecasts of what would happen if policy changed.
+- The demand elasticity is not a strong causal estimate in this build.
+
+</details>
+
+## Assumptions
+
+The demand and supply elasticities are estimated from repo data. The direct-care price decomposition uses a small number of source-backed assumptions documented in the [decomposition details](#national-satellite-account-benchmark) above. All values are centralized in [`configs/assumptions.yaml`](configs/assumptions.yaml).
+
+<details>
+<summary><strong>Fallback series (observed-data-derived)</strong></summary>
+
+Three quantities use observed-data-derived fallback rules when direct coverage is incomplete:
+
+- **Outside-option wage** — OEWS-derived state-year ratios where available; synthetic ratio fallback otherwise. OEWS overrides cover a minority of county rows; broader multi-year OEWS coverage is the primary upgrade path.
+- **County employment** — QCEW/ACS employment-per-under-5 medians fill missing county employment counts.
+- **Head Start capacity** — Observed slot-share medians fill missing Head Start slot counts.
+
+These are derived from observed public data, not fixed scalars. They are documented in the audit artifact with status `derived_from_observed_public_data`.
+
+</details>
+
+## Quickstart
+
+```bash
+# run tests
+PYTHONPYCACHEPREFIX=/tmp python -B -m pytest -q -p no:cacheprovider
+
+# with your project environment active, rebuild the childcare pipeline end to end
+PYTHONPYCACHEPREFIX=/tmp python -m unpaidwork.cli build-childcare --real
+PYTHONPYCACHEPREFIX=/tmp python -m unpaidwork.cli fit-childcare
+PYTHONPYCACHEPREFIX=/tmp python -m unpaidwork.cli simulate-childcare
+PYTHONPYCACHEPREFIX=/tmp python -m unpaidwork.cli report
+```
+
+<details>
+<summary><strong>Repo layout</strong></summary>
+
+```
+configs/          project and sector configs
+data/raw/         downloaded public source files
+data/interim/     normalized parquet outputs
+data/processed/   joined panels and model-ready datasets
+src/unpaidwork/   package code
+tests/            smoke and unit tests
+outputs/reports/  JSON and markdown reports
+outputs/figures/  SVG figures
+```
+
+</details>
+
+<details>
+<summary><strong>Data policy</strong></summary>
+
+- Raw source files are immutable after download
+- Normalized outputs are written to Parquet
+- Secrets belong in `.env`, never in code or git history
+- Survey-design metadata and imputation flags are carried through as first-class fields
+
+</details>
+
+<details>
+<summary><strong>Key artifacts</strong></summary>
+
+**Childcare:**
+- [childcare_headline_readout.md](outputs/reports/childcare_headline_readout.md) — short narrative summary of the headline counterfactual results
+- [childcare_headline_summary.json](outputs/reports/childcare_headline_summary.json) — machine-readable headline metrics
+- [childcare_satellite_account.md](outputs/reports/childcare_satellite_account.md) — national benchmark readout
+- [childcare_satellite_account.json](outputs/reports/childcare_satellite_account.json) — national benchmark machine-readable summary
+- [childcare_satellite_account_annual.csv](outputs/tables/childcare_satellite_account_annual.csv) — annual national benchmark series
+- [childcare_demand_iv_canonical.json](outputs/reports/childcare_demand_iv_canonical.json) — demand estimation
+- [childcare_scenario_diagnostics.json](outputs/reports/childcare_scenario_diagnostics.json) — scenario diagnostics
+- [figure_manifest.md](outputs/figures/figure_manifest.md) — figure index
+
+</details>
+
+## Status
+
+Current public-facing scope: childcare. Demonstration-grade, not publication-grade.
+
+Important boundary: NDCP observed prices end in 2022. All canonical scenarios stay within observed support. Any future post-2022 extension must be labeled as a nowcast.

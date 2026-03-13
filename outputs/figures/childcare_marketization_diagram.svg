@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="600" viewBox="0 0 980 600" role="img">
+<rect x="0.0" y="0.0" width="980.0" height="600.0" fill="#f8f7f4" />
+<rect x="40.0" y="40.0" width="900.0" height="520.0" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" rx="18" ry="18" />
+<text x="70.0" y="85.0" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#1e293b" text-anchor="start">Childcare Marketization Diagram</text>
+<text x="70.0" y="110.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#64748b" text-anchor="start">Stylized supply-demand schematic for outsourcing unpaid childcare</text>
+<line x1="140.0" y1="490.0" x2="840.0" y2="490.0" stroke="#1e293b" stroke-width="2" />
+<line x1="140.0" y1="490.0" x2="140.0" y2="150.0" stroke="#1e293b" stroke-width="2" />
+<text x="490.0" y="528.0" font-family="Arial, sans-serif" font-size="14" font-weight="400" fill="#64748b" text-anchor="middle">Quantity of paid childcare</text>
+<text x="110.0" y="320.0" font-family="Arial, sans-serif" font-size="14" font-weight="400" fill="#64748b" text-anchor="middle">Price</text>
+<path d="M 480.0 310.0 L 510.0 296.0 L 620.0 240.0 L 620.0 490.0 L 480.0 490.0 Z" fill="#0d9488" opacity="0.08" />
+<path d="M 160,470 C 300,470 420,340 480,310 C 540,280 700,185 800,175" fill="none" stroke="#0d9488" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+<path d="M 200,160 C 270,160 410,280 480,310 C 550,340 730,460 800,460" fill="none" stroke="#3b82f6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+<line x1="480.0" y1="310.0" x2="480.0" y2="490.0" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 6" />
+<line x1="140.0" y1="310.0" x2="480.0" y2="310.0" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 6" />
+<line x1="620.0" y1="240.0" x2="620.0" y2="490.0" stroke="#0d9488" stroke-width="1.5" stroke-dasharray="6 6" />
+<line x1="140.0" y1="240.0" x2="620.0" y2="240.0" stroke="#0d9488" stroke-width="1.5" stroke-dasharray="6 6" />
+<circle cx="480.0" cy="310.0" r="6.0" fill="#ffffff" stroke="#1e293b" stroke-width="2" />
+<circle cx="510.0" cy="296.0" r="6.0" fill="#d97706" stroke="#d97706" stroke-width="2" />
+<circle cx="620.0" cy="240.0" r="6.0" fill="#0d9488" stroke="#0d9488" stroke-width="2" />
+<text x="132.0" y="315.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#64748b" text-anchor="end">P₀</text>
+<text x="132.0" y="245.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#0d9488" text-anchor="end">P(α)</text>
+<text x="480.0" y="508.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#64748b" text-anchor="middle">Q₀</text>
+<text x="620.0" y="508.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#0d9488" text-anchor="middle">Q(α)</text>
+<rect x="802.0" y="448.0" width="62.8" height="23.0" fill="#ffffff" stroke="#3b82f6" stroke-width="1" rx="11.5" ry="11.5" />
+<text x="810.0" y="465.0" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#3b82f6" text-anchor="start">Demand</text>
+<rect x="802.0" y="153.0" width="62.8" height="23.0" fill="#ffffff" stroke="#0d9488" stroke-width="1" rx="11.5" ry="11.5" />
+<text x="810.0" y="170.0" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#0d9488" text-anchor="start">Supply</text>
+<line x1="480.0" y1="310.0" x2="420.0" y2="265.0" stroke="#94a3b8" stroke-width="1" />
+<rect x="297.8" y="245.0" width="125.2" height="23.0" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" rx="11.5" ry="11.5" />
+<text x="415.0" y="262.0" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="end">Baseline price</text>
+<line x1="510.0" y1="296.0" x2="520.0" y2="246.0" stroke="#d97706" stroke-width="1" />
+<rect x="517.0" y="226.0" width="109.6" height="23.0" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" rx="11.5" ry="11.5" />
+<text x="525.0" y="243.0" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#d97706" text-anchor="start">Shadow price</text>
+<line x1="620.0" y1="240.0" x2="670.0" y2="210.0" stroke="#0d9488" stroke-width="1" />
+<rect x="667.0" y="190.0" width="94.0" height="23.0" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" rx="11.5" ry="11.5" />
+<text x="675.0" y="207.0" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#0d9488" text-anchor="start">Price at α</text>
+<text x="140.0" y="548.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">Shaded region: additional paid-care volume under outsourcing</text>
+</svg>
