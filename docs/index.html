@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Reproducible estimates of what unpaid childcare would cost at market prices. National satellite-account benchmark and counterfactual marketization price.">
+  <title>Unpriced &mdash; Valuing Unpaid Childcare</title>
+  <script src="js/theme.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="#" class="site-logo">un<span class="logo-accent">priced</span></a>
+      <nav><ul class="nav-links">
+        <li><a href="#benchmark">Benchmark</a></li>
+        <li><a href="#marketization">Marketization</a></li>
+        <li><a href="#model">Model</a></li>
+        <li><a href="#data">Data</a></li>
+        <li><a href="#evidence">Evidence</a></li>
+        <li><a href="#limitations">Limitations</a></li>
+      </ul></nav>
+      <div class="header-controls">
+        <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Toggle navigation">&#9776;</button>
+        <button id="themeToggle" class="theme-toggle" onclick="upToggleTheme()" aria-label="Toggle theme">&#9790;</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════════════ HERO ══════════════════ -->
+  <section class="hero">
+    <div class="hero-inner">
+      <h1>Unpriced</h1>
+      <p class="hero-subtitle">What would unpaid childcare cost at market prices?</p>
+      <p class="hero-desc">Reproducible estimates pairing a national satellite-account benchmark with a counterfactual marketization price&mdash;what the childcare sector would clear at if unpaid care entered the paid market at scale.</p>
+      <div class="stats-row">
+        <div class="stat-chip"><div class="stat-value">$41.38B</div><div class="stat-label">Preferred benchmark</div></div>
+        <div class="stat-chip"><div class="stat-value">$8,737</div><div class="stat-label">Market price (&alpha;=0.50)</div></div>
+        <div class="stat-chip"><div class="stat-value">21</div><div class="stat-label">States in sample</div></div>
+      </div>
+    </div>
+  </section>
+
+  <main class="content">
+
+    <!-- ══════════════════ SATELLITE ACCOUNT BENCHMARK ══════════════════ -->
+    <section class="section" id="benchmark">
+      <div class="section-header"><h2>National Satellite Account Benchmark</h2><span class="section-tag">2022</span></div>
+      <p>A partial-equilibrium accounting identity that values unpaid childcare at the current marginal replacement price. The preferred benchmark uses the <strong>direct-care-equivalent</strong> price, isolating the labor component. The gross-market figure is retained as an upper bound.</p>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Measure</th><th class="num">Value</th><th>Unit</th></tr></thead>
+          <tbody>
+            <tr class="highlight"><td>Preferred benchmark: direct-care value</td><td class="num">$41.38B</td><td>annual national value</td></tr>
+            <tr><td>Gross-market upper benchmark</td><td class="num">$50.35B</td><td>annual national value</td></tr>
+            <tr><td>Excluded non-direct residual</td><td class="num">$8.97B</td><td>annual national value</td></tr>
+            <tr><td>Direct-care-equivalent price</td><td class="num">$8,762</td><td>per child-equivalent year</td></tr>
+            <tr><td>Gross market price</td><td class="num">$10,660</td><td>per child-equivalent year</td></tr>
+            <tr><td>Unpaid child-equivalent quantity</td><td class="num">4.72M</td><td>annual slots</td></tr>
+            <tr><td>Average unpaid childcare hours</td><td class="num">457.9</td><td>per child-year</td></tr>
+            <tr><td>Price-support population share</td><td class="num">89.0%</td><td>of national under-5 pop.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="collapsible">
+        <div class="collapsible-header">
+          <h4>How the direct-care-equivalent price is derived</h4>
+          <span class="collapsible-arrow">&#9654;</span>
+        </div>
+        <div class="collapsible-body"><div class="collapsible-inner">
+          <p>The direct-care-equivalent price isolates the labor component of the gross market price:</p>
+          <p><code>direct_care_price = (wage &times; fringe_multiplier &times; annual_hours) / children_per_worker</code></p>
+          <p>where <strong>wage</strong> is the observed or imputed childcare-worker hourly wage from QCEW, weighted by the state-year provider-type and age mix from ACS. The <strong>implied wage</strong> is back-solved: <code>wage = direct_care_price &times; children_per_worker / (fringe_multiplier &times; annual_hours)</code>. The raw labor-equivalent price is clipped at the gross market price&mdash;direct-care cannot exceed the total.</p>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Assumption</th><th class="num">Value</th><th>Source</th></tr></thead>
+              <tbody>
+                <tr><td>Fringe multiplier</td><td class="num">1.3763</td><td>BLS ECEC Table 4, June 2025 (compensation-to-wages for private-industry health care &amp; social assistance)</td></tr>
+                <tr><td>Annual hours</td><td class="num">2,080</td><td>BLS OEWS Technical Notes (52 &times; 40 FTE convention)</td></tr>
+                <tr><td>Center staffing (children/worker)</td><td class="num">4 / 7 / 10</td><td>ACF/NCECQA Brief #1, Table 4 (infant/toddler/preschool most-common state ratios)</td></tr>
+                <tr><td>Home staffing (children/worker)</td><td class="num">2 / 4 / 6</td><td>Head Start 45 C.F.R. &sect;1302.23 (benchmark mapping)</td></tr>
+                <tr><td>Market hours/child/week</td><td class="num">18.24</td><td>NCES ECPP 2019 + Digest 202.30</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>This is <strong>not cost accounting</strong>&mdash;it is a transparent assumption-based decomposition. The non-direct-care residual (gross minus direct-care) covers facilities, administration, meals, and other overhead. Sensitivity: direct-care price ranges from $5,371&ndash;$7,787 under &plusmn;10% stress on staffing and fringe, but the implied wage is stable at $9.56&ndash;$9.75.</p>
+        </div></div>
+      </div>
+
+      <div class="insight-box">
+        <p><strong>Interpretation:</strong> Replacement cost is useful for saying what unpaid care is worth if purchased one unit at a time at current prices. But policy does not operate one unit at a time&mdash;that is why the marketization price exists below.</p>
+      </div>
+    </section>
+
+    <!-- ══════════════════ MARKETIZATION PRICE ══════════════════ -->
+    <section class="section" id="marketization">
+      <div class="section-header"><h2>Counterfactual Marketization Price</h2><span class="section-tag">Headline</span></div>
+      <p>If some share (&alpha;) of currently unpaid childcare entered the paid market, what price would the sector clear at? &alpha; is the outsourcing share: &alpha;&nbsp;=&nbsp;0 is the status quo, &alpha;&nbsp;=&nbsp;0.50 means half of unpaid hours enter the market, and &alpha;&nbsp;=&nbsp;1.00 means full outsourcing. Canonical sample: <code>observed_core</code>, <code>household_parsimonious</code>, 21 states, 2014&ndash;2022, 556 scenario rows.</p>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Measure</th><th class="num">Value</th><th>Unit</th></tr></thead>
+          <tbody>
+            <tr><td>Gross market price</td><td class="num">$8,218</td><td>per child per year</td></tr>
+            <tr><td>Direct-care-equivalent price</td><td class="num">$6,564</td><td>per child per year</td></tr>
+            <tr><td>Non-direct-care residual</td><td class="num">$1,836</td><td>per child per year</td></tr>
+            <tr><td>Implied direct-care wage</td><td class="num">$9.75</td><td>per hour</td></tr>
+            <tr class="highlight"><td>Marketization price (&alpha; = 0.50)</td><td class="num">$8,737</td><td>per child per year</td></tr>
+            <tr><td>Marketization price (&alpha; = 1.00)</td><td class="num">$9,125</td><td>per child per year</td></tr>
+            <tr><td>Demand elasticity</td><td class="num">&minus;0.021</td><td>at mean</td></tr>
+            <tr><td>Supply elasticity</td><td class="num">4.078</td><td>weighted median</td></tr>
+            <tr><td>LOO state R&sup2;</td><td class="num">&minus;0.097</td><td>held-out fit</td></tr>
+            <tr><td>LOO year R&sup2;</td><td class="num">&minus;0.000</td><td>held-out fit</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ══════════════════ MODEL ══════════════════ -->
+    <section class="section" id="model">
+      <div class="section-header"><h2>How the Model Works</h2></div>
+      <p>The core intuition is a standard supply-and-demand framework. The observed market price (<strong>P&#x2080;</strong>) is the current equilibrium. When unpaid childcare enters the paid market, demand shifts right from <strong>D</strong> to <strong>D&prime;</strong>. The new equilibrium price <strong>P(&alpha;)</strong> depends on how elastic supply and demand are.</p>
+
+      <!-- Stylized Econ-101 diagram -->
+      <div class="chart-container">
+        <h3>The Outsourcing Shift</h3>
+        <p class="chart-subtitle">A stylized supply-and-demand diagram. The steep demand curve reflects very inelastic demand (&epsilon;&nbsp;=&nbsp;&minus;0.021): families need childcare regardless of price. The flatter supply curve reflects elastic supply (&epsilon;&nbsp;=&nbsp;4.078): providers expand when prices rise. When unpaid care enters the market, demand shifts right (D&nbsp;&rarr;&nbsp;D&prime;), moving the equilibrium from E&#x2080; to E&prime; with a modest price increase.</p>
+        <div class="chart-canvas-wrap tall"><canvas id="econ101Chart"></canvas></div>
+        <p class="chart-note">This is a conceptual diagram illustrating the model logic. For the actual estimated curves with real data, see Solver-Implied Curves below.</p>
+      </div>
+
+      <!-- Price Decomposition -->
+      <h3>Price Decomposition by Alpha</h3>
+      <p>The gross market price splits into a <strong>direct-care</strong> labor component and a <strong>non-direct-care residual</strong> (facilities, administration, meals). The direct-care component grows with alpha as the equilibrium wage rises.</p>
+      <div class="chart-container">
+        <div class="chart-canvas-wrap" style="min-height:420px;"><canvas id="priceDecompChart"></canvas></div>
+        <div class="chart-legend">
+          <div class="chart-legend-item"><span class="chart-legend-swatch" style="background:var(--color-teal);"></span> Direct-care component</div>
+          <div class="chart-legend-item"><span class="chart-legend-swatch" style="background:var(--color-amber);"></span> Non-direct-care residual</div>
+        </div>
+        <p class="chart-note">Gross price labeled above each bar. The wage stability ($9.75&ndash;$10.86 across the full alpha range) makes it a useful anchor even when the price-level decomposition is uncertain.</p>
+      </div>
+
+      <!-- Scenario Intervals -->
+      <h3>Scenario Intervals</h3>
+      <p>Each point is the median marketization price across canonical scenario rows at a given alpha. Shaded bands are bootstrap 10th-to-90th percentile intervals from resampling the demand and supply elasticities.</p>
+      <div class="chart-container">
+        <div class="chart-canvas-wrap" style="min-height:380px;"><canvas id="alphaIntervalsChart"></canvas></div>
+        <p class="chart-note">The <strong>marginal</strong> point is the shadow price at an infinitesimal outsourcing increment. Intervals widen as alpha grows because larger demand shifts amplify elasticity uncertainty. At &alpha;&nbsp;=&nbsp;1.00, the median price rises ~11% from the baseline.</p>
+      </div>
+
+      <!-- Solver-Implied Curves -->
+      <h3>Solver-Implied Curves</h3>
+      <p>The solver constructs constant-elasticity curves through the observed baseline: <code>Qd(P) = Q&#x2080; &times; (P/P&#x2080;)^(&minus;|&epsilon;d|)</code> and <code>Qs(P) = Q&#x2080; &times; (P/P&#x2080;)^(&epsilon;s)</code>. Both curves pass through the baseline point (Q&#x2080;, P&#x2080;) by construction. Unlike the stylized diagram above, these use real estimated elasticities and data-derived baselines.</p>
+      <div class="chart-container">
+        <div class="chart-canvas-wrap tall"><canvas id="solverCurvesChart"></canvas></div>
+        <p class="chart-note">At &alpha;&nbsp;=&nbsp;0.50, price rises +$519. At &alpha;&nbsp;=&nbsp;1.00, +$907. These are solver-implied curves from the canonical elasticities, not nonparametric empirical schedules.</p>
+      </div>
+
+      <!-- Piecewise Supply Demo -->
+      <h3>Piecewise Supply Extension</h3>
+      <p>The constant-elasticity assumption can be relaxed. This demo estimates separate reduced-form slopes <strong>below</strong> and <strong>above</strong> the baseline price, creating a one-kink supply curve. Below the baseline, supply is more elastic (&eta;&nbsp;=&nbsp;5.96); above, it is stiffer (&eta;&nbsp;=&nbsp;2.60). This raises predicted marketization prices: <strong>+$291</strong> at &alpha;&nbsp;=&nbsp;0.50 and <strong>+$565</strong> at &alpha;&nbsp;=&nbsp;1.00 vs. the constant benchmark.</p>
+      <div class="chart-container">
+        <div class="chart-canvas-wrap tall"><canvas id="piecewiseChart"></canvas></div>
+        <p class="chart-note">Only 22 of 107 eligible state-years have directly estimated positive slopes on both sides of the baseline. Most rows (79.4%) borrow a pooled fallback on at least one side. This is a methodology demonstration, not a richly estimated piecewise supply system.</p>
+      </div>
+    </section>
+
+    <!-- ══════════════════ SAMPLE AND DATA ══════════════════ -->
+    <section class="section" id="data">
+      <div class="section-header"><h2>Sample &amp; Data Support</h2></div>
+
+      <!-- Pipeline provenance -->
+      <h3>Pipeline Provenance</h3>
+      <p>All inputs are free public data. The pipeline joins six sources into county-year and state-year panels.</p>
+      <div class="chart-container">
+        <div class="chart-canvas-wrap" style="min-height:320px;"><canvas id="provenanceChart"></canvas></div>
+      </div>
+
+      <!-- Sample ladder -->
+      <h3>Sample Ladder</h3>
+      <p>Three samples are tested. The <strong>observed core</strong> is the headline: 139 state-year rows, 21 states, restricted to years with observed NDCP prices and QCEW labor coverage above 94%.</p>
+      <div class="ladder-grid">
+        <div class="ladder-card">
+          <div class="lc-name">Broad Complete</div>
+          <div class="lc-rows">228</div>
+          <div class="lc-detail">22 states &times; 15 years</div>
+          <div class="lc-badges">
+            <span class="badge badge-amber">LOO state R&sup2;: &minus;0.092</span>
+            <span class="badge badge-red">LOO year R&sup2;: &minus;2.592</span>
+          </div>
+        </div>
+        <div class="ladder-card headline">
+          <div class="lc-name">Observed Core</div>
+          <div class="lc-rows">139</div>
+          <div class="lc-detail">21 states &times; 8 years (headline)</div>
+          <div class="lc-badges">
+            <span class="badge badge-amber">LOO state R&sup2;: &minus;0.097</span>
+            <span class="badge badge-teal">LOO year R&sup2;: &minus;0.000</span>
+          </div>
+        </div>
+        <div class="ladder-card">
+          <div class="lc-name">Low-Impute</div>
+          <div class="lc-rows">55</div>
+          <div class="lc-detail">13 states &times; 8 years</div>
+          <div class="lc-badges">
+            <span class="badge badge-amber">LOO state R&sup2;: &minus;0.248</span>
+            <span class="badge badge-amber">LOO year R&sup2;: &minus;0.107</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Support boundary -->
+      <h3>Observed Price Support Window</h3>
+      <div class="timeline-bar">
+        <div class="timeline-labels"><span>2008</span><span>2022</span></div>
+        <div class="timeline-track">
+          <div class="timeline-fill" style="left:40%;width:60%;">Headline sample 2014&ndash;2022</div>
+        </div>
+        <p style="font-size:0.82rem;color:var(--color-text-secondary);margin-top:0.5rem;">NDCP observed price support: 2008&ndash;2022. All 556 canonical scenario rows stay within this window. No post-2022 nowcasts.</p>
+      </div>
+
+      <!-- Specification Comparison -->
+      <h3>Specification Comparison</h3>
+      <p>The demand elasticity is the most consequential parameter in the model. It determines how much price rises when outsourced care enters the market. To test robustness, four different instrumental-variable specifications are estimated, each using state birth rates as the demand instrument but varying which demographic controls are included.</p>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Specification</th><th class="num">Elasticity</th><th class="num">LOO State R&sup2;</th><th class="num">LOO Year R&sup2;</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr class="highlight">
+              <td>household_parsimonious</td><td class="num">&minus;0.021</td><td class="num">&minus;0.097</td><td class="num">&minus;0.000</td>
+              <td><span class="badge badge-teal">canonical</span></td>
+            </tr>
+            <tr>
+              <td>instrument_only</td><td class="num" style="color:var(--color-red);">+0.007</td><td class="num">&minus;0.074</td><td class="num">&minus;0.038</td>
+              <td><span class="badge badge-red">quarantined</span></td>
+            </tr>
+            <tr>
+              <td>labor_parsimonious</td><td class="num">&minus;0.020</td><td class="num">&minus;0.083</td><td class="num">+0.012</td>
+              <td><span class="badge badge-amber">sensitivity</span></td>
+            </tr>
+            <tr>
+              <td>full_controls</td><td class="num" style="color:var(--color-red);">+0.797</td><td class="num">&minus;0.041</td><td class="num">+0.130</td>
+              <td><span class="badge badge-red">quarantined</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:0.9rem;color:var(--color-text-secondary);margin-top:0.75rem;">
+        <strong>LOO R&sup2;</strong> (leave-one-out R-squared) measures out-of-sample prediction: each state or year is held out, the model is re-estimated on the rest, and R&sup2; is computed on the held-out data. Negative values mean the model predicts worse than a simple mean&mdash;confirming this is demonstration-grade, not a high-powered empirical design.
+      </p>
+      <div class="warning-box">
+        <p><strong>Quarantined specifications</strong> produce positive demand elasticities&mdash;economically inadmissible (demand should fall when price rises). The <code>instrument_only</code> specification omits all controls, leaving the birth-rate IV to absorb confounders it cannot handle alone. The <code>full_controls</code> specification adds median income, which likely absorbs the price signal rather than controlling for it. Both are retained for diagnostic comparison but excluded from headline results. The canonical <code>household_parsimonious</code> uses parent employment rate and single-parent share&mdash;variables that shift demand for childcare without directly affecting its price.</p>
+      </div>
+    </section>
+
+    <!-- ══════════════════ EVIDENCE QUALITY ══════════════════ -->
+    <section class="section" id="evidence">
+      <div class="section-header"><h2>Evidence Quality &amp; Decomposition Layers</h2></div>
+      <p>Beyond the pooled headline estimates, the project maintains an <strong>evidence-quality layer</strong> that tracks how much underlying data rests on direct administrative evidence versus inferred, proxy, or fallback sources.</p>
+
+      <h3>CCDF Support Quality</h3>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Support Bucket</th><th class="num">Rows</th><th class="num">Share</th><th>Headline Eligible?</th></tr></thead>
+          <tbody>
+            <tr><td>Explicit administrative</td><td class="num">7</td><td class="num">4.3%</td><td><span class="badge badge-green">Yes</span></td></tr>
+            <tr><td>Inferred from related fields</td><td class="num">100</td><td class="num">61.3%</td><td><span class="badge badge-green">Yes</span></td></tr>
+            <tr><td>Retained proxy</td><td class="num">9</td><td class="num">5.5%</td><td><span class="badge badge-red">No</span></td></tr>
+            <tr><td>Downgraded proxy</td><td class="num">47</td><td class="num">28.8%</td><td><span class="badge badge-red">No</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="insight-box">
+        <p><strong>107 rows</strong> (explicit + inferred) are eligible for headline-grade CCDF decomposition claims. <strong>56 rows</strong> (retained + downgraded proxy) are excluded from headline use and retained only for diagnostics.</p>
+      </div>
+
+      <div class="collapsible">
+        <div class="collapsible-header">
+          <h4>Licensing Harmonization &amp; Causal Diagnostics</h4>
+          <span class="collapsible-arrow">&#9654;</span>
+        </div>
+        <div class="collapsible-body"><div class="collapsible-inner">
+          <p>State childcare licensing rules are harmonized from raw regulatory source documents into a structured panel: <strong>4,692 harmonized rule rows</strong> from 16,338 raw audit rows, covering center-based, family home, and large group home provider types across all 50 states and DC.</p>
+          <p><strong>Licensing IV status: diagnostics only.</strong> The full-panel multi-state licensing IV produces weak first-stage results (F-statistic = 1.24 across 41 states, 5,013 county-year observations). The 4-state pilot documented in the README uses a more concentrated identification strategy (3 treated states, F = 83.3).</p>
+        </div></div>
+      </div>
+
+      <div class="collapsible">
+        <div class="collapsible-header">
+          <h4>Segmented Childcare Decomposition</h4>
+          <span class="collapsible-arrow">&#9654;</span>
+        </div>
+        <div class="collapsible-body"><div class="collapsible-inner">
+          <p>The segmented decomposition separates childcare quantities into three channels:</p>
+          <ul>
+            <li><strong>Public-admin care</strong> &mdash; directly provided or administered through public programs (Head Start, state pre-K)</li>
+            <li><strong>Subsidized-private care</strong> &mdash; privately provided but publicly subsidized through CCDF vouchers or contracts</li>
+            <li><strong>Unsubsidized-private care</strong> &mdash; privately provided and privately paid</li>
+          </ul>
+          <p>These outputs are <strong>additive only</strong>. They do not replace the canonical pooled estimates. 139 segmented state-year rows are available for scenario decomposition alongside the pooled benchmark.</p>
+        </div></div>
+      </div>
+
+      <div class="collapsible">
+        <div class="collapsible-header">
+          <h4>Release Contract</h4>
+          <span class="collapsible-arrow">&#9654;</span>
+        </div>
+        <div class="collapsible-body"><div class="collapsible-inner">
+          <p>The release package is a self-contained bundle with a machine-readable contract specifying which artifacts are headline-safe, which are diagnostics-only, and what publication rules apply.</p>
+          <ul>
+            <li>Only explicit and inferred CCDF support rows are headline-eligible for decomposition claims.</li>
+            <li>Licensing IV outputs are diagnostics-only in their current form.</li>
+            <li>Segmented outputs are additive-only and should not be presented as the canonical marketization result.</li>
+          </ul>
+          <p>The full pipeline is rebuildable from source data with no manual steps. Zero manual actions required.</p>
+        </div></div>
+      </div>
+    </section>
+
+    <!-- ══════════════════ LIMITATIONS ══════════════════ -->
+    <section class="section" id="limitations">
+      <div class="section-header"><h2>Limitations</h2></div>
+      <p>This section is the most important part of the documentation.</p>
+      <div class="limitation-list">
+        <div class="limitation-item">
+          <strong>The satellite account is still partial-equilibrium.</strong>
+          <p>Even the preferred benchmark is an accounting construct, not a GE valuation. It says what unpaid childcare would be worth at a current marginal replacement price, not what would happen if all unpaid childcare actually moved into the paid market.</p>
+        </div>
+        <div class="limitation-item">
+          <strong>Causal identification is weak.</strong>
+          <p>The demand elasticity is estimated with birth-rate instruments that have plausible exclusion-restriction stories but limited statistical power in a 21-state panel. The negative leave-one-out diagnostics confirm the model does not generalize well out of sample. This is the primary limitation.</p>
+        </div>
+        <div class="limitation-item">
+          <strong>Geography mismatch.</strong>
+          <p>Prices are observed at the county level (NDCP), but the causal core is estimated at the state level (ATUS). County-to-state aggregation loses real variation.</p>
+        </div>
+        <div class="limitation-item">
+          <strong>Constant-elasticity assumption.</strong>
+          <p>The solver assumes log-linear supply and demand. Real markets have kinks, capacity constraints, and regime changes.</p>
+        </div>
+        <div class="limitation-item">
+          <strong>Price decomposition is benchmark-driven.</strong>
+          <p>The direct-care / non-direct-care split depends on source-backed staffing and compensation benchmarks; it is not literal cost accounting estimated from repo data.</p>
+        </div>
+        <div class="limitation-item">
+          <strong>Temporal coverage.</strong>
+          <p>NDCP prices end in 2022. The project does not extrapolate.</p>
+        </div>
+        <div class="limitation-item">
+          <strong>Sample size.</strong>
+          <p>139 state-year rows is sufficient for demonstration, not robust inference.</p>
+        </div>
+        <div class="limitation-item">
+          <strong>No behavioral response.</strong>
+          <p>Scenarios assume families and providers respond only through price&mdash;no quality changes, informal-care substitution, parental labor-supply responses, or policy feedback.</p>
+        </div>
+        <div class="limitation-item">
+          <strong>Evidence-quality caveats.</strong>
+          <p>107 of 163 CCDF rows are headline-eligible; 56 use proxy evidence. Licensing IV is diagnostics-only (F = 1.24). Segmented outputs complement but do not replace the canonical pooled model.</p>
+        </div>
+      </div>
+
+      <div class="collapsible">
+        <div class="collapsible-header">
+          <h4>What the numbers do not mean</h4>
+          <span class="collapsible-arrow">&#9654;</span>
+        </div>
+        <div class="collapsible-body"><div class="collapsible-inner">
+          <ul>
+            <li>The gross market price is not &ldquo;what it costs to raise a child.&rdquo; It is the annual price of a childcare slot.</li>
+            <li>The direct-care-equivalent price is not a verified cost-accounting split.</li>
+            <li>The marketization prices are not forecasts of what would happen if policy changed.</li>
+            <li>The demand elasticity is not a strong causal estimate in this project.</li>
+          </ul>
+        </div></div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <span>Unpriced &middot; MIT License &middot; Built entirely from free public data</span>
+      <a href="https://github.com/smkwray/unpriced">GitHub</a>
+    </div>
+  </footer>
+
+  <script src="js/charts.js"></script>
+</body>
+</html>

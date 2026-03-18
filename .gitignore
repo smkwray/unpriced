@@ -31,5 +31,4 @@ CLAUDE.md
 .playwright-cli/
 output/
 data/registry/
-docs/
 initial-plan.md
