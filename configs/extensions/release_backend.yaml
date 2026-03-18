@@ -1,0 +1,104 @@
+name: release_backend
+sector: childcare
+mode: backend_release
+description: Assemble the machine-readable childcare backend release bundle for frontend handoff without generating figures.
+
+geography:
+  canonical_core: state_year
+  support_level: state_year
+
+year_window:
+  start: 2008
+  end: 2025
+  sensitivity_year: 2020
+
+sources:
+  required:
+    - name: ccdf_admin_state_year
+      path: data/interim/ccdf/ccdf_admin_state_year.parquet
+      manual_download: false
+      real_release_required: true
+      description: State-year CCDF admin support layer used for backend support accounting.
+    - name: segmented_state_fallback_summary
+      path: data/interim/childcare/segmented_reports/segmented_state_fallback_summary.parquet
+      manual_download: false
+      real_release_required: true
+      description: Additive segmented fallback diagnostics used in the backend release bundle.
+    - name: segmented_channel_scenarios
+      path: data/interim/childcare/segmented_scenarios/segmented_channel_scenarios.parquet
+      manual_download: false
+      real_release_required: true
+      description: Additive segmented scenario comparison table for frontend-ready backend outputs.
+    - name: licensing_iv_results
+      path: data/interim/childcare/licensing_iv/licensing_iv_results.parquet
+      manual_download: false
+      real_release_required: true
+      description: Licensing IV result table required for the causal backend package.
+  optional:
+    - name: childcare_headline_summary
+      path: outputs/reports/childcare_headline_summary.json
+      manual_download: false
+      real_release_required: false
+      description: Existing pooled headline summary if already built.
+    - name: licensing_iv_summary
+      path: data/interim/childcare/licensing_iv/licensing_iv_summary.json
+      manual_download: false
+      real_release_required: false
+      description: Licensing IV summary metadata for release documentation.
+    - name: ccdf_policy_raw_directory
+      path: data/raw/ccdf/policies
+      manual_download: true
+      real_release_required: true
+      description: Manual CCDF policy workbook directory needed for non-empty real policy controls.
+    - name: licensing_icpsr_2020_rules
+      path: data/raw/licensing/icpsr_2020/ICPSR_38539/DS0001/38539-0001-Data.tsv
+      manual_download: true
+      real_release_required: true
+      description: Richer rule-level licensing source from the 2020 Child Care Licensing Study raw TSV.
+    - name: licensing_icpsr_2017_rules
+      path: data/raw/licensing/icpsr_2017/ICPSR_37700/DS0001/37700-0001-Data.tsv
+      manual_download: true
+      real_release_required: false
+      description: Earlier licensing-study raw TSV used to extend rule coverage back to 2017.
+    - name: licensing_supply_shocks
+      path: data/raw/licensing/licensing_supply_shocks.csv
+      manual_download: true
+      real_release_required: true
+      description: Manual licensing shock input retained as a fallback contract for the IV backend.
+
+outputs:
+  reports_namespace: outputs/reports
+  tables_namespace: outputs/tables
+  files:
+    headline_summary_json: childcare_backend_release_headline_summary.json
+    methods_summary_json: childcare_backend_release_methods_summary.json
+    methods_markdown: childcare_backend_release_methods.md
+    rebuild_markdown: childcare_backend_release_rebuild.md
+    manifest_json: childcare_backend_release_manifest.json
+    source_readiness_json: childcare_backend_release_source_readiness.json
+    manual_requirements_json: childcare_backend_release_manual_requirements.json
+    manual_requirements_markdown: childcare_backend_release_manual_requirements.md
+    schema_inventory_json: childcare_backend_release_schema_inventory.json
+    contract_json: childcare_backend_release_contract.json
+    bundle_index_json: childcare_backend_release_bundle_index.json
+    headline_summary_csv: childcare_backend_release_headline_summary.csv
+    support_quality_csv: childcare_backend_support_quality_summary.csv
+    ccdf_support_mix_csv: childcare_backend_ccdf_support_mix_summary.csv
+    policy_coverage_csv: childcare_backend_policy_coverage_summary.csv
+    ccdf_proxy_gap_summary_csv: childcare_backend_ccdf_proxy_gap_summary.csv
+    ccdf_proxy_gap_state_years_csv: childcare_backend_ccdf_proxy_gap_state_years.csv
+    segmented_comparison_csv: childcare_backend_segmented_comparison.csv
+    licensing_iv_results_csv: childcare_backend_licensing_iv_results.csv
+    licensing_iv_usability_summary_csv: childcare_backend_licensing_iv_usability_summary.csv
+    licensing_first_stage_diagnostics_csv: childcare_backend_licensing_first_stage_diagnostics.csv
+    licensing_treatment_timing_csv: childcare_backend_licensing_treatment_timing.csv
+    licensing_leave_one_state_out_csv: childcare_backend_licensing_leave_one_state_out.csv
+    manifest_csv: childcare_backend_release_manifest.csv
+    source_readiness_csv: childcare_backend_release_source_readiness.csv
+    manual_requirements_csv: childcare_backend_release_manual_requirements.csv
+    schema_artifact_csv: childcare_backend_release_schema_artifact_summary.csv
+    schema_columns_csv: childcare_backend_release_schema_column_summary.csv
+    contract_artifacts_csv: childcare_backend_release_artifact_contracts.csv
+    contract_columns_csv: childcare_backend_release_column_dictionary.csv
+    frontend_handoff_summary_json: childcare_backend_release_frontend_handoff_summary.json
+    bundle_index_csv: childcare_backend_release_bundle_index.csv

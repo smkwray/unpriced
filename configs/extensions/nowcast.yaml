@@ -1,0 +1,48 @@
+name: nowcast
+sector: childcare
+mode: dynamic_supply_nowcast
+description: Post-2022 nowcast extension that keeps observed-support outputs in a separate namespace.
+
+geography:
+  causal_core: state_year
+  supply_layer: county_year
+
+year_window:
+  start: 2023
+  end: 2025
+  observed_cutoff: 2022
+
+sources:
+  required:
+    - name: observed_state_panel
+      path: data/processed/childcare_state_year_panel.parquet
+    - name: qcew
+      path: data/interim/qcew/qcew.parquet
+    - name: cbp
+      path: data/interim/cbp/cbp.parquet
+  optional:
+    - name: bds
+      path: data/interim/bds/bds.parquet
+    - name: cpi_daycare
+      path: data/raw/cpi_daycare
+      manual_download: true
+
+nowcast:
+  anchor_observed_outputs: data/processed/childcare_state_year_panel.parquet
+  mode: separate_outputs
+  observed_namespace: data/processed/childcare/observed
+  nowcast_namespace: data/processed/childcare/nowcast
+  anchor_year: 2022
+  cpi_trend_helper: true
+  dynamic_supply:
+    include_short_run: true
+    include_long_run: true
+    max_lag_years: 2
+
+output_namespace:
+  namespace: data/processed/childcare/nowcast
+  files:
+    supply_params: dynamic_supply_params.parquet
+    state_panel: childcare_state_year_panel.parquet
+    scenario_panel: childcare_nowcast_scenarios.parquet
+    diagnostics: nowcast_diagnostics.json

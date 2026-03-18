@@ -24,6 +24,26 @@ def load_yaml(path: Path) -> dict[str, Any]:
         return yaml.safe_load(handle) or {}
 
 
+def extension_config_dir(root: Path) -> Path:
+    return root / "configs" / "extensions"
+
+
+def resolve_extension_config_path(root: Path, config_name_or_path: str | Path) -> Path:
+    candidate = Path(config_name_or_path)
+    if candidate.is_absolute():
+        return candidate
+    if candidate.exists():
+        return candidate
+    if candidate.suffix:
+        return extension_config_dir(root) / candidate.name
+    return extension_config_dir(root) / f"{candidate.name}.yaml"
+
+
+def load_extension_config(root: Path, config_name_or_path: str | Path) -> dict[str, Any]:
+    path = resolve_extension_config_path(root, config_name_or_path)
+    return load_yaml(path)
+
+
 def load_project_paths(root: Path) -> ProjectPaths:
     config = load_yaml(root / "configs" / "project.yaml")
     raw = root / config["paths"]["raw"]

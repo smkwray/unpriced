@@ -1,0 +1,43 @@
+name: segmented_publication
+sector: childcare
+mode: segmented_publication
+description: Publish additive segmented childcare report outputs into outputs/reports and outputs/tables.
+
+geography:
+  canonical_core: state_year
+  support_level: state_year
+
+year_window:
+  start: 2008
+  end: 2023
+  sensitivity_year: 2020
+
+sources:
+  required:
+    - name: segmented_channel_response_summary
+      path: data/interim/childcare/segmented_reports/segmented_channel_response_summary.parquet
+    - name: segmented_state_fallback_summary
+      path: data/interim/childcare/segmented_reports/segmented_state_fallback_summary.parquet
+    - name: childcare_segmented_headline_summary
+      path: data/interim/childcare/segmented_reports/childcare_segmented_headline_summary.json
+
+outputs:
+  reports_namespace: outputs/reports
+  tables_namespace: outputs/tables
+  files:
+    headline_summary_json: childcare_segmented_headline_summary.json
+    support_quality_summary_json: childcare_segmented_support_quality_summary.json
+    support_priority_summary_json: childcare_segmented_support_priority_summary.json
+    support_issue_breakdown_json: childcare_segmented_support_issue_breakdown.json
+    parser_focus_summary_json: childcare_segmented_parser_focus_summary.json
+    parser_action_plan_summary_json: childcare_segmented_parser_action_plan_summary.json
+    headline_readout_markdown: childcare_segmented_headline_readout.md
+    full_report_markdown: childcare_segmented_report.md
+    channel_response_csv: childcare_segmented_channel_response_summary.csv
+    fallback_csv: childcare_segmented_state_fallback_summary.csv
+    support_quality_csv: childcare_segmented_support_quality_summary.csv
+    support_priority_states_csv: childcare_segmented_support_priority_states.csv
+    support_issue_breakdown_csv: childcare_segmented_support_issue_breakdown.csv
+    parser_focus_areas_csv: childcare_segmented_parser_focus_areas.csv
+    admin_sheet_targets_csv: childcare_segmented_admin_sheet_targets.csv
+    parser_action_plan_csv: childcare_segmented_parser_action_plan.csv

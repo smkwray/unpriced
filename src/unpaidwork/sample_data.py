@@ -203,6 +203,211 @@ def licensing_supply_shocks() -> pd.DataFrame:
     )
 
 
+def ccdf() -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "source_component": "admin",
+                "raw_relpath": "data/raw/ccdf/admin/fy2023_table_1.xlsx",
+                "filename": "fy2023_table_1.xlsx",
+                "extension": ".xlsx",
+                "manual_download_required": True,
+                "landing_page": "https://acf.gov/occ/data/child-care-and-development-fund-statistics",
+            },
+            {
+                "source_component": "policies",
+                "raw_relpath": "data/raw/ccdf/policies/ccdf_policies_extract_2023.csv",
+                "filename": "ccdf_policies_extract_2023.csv",
+                "extension": ".csv",
+                "manual_download_required": True,
+                "landing_page": "https://ccdf.urban.org/search-database",
+            },
+        ]
+    )
+
+
+def ccdf_admin_long() -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "source_component": "admin",
+                "raw_relpath": "data/raw/ccdf/admin/fy2023_table_1.xlsx",
+                "filename": "fy2023_table_1.xlsx",
+                "file_format": "xlsx",
+                "landing_page": "https://acf.gov/occ/data/child-care-and-development-fund-statistics",
+                "source_sheet": "Table 1",
+                "row_number": 1,
+                "column_name": "state",
+                "value_text": "California",
+                "value_numeric": None,
+                "table_year": 2023,
+                "parse_status": "parsed",
+            },
+            {
+                "source_component": "admin",
+                "raw_relpath": "data/raw/ccdf/admin/fy2023_table_1.xlsx",
+                "filename": "fy2023_table_1.xlsx",
+                "file_format": "xlsx",
+                "landing_page": "https://acf.gov/occ/data/child-care-and-development-fund-statistics",
+                "source_sheet": "Table 1",
+                "row_number": 1,
+                "column_name": "subsidized_private_slots",
+                "value_text": "120000",
+                "value_numeric": 120000.0,
+                "table_year": 2023,
+                "parse_status": "parsed",
+            },
+            {
+                "source_component": "admin",
+                "raw_relpath": "data/raw/ccdf/admin/fy2023_table_1.xlsx",
+                "filename": "fy2023_table_1.xlsx",
+                "file_format": "xlsx",
+                "landing_page": "https://acf.gov/occ/data/child-care-and-development-fund-statistics",
+                "source_sheet": "Table 1",
+                "row_number": 1,
+                "column_name": "public_admin_slots",
+                "value_text": "25200",
+                "value_numeric": 25200.0,
+                "table_year": 2023,
+                "parse_status": "parsed",
+            },
+            {
+                "source_component": "admin",
+                "raw_relpath": "data/raw/ccdf/admin/fy2023_table_1.xlsx",
+                "filename": "fy2023_table_1.xlsx",
+                "file_format": "xlsx",
+                "landing_page": "https://acf.gov/occ/data/child-care-and-development-fund-statistics",
+                "source_sheet": "Table 1",
+                "row_number": 1,
+                "column_name": "children_served_average_monthly",
+                "value_text": "145200",
+                "value_numeric": 145200.0,
+                "table_year": 2023,
+                "parse_status": "parsed",
+            },
+            {
+                "source_component": "admin",
+                "raw_relpath": "data/raw/ccdf/admin/fy2023_table_1.xlsx",
+                "filename": "fy2023_table_1.xlsx",
+                "file_format": "xlsx",
+                "landing_page": "https://acf.gov/occ/data/child-care-and-development-fund-statistics",
+                "source_sheet": "Table 1",
+                "row_number": 2,
+                "column_name": "state",
+                "value_text": "Texas",
+                "value_numeric": None,
+                "table_year": 2023,
+                "parse_status": "parsed",
+            },
+            {
+                "source_component": "admin",
+                "raw_relpath": "data/raw/ccdf/admin/fy2023_table_1.xlsx",
+                "filename": "fy2023_table_1.xlsx",
+                "file_format": "xlsx",
+                "landing_page": "https://acf.gov/occ/data/child-care-and-development-fund-statistics",
+                "source_sheet": "Table 1",
+                "row_number": 2,
+                "column_name": "children_served_average_monthly",
+                "value_text": "98700",
+                "value_numeric": 98700.0,
+                "table_year": 2023,
+                "parse_status": "parsed",
+            },
+            {
+                "source_component": "admin",
+                "raw_relpath": "data/raw/ccdf/admin/fy2023_table_1.xlsx",
+                "filename": "fy2023_table_1.xlsx",
+                "file_format": "xlsx",
+                "landing_page": "https://acf.gov/occ/data/child-care-and-development-fund-statistics",
+                "source_sheet": "Table 1",
+                "row_number": 2,
+                "column_name": "subsidized_private_slots",
+                "value_text": "80000",
+                "value_numeric": 80000.0,
+                "table_year": 2023,
+                "parse_status": "parsed",
+            },
+            {
+                "source_component": "admin",
+                "raw_relpath": "data/raw/ccdf/admin/fy2023_table_1.xlsx",
+                "filename": "fy2023_table_1.xlsx",
+                "file_format": "xlsx",
+                "landing_page": "https://acf.gov/occ/data/child-care-and-development-fund-statistics",
+                "source_sheet": "Table 1",
+                "row_number": 2,
+                "column_name": "public_admin_slots",
+                "value_text": "18700",
+                "value_numeric": 18700.0,
+                "table_year": 2023,
+                "parse_status": "parsed",
+            },
+        ]
+    )
+
+
+def ccdf_policy_long() -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "source_component": "policies",
+                "raw_relpath": "data/raw/ccdf/policies/ccdf_policies_extract_2023.csv",
+                "filename": "ccdf_policies_extract_2023.csv",
+                "file_format": "csv",
+                "landing_page": "https://ccdf.urban.org/search-database",
+                "source_sheet": "__default__",
+                "row_number": 1,
+                "column_name": "state",
+                "value_text": "California",
+                "value_numeric": None,
+                "table_year": 2023,
+                "parse_status": "parsed",
+            },
+            {
+                "source_component": "policies",
+                "raw_relpath": "data/raw/ccdf/policies/ccdf_policies_extract_2023.csv",
+                "filename": "ccdf_policies_extract_2023.csv",
+                "file_format": "csv",
+                "landing_page": "https://ccdf.urban.org/search-database",
+                "source_sheet": "__default__",
+                "row_number": 1,
+                "column_name": "copayment_required",
+                "value_text": "yes",
+                "value_numeric": None,
+                "table_year": 2023,
+                "parse_status": "parsed",
+            },
+            {
+                "source_component": "policies",
+                "raw_relpath": "data/raw/ccdf/policies/ccdf_policies_extract_2023.csv",
+                "filename": "ccdf_policies_extract_2023.csv",
+                "file_format": "csv",
+                "landing_page": "https://ccdf.urban.org/search-database",
+                "source_sheet": "__default__",
+                "row_number": 2,
+                "column_name": "state",
+                "value_text": "Texas",
+                "value_numeric": None,
+                "table_year": 2023,
+                "parse_status": "parsed",
+            },
+            {
+                "source_component": "policies",
+                "raw_relpath": "data/raw/ccdf/policies/ccdf_policies_extract_2023.csv",
+                "filename": "ccdf_policies_extract_2023.csv",
+                "file_format": "csv",
+                "landing_page": "https://ccdf.urban.org/search-database",
+                "source_sheet": "__default__",
+                "row_number": 2,
+                "column_name": "copayment_required",
+                "value_text": "no",
+                "value_numeric": None,
+                "table_year": 2023,
+                "parse_status": "parsed",
+            },
+        ]
+    )
+
+
 def sipp() -> pd.DataFrame:
     return pd.DataFrame(
         [

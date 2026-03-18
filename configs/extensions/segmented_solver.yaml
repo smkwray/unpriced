@@ -1,0 +1,92 @@
+name: segmented_solver
+sector: childcare
+mode: segmented_baseline
+description: Build segmented childcare prices and quantities while preserving pooled benchmark compatibility.
+
+geography:
+  canonical_core: state_year
+  simulation_layer: county_year
+
+year_window:
+  start: 2008
+  end: 2022
+  sensitivity_year: 2020
+
+sources:
+  required:
+    - name: ndcp
+      path: data/interim/ndcp/ndcp.parquet
+      note: county_fips/state_fips/year/segment metadata are required
+  optional:
+    - name: qcew
+      path: data/interim/qcew/qcew.parquet
+    - name: cbp
+      path: data/interim/cbp/cbp.parquet
+    - name: ccdf
+      path: data/raw/ccdf
+    - name: head_start
+      path: data/interim/head_start/head_start.parquet
+
+segments:
+  - segment_id: infant_center_private
+    segment_label: infant / center / private
+    child_age: infant
+    provider_type: center
+    channel: private
+  - segment_id: toddler_center_private
+    segment_label: toddler / center / private
+    child_age: toddler
+    provider_type: center
+    channel: private
+  - segment_id: preschool_center_private
+    segment_label: preschool / center / private
+    child_age: preschool
+    provider_type: center
+    channel: private
+  - segment_id: infant_home_private
+    segment_label: infant / home / private
+    child_age: infant
+    provider_type: home
+    channel: private
+  - segment_id: toddler_home_private
+    segment_label: toddler / home / private
+    child_age: toddler
+    provider_type: home
+    channel: private
+  - segment_id: preschool_home_private
+    segment_label: preschool / home / private
+    child_age: preschool
+    provider_type: home
+    channel: private
+
+segment_metadata:
+  dimensions:
+    - child_age
+    - provider_type
+    - channel
+  imputation_flag_column: imputed_flag
+
+build:
+  price_panel_output_columns:
+    - child_age
+    - provider_type
+    - channel
+    - geography_fips
+    - state_fips
+    - county_fips
+    - year
+    - annual_price
+    - provider_count
+    - weight
+  compatibility:
+    enabled: true
+    method: weighted_average_to_pooled
+    weight_column: weight
+    tolerance: 1.0e-6
+
+output_namespace:
+  namespace: data/interim/childcare/segmented_solver
+  files:
+    segment_definitions: segment_definitions.parquet
+    segment_price_panel: ndcp_segment_prices.parquet
+    segment_mappings: segmented_to_pooled_mapping.parquet

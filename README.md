@@ -125,6 +125,89 @@ Higher alpha pushes more demand into the market, raising the equilibrium price. 
 
 </details>
 
+---
+
+## Evidence quality and decomposition layers
+
+Beyond the pooled headline estimates, the project maintains an **evidence-quality layer** that tracks, for every component of the childcare pipeline, how much of the underlying data rests on direct administrative evidence versus inferred, proxy, or fallback sources. The project:
+
+- Ingests real Child Care and Development Fund (CCDF) administrative data (163 state-year rows) and classifies each row by the quality of its public-vs-private childcare split — distinguishing explicit administrative records, inferred support, retained proxy support, and downgraded proxy support.
+- Harmonizes state childcare licensing rules (4,692 harmonized rules) into a structured regulatory panel covering all 50 states and DC.
+- Builds segmented childcare quantities that separate public-admin, subsidized-private, and unsubsidized-private channels alongside the pooled model.
+- Exports machine-readable release artifacts that specify which outputs are headline-eligible, which are diagnostics-only, and what publication rules apply.
+
+**Why this matters for economists and policy readers.** Replacement-cost and marketization-price estimates gain credibility when readers can verify how much of the underlying decomposition rests on direct administrative evidence. Policy readers evaluating formalization need to know which components are robust headline objects and which are still under empirical construction. The licensing and segmentation layers matter because formalization policy operates differently on public-admin care, subsidized-private care, and unsubsidized-private care — expanding public pre-K, increasing CCDF subsidy rates, and deregulating private providers are distinct policy levers that act on distinct segments of the market. The project is unusual in pairing a simple pooled headline with a transparent support-quality audit, rather than presenting a single number and hiding the empirical uncertainty behind it.
+
+Of the 163 CCDF administrative state-year rows, **107** (explicit + inferred) are headline-eligible for decomposition claims; **56** (retained or downgraded proxy) are excluded from headline use. The licensing IV produces diagnostics-only outputs in its current form (weak first-stage, F = 1.24). Segmented outputs are additive scaffolding — they complement but do not replace the canonical pooled model. The full pipeline is rebuildable from source data with no manual steps.
+
+<details>
+<summary><strong>CCDF decomposition and support quality</strong></summary>
+
+The project ingests real CCDF administrative data from Administration for Children and Families (ACF) reports and classifies each of the 163 state-year rows by the quality of its public-vs-private childcare split:
+
+| Support bucket | State-year rows | Share | Headline eligible? |
+|---|---|---|---|
+| Explicit administrative | 7 | 4.3% | Yes |
+| Inferred from related fields | 100 | 61.3% | Yes |
+| Retained proxy | 9 | 5.5% | No — diagnostics only |
+| Downgraded proxy | 47 | 28.8% | No — diagnostics only |
+
+**107 rows** (explicit + inferred) are eligible for headline-grade CCDF decomposition claims. **56 rows** (retained proxy + downgraded proxy) are excluded from headline use and retained only for diagnostics.
+
+The 47 downgraded-proxy rows estimated the public/private split using subsidy payment-method shares (voucher, contract, or private-pay distributions) rather than direct administrative counts of children served. Because the payment-method distribution diverges substantially from children-served totals for these rows (mean ratio: 2.10×), they are downgraded to a simpler children-served fallback. The 9 retained-proxy rows have smaller gaps but still fall short of the explicit/inferred standard.
+
+**Publication rule:** headline-grade CCDF decomposition claims should use only explicit and inferred support rows. Retained-proxy and downgraded-proxy rows should appear only in appendix or diagnostic contexts.
+
+</details>
+
+<details>
+<summary><strong>Licensing harmonization and causal diagnostics</strong></summary>
+
+State childcare licensing rules are harmonized from raw regulatory source documents into a structured panel: 4,692 harmonized rule rows from 16,338 raw audit rows, covering center-based, family home, and large group home provider types across all 50 states and DC. Rules cover staffing ratios, group sizes, background check requirements, and age-specific regulations.
+
+This panel serves two purposes:
+1. It provides a structured regulatory-variation layer for the segmented decomposition, where licensing stringency differs by provider type and state.
+2. It supports a licensing-shock instrumental variable (IV) design for estimating causal supply responses to regulatory changes.
+
+**Licensing IV status: diagnostics only.** The full-panel multi-state licensing IV produces weak first-stage results (F-statistic = 1.24 across 41 states, 5,013 county-year observations). Neither the provider-density nor employer-establishment-density outcome yields a headline-usable estimate. The recommended use tier is **diagnostics only**: the IV machinery exists, the data are harmonized, and the design is documented, but the results should not be cited as causal evidence in their current form.
+
+The 4-state supply IV pilot documented in the model-mechanics section below uses a more concentrated identification strategy (3 treated states, F = 83.3). The full-panel version here scales that approach to all states with harmonized licensing data, at the cost of diluting the treatment signal across states where licensing variation is less concentrated. Both are retained — the pilot as a proof-of-concept, the full-panel version as a broader but weaker diagnostic.
+
+CCDF policy coverage is available for copayment requirements (1,072 observed state-year rows, 99.2% coverage), but promotion of policy controls beyond copayment is intentionally conservative.
+
+</details>
+
+<details>
+<summary><strong>Segmented childcare decomposition</strong></summary>
+
+The segmented decomposition separates childcare quantities into three channels:
+
+- **Public-admin care** — directly provided or administered through public programs (e.g., Head Start, state pre-K)
+- **Subsidized-private care** — privately provided but publicly subsidized through CCDF vouchers or contracts
+- **Unsubsidized-private care** — privately provided and privately paid
+
+This decomposition matters because formalization policy affects each channel differently. Expanding public pre-K, increasing CCDF subsidy rates, and deregulating private providers are distinct interventions that operate on distinct segments of the childcare market. A pooled model treats them as one market; the segmented decomposition allows analysis of how outsourcing scenarios play out differently across channels.
+
+**These outputs are additive only.** They do not replace the canonical pooled estimates. They provide additional structured detail — 139 segmented state-year rows — that can be used for scenario decomposition and policy analysis alongside the pooled benchmark. The segmented results are not presented as canonical model outputs because the segment-level data support (particularly the CCDF public/private split) is still mixed quality, as documented in the support-quality section above.
+
+</details>
+
+<details>
+<summary><strong>Release bundle and reproducibility contract</strong></summary>
+
+The release package is a self-contained bundle with a machine-readable contract specifying which artifacts are headline-safe, which are diagnostics-only, and what publication rules apply. This matters for any downstream visualization or publication workflow: the contract tells consumers exactly which outputs can support headline claims and which should appear only in appendix or diagnostic contexts.
+
+The release is fully rebuildable from source data (see Quickstart below). Zero manual actions are required. The pipeline operates in real mode — all inputs are real administrative and survey data, not synthetic.
+
+Key contract rules:
+- Only explicit and inferred CCDF support rows are headline-eligible for decomposition claims.
+- Licensing IV outputs are diagnostics-only in their current form.
+- Segmented outputs are additive-only and should not be presented as the canonical marketization result.
+
+</details>
+
+---
+
 ## How the model works
 
 ![Childcare Marketization Diagram](outputs/figures/childcare_marketization_diagram.svg)
@@ -236,6 +319,7 @@ The pipeline assembles county-year and state-year panels from six public sources
 | ACS | Demographics, household structure | County and state | 2009-2023 |
 | QCEW | Childcare wages and employment | County and state | 2014-2024 |
 | CDC WONDER | Birth counts (demand instrument) | State-year | varies |
+| ACF/CCDF | Subsidy admin data, licensing rules | State-year | 2017-2020 |
 | State licensing agencies | Licensing shock panel (supply IV demo) | County (VA, MT, LA, SC) | 2017-2022 |
 | SIPP, CE | Validation benchmarks | National | 2020-2024 |
 
@@ -306,13 +390,15 @@ This section is the most important part of the documentation.
 
 **No behavioral response.** Scenarios assume families and providers respond only through price — no quality changes, informal-care substitution, parental labor-supply responses, or policy feedback.
 
+**Evidence-quality caveats.** The CCDF public/private decomposition relies on mixed-quality administrative support: 107 of 163 state-year rows are headline-eligible (explicit or inferred); 56 use retained or downgraded proxy evidence and are excluded from headline claims. The full-panel multi-state licensing IV is diagnostics-only (F = 1.24) and should not be confused with the sharper 4-state pilot (F = 83.3) documented above. Segmented childcare outputs are additive scaffolding that complements but does not replace the canonical pooled model. See the [evidence-quality section](#evidence-quality-and-decomposition-layers) for details.
+
 <details>
 <summary><strong>What the numbers do not mean</strong></summary>
 
 - The gross market price is not "what it costs to raise a child." It is the annual price of a childcare slot.
 - The direct-care-equivalent price is not a verified cost-accounting split.
 - The marketization prices are not forecasts of what would happen if policy changed.
-- The demand elasticity is not a strong causal estimate in this build.
+- The demand elasticity is not a strong causal estimate in this project.
 
 </details>
 
@@ -347,6 +433,24 @@ PYTHONPYCACHEPREFIX=/tmp python -m unpaidwork.cli report
 ```
 
 <details>
+<summary><strong>Extended pipeline rebuild</strong></summary>
+
+After the pooled pipeline above, the evidence-quality and segmented layers can be rebuilt end-to-end:
+
+```bash
+PYTHONPYCACHEPREFIX=/tmp python -m unpaidwork.cli pull-ccdf --real --refresh
+PYTHONPYCACHEPREFIX=/tmp python -m unpaidwork.cli build-ccdf-state-year --real --refresh
+PYTHONPYCACHEPREFIX=/tmp python -m unpaidwork.cli build-childcare-segmented-report --real --refresh
+PYTHONPYCACHEPREFIX=/tmp python -m unpaidwork.cli build-licensing-harmonization --real --refresh
+PYTHONPYCACHEPREFIX=/tmp python -m unpaidwork.cli build-licensing-iv --real --refresh
+PYTHONPYCACHEPREFIX=/tmp python -m unpaidwork.cli build-childcare-release-backend --real --refresh
+```
+
+All inputs are real administrative and survey data. Zero manual actions required. The final command produces the release bundle with all artifacts, the handoff contract, and the headline summary.
+
+</details>
+
+<details>
 <summary><strong>Repo layout</strong></summary>
 
 ```
@@ -357,6 +461,7 @@ data/processed/   joined panels and model-ready datasets
 src/unpaidwork/   package code
 tests/            smoke and unit tests
 outputs/reports/  JSON and markdown reports
+outputs/tables/   CSV artifacts (support quality, licensing IV, release summaries)
 outputs/figures/  SVG figures
 ```
 
@@ -389,5 +494,7 @@ Generated report JSON/CSV/Markdown outputs are produced locally by `python -m un
 ## Status
 
 Current public-facing scope: childcare. Demonstration-grade, not publication-grade.
+
+The pooled childcare benchmark and marketization demo are the canonical headline products. The evidence-quality layer — CCDF support tracking, licensing harmonization, segmented quantities, and the release contract — is complete and fully rebuildable. Licensing IV outputs and segmented scenarios are not headline-grade and are documented as diagnostics-only and additive-only, respectively.
 
 Important boundary: NDCP observed prices end in 2022. All canonical scenarios stay within observed support. Any future post-2022 extension must be labeled as a nowcast.

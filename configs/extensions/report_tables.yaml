@@ -1,0 +1,38 @@
+name: report_tables
+sector: childcare
+mode: additive_report_tables
+description: Build additive childcare report tables from segmented utilization and promoted CCDF controls.
+
+geography:
+  canonical_core: state_year
+  support_level: state_year
+
+year_window:
+  start: 2008
+  end: 2023
+  sensitivity_year: 2020
+
+sources:
+  required:
+    - name: q0_segmented
+      path: data/interim/childcare/utilization_stack/q0_segmented.parquet
+    - name: utilization_reconciliation_diagnostics
+      path: data/interim/childcare/utilization_stack/utilization_reconciliation_diagnostics.parquet
+  optional:
+    - name: ccdf_policy_promoted_controls_state_year
+      path: data/interim/ccdf/ccdf_policy_promoted_controls_state_year.parquet
+    - name: ccdf_policy_controls_state_year
+      path: data/interim/ccdf/ccdf_policy_controls_state_year.parquet
+
+build:
+  summary_tables:
+    - state_year_channel_summary
+    - state_year_policy_quantity_summary
+    - state_year_support_summary
+
+output_namespace:
+  namespace: data/interim/childcare/report_tables
+  files:
+    state_year_channel_summary: state_year_channel_summary.parquet
+    state_year_policy_quantity_summary: state_year_policy_quantity_summary.parquet
+    state_year_support_summary: state_year_support_summary.parquet

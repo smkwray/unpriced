@@ -1,0 +1,42 @@
+name: segmented_reports
+sector: childcare
+mode: segmented_reports
+description: Build additive segmented childcare report outputs from segmented scenarios and support diagnostics.
+
+geography:
+  canonical_core: state_year
+  support_level: state_year
+
+year_window:
+  start: 2008
+  end: 2023
+  sensitivity_year: 2020
+
+sources:
+  required:
+    - name: segmented_channel_scenarios
+      path: data/interim/childcare/segmented_scenarios/segmented_channel_scenarios.parquet
+    - name: segmented_state_year_summary
+      path: data/interim/childcare/segmented_scenarios/segmented_state_year_summary.parquet
+    - name: segmented_state_year_diagnostics
+      path: data/interim/childcare/segmented_scenarios/segmented_state_year_diagnostics.parquet
+  optional:
+    - name: state_year_support_summary
+      path: data/interim/childcare/report_tables/state_year_support_summary.parquet
+    - name: state_year_channel_summary
+      path: data/interim/childcare/report_tables/state_year_channel_summary.parquet
+    - name: state_year_policy_quantity_summary
+      path: data/interim/childcare/report_tables/state_year_policy_quantity_summary.parquet
+
+build:
+  summary_surfaces:
+    - segmented_channel_response_summary
+    - segmented_state_fallback_summary
+
+output_namespace:
+  namespace: data/interim/childcare/segmented_reports
+  files:
+    segmented_channel_response_summary: segmented_channel_response_summary.parquet
+    segmented_state_fallback_summary: segmented_state_fallback_summary.parquet
+    childcare_segmented_headline_summary: childcare_segmented_headline_summary.json
+    childcare_segmented_report: childcare_segmented_report.md

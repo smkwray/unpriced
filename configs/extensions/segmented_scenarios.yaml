@@ -1,0 +1,44 @@
+name: segmented_scenarios
+sector: childcare
+mode: segmented_scenarios
+description: Build additive segmented childcare scenario outputs from solver-ready channel inputs and selected demand fits.
+
+geography:
+  canonical_core: state_year
+  support_level: state_year
+
+year_window:
+  start: 2008
+  end: 2023
+  sensitivity_year: 2020
+
+sources:
+  required:
+    - name: childcare_state_year_panel
+      path: data/processed/childcare_state_year_panel.parquet
+    - name: childcare_county_year_price_panel
+      path: data/processed/childcare_county_year_price_panel.parquet
+    - name: childcare_demand_sample_comparison
+      path: outputs/reports/childcare_demand_sample_comparison.json
+  optional:
+    - name: solver_baseline_state_year
+      path: data/interim/childcare/solver_inputs/solver_baseline_state_year.parquet
+    - name: solver_elasticity_mapping
+      path: data/interim/childcare/solver_inputs/solver_elasticity_mapping.parquet
+    - name: solver_policy_controls_state_year
+      path: data/interim/childcare/solver_inputs/solver_policy_controls_state_year.parquet
+
+build:
+  selection:
+    sample_choice: headline_sample
+    demand_comparison: childcare_demand_sample_comparison.json
+  scenario_grid:
+    alphas: project_alpha_grid
+
+output_namespace:
+  namespace: data/interim/childcare/segmented_scenarios
+  files:
+    segmented_channel_inputs: segmented_channel_inputs.parquet
+    segmented_channel_scenarios: segmented_channel_scenarios.parquet
+    segmented_state_year_summary: segmented_state_year_summary.parquet
+    segmented_state_year_diagnostics: segmented_state_year_diagnostics.parquet

@@ -1,0 +1,48 @@
+name: solver_inputs
+sector: childcare
+mode: additive_solver_inputs
+description: Build additive solver-ready childcare channel inputs from segmented utilization and promoted CCDF controls.
+
+geography:
+  canonical_core: state_year
+  support_level: state_year
+
+year_window:
+  start: 2008
+  end: 2023
+  sensitivity_year: 2020
+
+sources:
+  required:
+    - name: q0_segmented
+      path: data/interim/childcare/utilization_stack/q0_segmented.parquet
+    - name: ndcp_segment_prices
+      path: data/interim/childcare/segmented_solver/ndcp_segment_prices.parquet
+  optional:
+    - name: utilization_reconciliation_diagnostics
+      path: data/interim/childcare/utilization_stack/utilization_reconciliation_diagnostics.parquet
+    - name: ccdf_policy_promoted_controls_state_year
+      path: data/interim/ccdf/ccdf_policy_promoted_controls_state_year.parquet
+    - name: ccdf_policy_controls_state_year
+      path: data/interim/ccdf/ccdf_policy_controls_state_year.parquet
+
+build:
+  channels:
+    private_unsubsidized:
+      quantity_component: private_unsubsidized
+      price_responsive: true
+    private_subsidized:
+      quantity_component: private_subsidized
+      price_responsive: true
+    public_admin:
+      quantity_component: public_admin
+      price_responsive: false
+  elasticity_family: pooled_childcare_demand
+
+output_namespace:
+  namespace: data/interim/childcare/solver_inputs
+  files:
+    solver_channel_quantities: solver_channel_quantities.parquet
+    solver_baseline_state_year: solver_baseline_state_year.parquet
+    solver_elasticity_mapping: solver_elasticity_mapping.parquet
+    solver_policy_controls_state_year: solver_policy_controls_state_year.parquet

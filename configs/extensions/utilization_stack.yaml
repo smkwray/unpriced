@@ -1,0 +1,55 @@
+name: utilization_stack
+sector: childcare
+mode: observed_utilization
+description: Replace proxy paid-care quantity with measured utilization components and reconciliation targets.
+
+geography:
+  canonical_core: state_year
+  support_level: state_year
+
+year_window:
+  start: 2008
+  end: 2023
+  sensitivity_year: 2020
+
+sources:
+  required:
+    - name: atus
+      path: data/interim/atus/atus_state_year_panel.parquet
+    - name: ndcp
+      path: data/interim/ndcp/ndcp.parquet
+  optional:
+    - name: ccdf_admin
+      path: data/raw/ccdf
+      manual_download: true
+    - name: head_start
+      path: data/interim/head_start/head_start.parquet
+    - name: sipp
+      path: data/interim/sipp/sipp.parquet
+    - name: nes
+      path: data/interim/nes/nes.parquet
+
+build:
+  decomposition:
+    components:
+      - subsidized_private
+      - unsubsidized_private
+      - head_start
+      - public_pre_k
+      - other_public_slots
+    formula: "private_paid_slots = max(total_paid_slots_from_surveys - public_admin_slots, 0)"
+  reconciliation:
+    method: quadratic_programming
+    nonnegativity: true
+    accounting_tolerance: 1.0e-6
+  quality:
+    require_support_flags: true
+    require_uncertainty_cols: true
+
+output_namespace:
+  namespace: data/interim/childcare/utilization_stack
+  files:
+    public_program_slots: public_program_slots_state_year.parquet
+    survey_paid_use_targets: survey_paid_use_targets.parquet
+    quantity_by_segment: q0_segmented.parquet
+    reconciliation_diagnostics: utilization_reconciliation_diagnostics.parquet

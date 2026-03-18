@@ -1,0 +1,47 @@
+name: local_markets
+sector: childcare
+mode: local_market_panel
+description: Extend causal input panels from state-year to local market definitions.
+
+geography:
+  canonical_core: county_year
+  causal_core_fallback: state_year
+  market_type: commuting_market
+
+year_window:
+  start: 2014
+  end: 2024
+  sensitivity_year: 2020
+
+sources:
+  required:
+    - name: atus
+      path: data/interim/atus/atus_state_year_panel.parquet
+    - name: acs
+      path: data/interim/acs/acs.parquet
+    - name: ndcp
+      path: data/interim/ndcp/ndcp.parquet
+  optional:
+    - name: lodes
+      path: data/raw/lodes
+    - name: qcew
+      path: data/interim/qcew/qcew.parquet
+    - name: cbp
+      path: data/interim/cbp/cbp.parquet
+
+panelization:
+  geography_definition:
+    method: commuting_flows
+    cluster_key: local_market_id
+    allow_county_to_market_mapping: true
+  atus_projection:
+    predict_on_acs_cells: true
+    poststratify_weights: true
+
+output_namespace:
+  namespace: data/interim/childcare/local_markets
+  files:
+    geography_crosswalk: local_market_crosswalk.parquet
+    atus_predictions: atus_local_mrp_predictions.parquet
+    market_panel: childcare_local_market_panel.parquet
+    support_diagnostics: local_market_support_diagnostics.parquet

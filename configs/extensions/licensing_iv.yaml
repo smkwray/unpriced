@@ -1,0 +1,67 @@
+name: licensing_iv
+sector: childcare
+mode: supply_identification
+description: National licensing harmonization and supply-IV extension layer for segmented and pooled frameworks.
+
+geography:
+  canonical_core: state_year
+  panel_level: state_year
+
+year_window:
+  start: 2010
+  end: 2025
+  sensitivity_year: 2020
+
+sources:
+  required:
+    - name: ndcp
+      path: data/interim/ndcp/ndcp.parquet
+    - name: qcew
+      path: data/interim/qcew/qcew.parquet
+    - name: cbp
+      path: data/interim/cbp/cbp.parquet
+  optional:
+    - name: licensing
+      path: data/raw/licensing
+      manual_download: true
+    - name: ccdf
+      path: data/raw/ccdf
+    - name: atus
+      path: data/interim/atus/atus_state_year_panel.parquet
+
+estimation:
+  harmonization:
+    output_year_grid: yearly
+    index_types:
+      - equal_weight
+      - pca_first_component
+  identification:
+    methods:
+      - event_study
+      - twosls
+    controls:
+      - state_fixed_effects
+      - year_fixed_effects
+      - labor_market_controls
+    first_stage:
+      min_fstat: 10
+    diagnostics:
+      - weak_iv
+      - leave_one_state_out
+      - treatment_timing_summary
+
+output_namespace:
+  namespace: data/interim/childcare/licensing_iv
+  files:
+    harmonized_rules: licensing_rules_harmonized.parquet
+    rule_audit: licensing_rules_raw_audit.parquet
+    stringency_index: licensing_stringency_index.parquet
+    harmonization_summary: licensing_harmonization_summary.parquet
+    event_study_results: licensing_event_study_results.parquet
+    iv_results: licensing_iv_results.parquet
+    iv_usability_summary: licensing_iv_usability_summary.parquet
+    first_stage_diagnostics: licensing_first_stage_diagnostics.parquet
+    treatment_timing: licensing_treatment_timing.parquet
+    leave_one_state_out: licensing_leave_one_state_out.parquet
+    elasticity_panel: supply_iv_elasticities.parquet
+    iv_summary_json: licensing_iv_summary.json

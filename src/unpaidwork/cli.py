@@ -7,14 +7,39 @@ import sys
 import pandas as pd
 
 from unpaidwork.assumptions import childcare_model_assumptions, write_assumption_audit
-from unpaidwork.config import ensure_project_dirs, load_project_paths, load_yaml
-from unpaidwork.errors import UnpaidWorkError
+from unpaidwork.config import (
+    ensure_project_dirs,
+    load_extension_config,
+    load_project_paths,
+    load_yaml,
+    resolve_extension_config_path,
+)
+from unpaidwork.errors import SourceAccessError, UnpaidWorkError
 from unpaidwork.features.childcare_panel import (
     build_childcare_panels,
     diagnose_childcare_pipeline,
 )
 from unpaidwork.features.home_maintenance_panel import build_home_maintenance_panel
-from unpaidwork.ingest import acs, ahs, atus, cbp, cdc_wonder, ce, head_start, laus, licensing, nces_ccd, ndcp, nes, noaa, oews, qcew, sipp
+from unpaidwork.ingest import (
+    acs,
+    ahs,
+    atus,
+    cbp,
+    ccdf,
+    cdc_wonder,
+    ce,
+    head_start,
+    laus,
+    licensing,
+    nces_ccd,
+    ndcp,
+    nes,
+    noaa,
+    oews,
+    qcew,
+    sipp,
+)
+from unpaidwork.ingest.provenance import write_provenance_sidecar
 from unpaidwork.ingest.acs import ACS_FIRST_AVAILABLE_YEAR
 from unpaidwork.ingest.qcew import QCEW_FIRST_AVAILABLE_YEAR
 from unpaidwork.ingest.laus import LAUS_FIRST_AVAILABLE_YEAR
@@ -48,7 +73,7 @@ from unpaidwork.models.supply_curve import (
     summarize_piecewise_supply_curve,
     summarize_supply_elasticity,
 )
-from unpaidwork.models.supply_iv import fit_supply_iv_exposure_design
+from unpaidwork.models.supply_iv import build_supply_iv_panel, fit_supply_iv_exposure_design
 from unpaidwork.models.switching import fit_home_switching
 from unpaidwork.registry import ensure_registry
 from unpaidwork.reports.export import (
@@ -175,6 +200,2296 @@ def build_childcare(
         diag["state_year_rows"],
         diag["births_cdc_wonder_observed"],
         diag["state_year_rows"],
+    )
+
+
+def _output_namespace_path(paths, namespace: str | Path) -> Path:
+    target = Path(namespace)
+    return target if target.is_absolute() else paths.root / target
+
+
+def _read_optional_parquet(path: Path) -> pd.DataFrame | None:
+    return read_parquet(path) if path.exists() else None
+
+
+def _read_optional_json(path: Path) -> dict[str, object] | None:
+    return read_json(path) if path.exists() else None
+
+
+def _write_csv_output(frame: pd.DataFrame, path: Path) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    frame.to_csv(path, index=False)
+    return path
+
+
+def _write_json_records(frame: pd.DataFrame, path: Path, record_key: str = "rows") -> Path:
+    return write_json({record_key: frame.to_dict(orient="records")}, path)
+
+
+def _load_pooled_backend_summary(paths, sample: bool, refresh: bool = False) -> dict[str, object]:
+    headline_path = paths.outputs_reports / "childcare_headline_summary.json"
+    demand_path = paths.outputs_reports / "childcare_demand_iv.json"
+    state_path = paths.processed / "childcare_state_year_panel.parquet"
+    if headline_path.exists():
+        return read_json(headline_path)
+    if demand_path.exists():
+        return read_json(demand_path)
+    if not state_path.exists():
+        build_childcare(paths, sample=sample, refresh=refresh, dry_run=False, year=None)
+    state = read_parquet(state_path)
+    if state.empty:
+        return {
+            "selected_headline_sample": "missing",
+            "mode": "sample" if sample else "real",
+            "n_obs": 0,
+            "n_states": 0,
+            "year_min": None,
+            "year_max": None,
+        }
+    years = pd.to_numeric(state["year"], errors="coerce").dropna().astype(int)
+    return {
+        "selected_headline_sample": "state_panel_fallback",
+        "mode": "sample" if sample else "real",
+        "n_obs": int(len(state)),
+        "n_states": int(state["state_fips"].astype(str).nunique()) if "state_fips" in state.columns else 0,
+        "year_min": int(years.min()) if not years.empty else None,
+        "year_max": int(years.max()) if not years.empty else None,
+    }
+
+
+def build_childcare_segments(
+    paths,
+    sample: bool,
+    refresh: bool = False,
+    dry_run: bool = False,
+    year: int | None = None,
+    config_name_or_path: str = "segmented_solver",
+) -> None:
+    config_path = resolve_extension_config_path(paths.root, config_name_or_path)
+    config = load_extension_config(paths.root, config_name_or_path)
+    if not config:
+        raise UnpaidWorkError(f"extension config is empty or missing: {config_path}")
+
+    ndcp_path = paths.interim / "ndcp" / "ndcp.parquet"
+    if not ndcp_path.exists():
+        result = ndcp.ingest(paths, sample=sample, refresh=refresh, dry_run=dry_run, year=year)
+        LOGGER.info(
+            "%s %s -> %s (%s)",
+            "planned" if result.dry_run else "ingested",
+            result.source_name,
+            result.normalized_path,
+            result.detail or ("skipped" if result.skipped else "ok"),
+        )
+    if dry_run:
+        LOGGER.info("planned segmented childcare build using %s", config_path)
+        return
+    if not ndcp_path.exists():
+        raise UnpaidWorkError(f"missing normalized NDCP input: {ndcp_path}")
+
+    from unpaidwork.childcare.segmentation import (
+        build_ndcp_segment_price_panel,
+        build_pooled_ndcp_price_benchmark,
+        build_segment_definitions,
+        build_segment_to_pooled_mapping,
+    )
+
+    output_config = config.get("output_namespace", {})
+    output_namespace = _output_namespace_path(
+        paths,
+        str(output_config.get("namespace", "data/interim/childcare/segmented_solver")),
+    )
+    file_names = output_config.get("files", {})
+    segment_definitions_path = output_namespace / file_names.get(
+        "segment_definitions", "segment_definitions.parquet"
+    )
+    segment_price_panel_path = output_namespace / file_names.get(
+        "segment_price_panel", "ndcp_segment_prices.parquet"
+    )
+    segment_mapping_path = output_namespace / file_names.get(
+        "segment_mappings", "segmented_to_pooled_mapping.parquet"
+    )
+
+    ndcp_frame = read_parquet(ndcp_path)
+    segment_definitions = build_segment_definitions(config)
+    segment_prices = build_ndcp_segment_price_panel(ndcp_frame, segment_definitions)
+    pooled_benchmark = build_pooled_ndcp_price_benchmark(ndcp_frame)
+    segment_mapping = build_segment_to_pooled_mapping(segment_prices, pooled_benchmark=pooled_benchmark)
+
+    compatibility = config.get("build", {}).get("compatibility", {})
+    if compatibility.get("enabled", False) and not segment_mapping.empty:
+        tolerance = float(compatibility.get("tolerance", 1.0e-6))
+        max_gap = float(pd.to_numeric(segment_mapping.get("pooled_price_gap"), errors="coerce").abs().max())
+        if pd.notna(max_gap) and max_gap > tolerance:
+            raise UnpaidWorkError(
+                f"segmented childcare compatibility check failed: max pooled price gap {max_gap:.6g} exceeds tolerance {tolerance:.6g}"
+            )
+
+    write_parquet(segment_definitions, segment_definitions_path)
+    write_parquet(segment_prices, segment_price_panel_path)
+    write_parquet(segment_mapping, segment_mapping_path)
+
+    provenance_kwargs = {
+        "source_files": [ndcp_path, config_path],
+        "parameters": {
+            "sample_mode": sample,
+            "requested_year": year,
+            "extension_name": config.get("name", "segmented_solver"),
+            "mode": config.get("mode", "segmented_baseline"),
+        },
+        "config": config,
+        "repo_root": paths.root,
+    }
+    write_provenance_sidecar(segment_definitions_path, **provenance_kwargs)
+    write_provenance_sidecar(segment_price_panel_path, **provenance_kwargs)
+    write_provenance_sidecar(segment_mapping_path, **provenance_kwargs)
+    LOGGER.info(
+        "built segmented childcare NDCP baseline: definitions=%s prices=%s mappings=%s",
+        len(segment_definitions),
+        len(segment_prices),
+        len(segment_mapping),
+    )
+
+
+def build_childcare_utilization(
+    paths,
+    sample: bool,
+    refresh: bool = False,
+    dry_run: bool = False,
+    year: int | None = None,
+    config_name_or_path: str = "utilization_stack",
+    segmented_config_name_or_path: str = "segmented_solver",
+) -> None:
+    config_path = resolve_extension_config_path(paths.root, config_name_or_path)
+    config = load_extension_config(paths.root, config_name_or_path)
+    if not config:
+        raise UnpaidWorkError(f"extension config is empty or missing: {config_path}")
+
+    source_requirements = {
+        "acs": paths.interim / "acs" / "acs.parquet",
+        "sipp": paths.interim / "sipp" / "sipp.parquet",
+        "head_start": paths.interim / "head_start" / "head_start.parquet",
+    }
+    ingestors = {
+        "acs": acs.ingest_with_options,
+        "sipp": sipp.ingest,
+        "head_start": head_start.ingest,
+    }
+    for source_name, source_path in source_requirements.items():
+        if source_path.exists():
+            continue
+        result = ingestors[source_name](paths, sample=sample, refresh=refresh, dry_run=dry_run, year=year)
+        LOGGER.info(
+            "%s %s -> %s (%s)",
+            "planned" if result.dry_run else "ingested",
+            result.source_name,
+            result.normalized_path,
+            result.detail or ("skipped" if result.skipped else "ok"),
+        )
+
+    segmented_output_path = (
+        _output_namespace_path(paths, "data/interim/childcare/segmented_solver")
+        / "ndcp_segment_prices.parquet"
+    )
+    ccdf_admin_state_year_path = paths.interim / "ccdf" / "ccdf_admin_state_year.parquet"
+    ccdf_policy_features_state_year_path = paths.interim / "ccdf" / "ccdf_policy_features_state_year.parquet"
+    ccdf_policy_controls_state_year_path = paths.interim / "ccdf" / "ccdf_policy_controls_state_year.parquet"
+    ccdf_policy_promoted_controls_state_year_path = (
+        paths.interim / "ccdf" / "ccdf_policy_promoted_controls_state_year.parquet"
+    )
+    ccdf_long_inputs_exist = (
+        (paths.interim / "ccdf" / "ccdf_admin_long.parquet").exists()
+        and (paths.interim / "ccdf" / "ccdf_policy_long.parquet").exists()
+    )
+    if not segmented_output_path.exists():
+        build_childcare_segments(
+            paths,
+            sample=sample,
+            refresh=refresh,
+            dry_run=dry_run,
+            year=year,
+            config_name_or_path=segmented_config_name_or_path,
+        )
+    if sample or ccdf_long_inputs_exist or paths.raw.joinpath("ccdf").exists():
+        try:
+            build_ccdf_state_year(
+                paths,
+                sample=sample,
+                refresh=refresh,
+                dry_run=dry_run,
+            )
+        except UnpaidWorkError:
+            if sample:
+                raise
+            LOGGER.info("skipping optional CCDF state-year mapper because mapped inputs are unavailable")
+
+    if dry_run:
+        LOGGER.info("planned childcare utilization build using %s", config_path)
+        return
+
+    for source_name, source_path in source_requirements.items():
+        if not source_path.exists():
+            raise UnpaidWorkError(f"missing normalized {source_name} input: {source_path}")
+    if not segmented_output_path.exists():
+        raise UnpaidWorkError(f"missing segmented NDCP input: {segmented_output_path}")
+
+    from unpaidwork.childcare.utilization import build_childcare_utilization_outputs
+
+    output_config = config.get("output_namespace", {})
+    output_namespace = _output_namespace_path(
+        paths,
+        str(output_config.get("namespace", "data/interim/childcare/utilization_stack")),
+    )
+    file_names = output_config.get("files", {})
+    public_program_slots_path = output_namespace / file_names.get(
+        "public_program_slots", "public_program_slots_state_year.parquet"
+    )
+    survey_targets_path = output_namespace / file_names.get(
+        "survey_paid_use_targets", "survey_paid_use_targets.parquet"
+    )
+    quantity_by_segment_path = output_namespace / file_names.get(
+        "quantity_by_segment", "q0_segmented.parquet"
+    )
+    diagnostics_path = output_namespace / file_names.get(
+        "reconciliation_diagnostics", "utilization_reconciliation_diagnostics.parquet"
+    )
+
+    outputs = build_childcare_utilization_outputs(
+        acs_frame=read_parquet(source_requirements["acs"]),
+        sipp_frame=read_parquet(source_requirements["sipp"]),
+        head_start_frame=read_parquet(source_requirements["head_start"]),
+        ccdf_state_year=read_parquet(ccdf_admin_state_year_path) if ccdf_admin_state_year_path.exists() else None,
+        ccdf_policy_features_state_year=read_parquet(ccdf_policy_features_state_year_path)
+        if ccdf_policy_features_state_year_path.exists()
+        else None,
+        ccdf_policy_controls_state_year=(
+            read_parquet(ccdf_policy_promoted_controls_state_year_path)
+            if ccdf_policy_promoted_controls_state_year_path.exists()
+            else (
+                read_parquet(ccdf_policy_controls_state_year_path)
+                if ccdf_policy_controls_state_year_path.exists()
+                else None
+            )
+        ),
+        segment_price_panel=read_parquet(segmented_output_path),
+        config=config,
+    )
+    write_parquet(outputs["public_program_slots"], public_program_slots_path)
+    write_parquet(outputs["survey_paid_use_targets"], survey_targets_path)
+    write_parquet(outputs["quantity_by_segment"], quantity_by_segment_path)
+    write_parquet(outputs["reconciliation_diagnostics"], diagnostics_path)
+
+    provenance_kwargs = {
+        "source_files": [
+            source_requirements["acs"],
+            source_requirements["sipp"],
+            source_requirements["head_start"],
+            segmented_output_path,
+            config_path,
+        ]
+        + ([ccdf_admin_state_year_path] if ccdf_admin_state_year_path.exists() else [])
+        + (
+            [ccdf_policy_promoted_controls_state_year_path]
+            if ccdf_policy_promoted_controls_state_year_path.exists()
+            else ([ccdf_policy_controls_state_year_path] if ccdf_policy_controls_state_year_path.exists() else [])
+        )
+        + ([ccdf_policy_features_state_year_path] if ccdf_policy_features_state_year_path.exists() else []),
+        "parameters": {
+            "sample_mode": sample,
+            "requested_year": year,
+            "extension_name": config.get("name", "utilization_stack"),
+            "mode": config.get("mode", "observed_utilization"),
+        },
+        "config": config,
+        "repo_root": paths.root,
+    }
+    write_provenance_sidecar(public_program_slots_path, **provenance_kwargs)
+    write_provenance_sidecar(survey_targets_path, **provenance_kwargs)
+    write_provenance_sidecar(quantity_by_segment_path, **provenance_kwargs)
+    write_provenance_sidecar(diagnostics_path, **provenance_kwargs)
+    LOGGER.info(
+        "built childcare utilization stack: public=%s survey=%s q0=%s diagnostics=%s",
+        len(outputs["public_program_slots"]),
+        len(outputs["survey_paid_use_targets"]),
+        len(outputs["quantity_by_segment"]),
+        len(outputs["reconciliation_diagnostics"]),
+    )
+
+
+def _ccdf_policy_controls_input_path(paths) -> Path | None:
+    promoted = paths.interim / "ccdf" / "ccdf_policy_promoted_controls_state_year.parquet"
+    controls = paths.interim / "ccdf" / "ccdf_policy_controls_state_year.parquet"
+    if promoted.exists():
+        return promoted
+    if controls.exists():
+        return controls
+    return None
+
+
+def _ensure_childcare_utilization_artifacts(
+    paths,
+    sample: bool,
+    refresh: bool = False,
+    dry_run: bool = False,
+    year: int | None = None,
+) -> None:
+    quantity_path = paths.root / "data" / "interim" / "childcare" / "utilization_stack" / "q0_segmented.parquet"
+    diagnostics_path = (
+        paths.root
+        / "data"
+        / "interim"
+        / "childcare"
+        / "utilization_stack"
+        / "utilization_reconciliation_diagnostics.parquet"
+    )
+    if not refresh and quantity_path.exists() and diagnostics_path.exists():
+        return
+    build_childcare_utilization(
+        paths,
+        sample=sample,
+        refresh=refresh,
+        dry_run=dry_run,
+        year=year,
+        config_name_or_path="utilization_stack",
+        segmented_config_name_or_path="segmented_solver",
+    )
+
+
+def _ensure_childcare_segmented_prices_artifact(
+    paths,
+    sample: bool,
+    refresh: bool = False,
+    dry_run: bool = False,
+    year: int | None = None,
+) -> None:
+    segmented_price_panel_path = (
+        paths.root / "data" / "interim" / "childcare" / "segmented_solver" / "ndcp_segment_prices.parquet"
+    )
+    if not refresh and segmented_price_panel_path.exists():
+        return
+    build_childcare_segments(
+        paths,
+        sample=sample,
+        refresh=refresh,
+        dry_run=dry_run,
+        year=year,
+        config_name_or_path="segmented_solver",
+    )
+
+
+def build_childcare_solver_inputs(
+    paths,
+    sample: bool,
+    refresh: bool = False,
+    dry_run: bool = False,
+    year: int | None = None,
+    config_name_or_path: str = "solver_inputs",
+) -> None:
+    config_path = resolve_extension_config_path(paths.root, config_name_or_path)
+    config = load_extension_config(paths.root, config_name_or_path)
+    if not config:
+        raise UnpaidWorkError(f"extension config is empty or missing: {config_path}")
+
+    if dry_run:
+        LOGGER.info("planned childcare solver inputs build using %s", config_path)
+        return
+
+    _ensure_childcare_utilization_artifacts(
+        paths,
+        sample=sample,
+        refresh=refresh,
+        dry_run=dry_run,
+        year=year,
+    )
+    _ensure_childcare_segmented_prices_artifact(
+        paths,
+        sample=sample,
+        refresh=refresh,
+        dry_run=dry_run,
+        year=year,
+    )
+
+    q0_segmented_path = (
+        paths.root / "data" / "interim" / "childcare" / "utilization_stack" / "q0_segmented.parquet"
+    )
+    diagnostics_path = (
+        paths.root
+        / "data"
+        / "interim"
+        / "childcare"
+        / "utilization_stack"
+        / "utilization_reconciliation_diagnostics.parquet"
+    )
+    segmented_price_panel_path = (
+        paths.root / "data" / "interim" / "childcare" / "segmented_solver" / "ndcp_segment_prices.parquet"
+    )
+    if not q0_segmented_path.exists() or not diagnostics_path.exists() or not segmented_price_panel_path.exists():
+        raise UnpaidWorkError(
+            "missing upstream childcare additive inputs: "
+            f"{q0_segmented_path}, {diagnostics_path}, and/or {segmented_price_panel_path}"
+        )
+
+    controls_path = _ccdf_policy_controls_input_path(paths)
+
+    from importlib import import_module
+
+    childcare_solver_inputs = import_module("unpaidwork.childcare.solver_inputs")
+    build_childcare_solver_inputs_impl = childcare_solver_inputs.build_childcare_solver_inputs
+
+    output_config = config.get("output_namespace", {})
+    output_namespace = _output_namespace_path(
+        paths,
+        str(output_config.get("namespace", "data/interim/childcare/solver_inputs")),
+    )
+    file_names = output_config.get("files", {})
+    channel_quantities_path = output_namespace / file_names.get(
+        "solver_channel_quantities", "solver_channel_quantities.parquet"
+    )
+    baseline_state_year_path = output_namespace / file_names.get(
+        "solver_baseline_state_year", "solver_baseline_state_year.parquet"
+    )
+    elasticity_mapping_path = output_namespace / file_names.get(
+        "solver_elasticity_mapping", "solver_elasticity_mapping.parquet"
+    )
+    policy_controls_path = output_namespace / file_names.get(
+        "solver_policy_controls_state_year", "solver_policy_controls_state_year.parquet"
+    )
+
+    outputs = build_childcare_solver_inputs_impl(
+        q0_segmented=read_parquet(q0_segmented_path),
+        promoted_controls=read_parquet(controls_path) if controls_path is not None else None,
+        ccdf_policy_controls_state_year=read_parquet(controls_path) if controls_path is not None else None,
+        ndcp_segment_prices=read_parquet(segmented_price_panel_path),
+    )
+
+    write_parquet(outputs["solver_channel_quantities"], channel_quantities_path)
+    write_parquet(outputs["solver_baseline_state_year"], baseline_state_year_path)
+    write_parquet(outputs["solver_elasticity_mapping"], elasticity_mapping_path)
+    write_parquet(outputs["solver_policy_controls_state_year"], policy_controls_path)
+
+    provenance_kwargs = {
+        "source_files": [
+            q0_segmented_path,
+            diagnostics_path,
+            segmented_price_panel_path,
+            config_path,
+        ]
+        + ([controls_path] if controls_path is not None else []),
+        "parameters": {
+            "sample_mode": sample,
+            "requested_year": year,
+            "extension_name": config.get("name", "solver_inputs"),
+            "mode": config.get("mode", "additive_solver_inputs"),
+        },
+        "config": config,
+        "repo_root": paths.root,
+    }
+    write_provenance_sidecar(channel_quantities_path, **provenance_kwargs)
+    write_provenance_sidecar(baseline_state_year_path, **provenance_kwargs)
+    write_provenance_sidecar(elasticity_mapping_path, **provenance_kwargs)
+    write_provenance_sidecar(policy_controls_path, **provenance_kwargs)
+    LOGGER.info(
+        "built childcare solver inputs: quantities=%s baseline=%s elasticity=%s controls=%s",
+        len(outputs["solver_channel_quantities"]),
+        len(outputs["solver_baseline_state_year"]),
+        len(outputs["solver_elasticity_mapping"]),
+        len(outputs["solver_policy_controls_state_year"]),
+    )
+
+
+def build_childcare_report_tables(
+    paths,
+    sample: bool,
+    refresh: bool = False,
+    dry_run: bool = False,
+    year: int | None = None,
+    config_name_or_path: str = "report_tables",
+) -> None:
+    config_path = resolve_extension_config_path(paths.root, config_name_or_path)
+    config = load_extension_config(paths.root, config_name_or_path)
+    if not config:
+        raise UnpaidWorkError(f"extension config is empty or missing: {config_path}")
+
+    if dry_run:
+        LOGGER.info("planned childcare report tables build using %s", config_path)
+        return
+
+    _ensure_childcare_utilization_artifacts(
+        paths,
+        sample=sample,
+        refresh=refresh,
+        dry_run=dry_run,
+        year=year,
+    )
+
+    q0_segmented_path = (
+        paths.root / "data" / "interim" / "childcare" / "utilization_stack" / "q0_segmented.parquet"
+    )
+    diagnostics_path = (
+        paths.root
+        / "data"
+        / "interim"
+        / "childcare"
+        / "utilization_stack"
+        / "utilization_reconciliation_diagnostics.parquet"
+    )
+    if not q0_segmented_path.exists() or not diagnostics_path.exists():
+        raise UnpaidWorkError(
+            "missing upstream childcare additive inputs: "
+            f"{q0_segmented_path} and/or {diagnostics_path}"
+        )
+
+    controls_path = _ccdf_policy_controls_input_path(paths)
+
+    from importlib import import_module
+
+    childcare_report_tables = import_module("unpaidwork.childcare.report_tables")
+    build_childcare_report_tables_impl = childcare_report_tables.build_childcare_report_tables
+
+    output_config = config.get("output_namespace", {})
+    output_namespace = _output_namespace_path(
+        paths,
+        str(output_config.get("namespace", "data/interim/childcare/report_tables")),
+    )
+    file_names = output_config.get("files", {})
+    channel_summary_path = output_namespace / file_names.get(
+        "state_year_channel_summary", "state_year_channel_summary.parquet"
+    )
+    policy_quantity_summary_path = output_namespace / file_names.get(
+        "state_year_policy_quantity_summary", "state_year_policy_quantity_summary.parquet"
+    )
+    support_summary_path = output_namespace / file_names.get(
+        "state_year_support_summary", "state_year_support_summary.parquet"
+    )
+
+    outputs = build_childcare_report_tables_impl(
+        q0_segmented=read_parquet(q0_segmented_path),
+        utilization_diagnostics=read_parquet(diagnostics_path),
+        promoted_controls=read_parquet(controls_path) if controls_path is not None else None,
+        ccdf_policy_controls_state_year=read_parquet(controls_path) if controls_path is not None else None,
+    )
+
+    write_parquet(outputs["state_year_channel_summary"], channel_summary_path)
+    write_parquet(outputs["state_year_policy_quantity_summary"], policy_quantity_summary_path)
+    write_parquet(outputs["state_year_support_summary"], support_summary_path)
+
+    provenance_kwargs = {
+        "source_files": [q0_segmented_path, diagnostics_path, config_path]
+        + ([controls_path] if controls_path is not None else []),
+        "parameters": {
+            "sample_mode": sample,
+            "requested_year": year,
+            "extension_name": config.get("name", "report_tables"),
+            "mode": config.get("mode", "additive_report_tables"),
+        },
+        "config": config,
+        "repo_root": paths.root,
+    }
+    write_provenance_sidecar(channel_summary_path, **provenance_kwargs)
+    write_provenance_sidecar(policy_quantity_summary_path, **provenance_kwargs)
+    write_provenance_sidecar(support_summary_path, **provenance_kwargs)
+    LOGGER.info(
+        "built childcare report tables: channel=%s policy=%s support=%s",
+        len(outputs["state_year_channel_summary"]),
+        len(outputs["state_year_policy_quantity_summary"]),
+        len(outputs["state_year_support_summary"]),
+    )
+
+
+def build_childcare_segmented_scenarios(
+    paths,
+    sample: bool,
+    refresh: bool = False,
+    dry_run: bool = False,
+    year: int | None = None,
+    config_name_or_path: str = "segmented_scenarios",
+) -> None:
+    config_path = resolve_extension_config_path(paths.root, config_name_or_path)
+    config = load_extension_config(paths.root, config_name_or_path)
+    if not config:
+        raise UnpaidWorkError(f"extension config is empty or missing: {config_path}")
+
+    state_path = paths.processed / "childcare_state_year_panel.parquet"
+    county_path = paths.processed / "childcare_county_year_price_panel.parquet"
+    comparison_path = paths.outputs_reports / "childcare_demand_sample_comparison.json"
+    solver_namespace = paths.root / "data" / "interim" / "childcare" / "solver_inputs"
+    baseline_path = solver_namespace / "solver_baseline_state_year.parquet"
+    elasticity_path = solver_namespace / "solver_elasticity_mapping.parquet"
+    controls_path = solver_namespace / "solver_policy_controls_state_year.parquet"
+
+    if dry_run:
+        LOGGER.info("planned childcare segmented scenarios build using %s", config_path)
+        return
+
+    if not state_path.exists() or not county_path.exists() or not comparison_path.exists():
+        fit_childcare(paths)
+    if not baseline_path.exists() or not elasticity_path.exists() or not controls_path.exists():
+        build_childcare_solver_inputs(
+            paths,
+            sample=sample,
+            refresh=refresh,
+            dry_run=dry_run,
+            year=year,
+        )
+
+    if not state_path.exists() or not county_path.exists() or not comparison_path.exists():
+        raise UnpaidWorkError(
+            "missing pooled childcare artifacts required for segmented scenarios: "
+            f"{state_path}, {county_path}, and/or {comparison_path}"
+        )
+    if not baseline_path.exists() or not elasticity_path.exists():
+        raise UnpaidWorkError(
+            "missing segmented solver inputs required for segmented scenarios: "
+            f"{baseline_path} and/or {elasticity_path}"
+        )
+
+    state = read_parquet(state_path)
+    county = read_parquet(county_path)
+    if not _state_panel_has_sample_ladder(state):
+        fit_childcare(paths)
+        state = read_parquet(state_path)
+        county = read_parquet(county_path)
+    comparison = read_json(comparison_path)
+    samples = comparison.get("samples", {})
+    selected_sample, selection_reason = select_headline_sample(samples)
+    if selected_sample is None:
+        raise UnpaidWorkError(
+            "no defensible observed-core childcare sample passed the minimum support rule; only exploratory samples are available"
+        )
+    canonical_profile = _canonical_specification_profile_for_sample(selected_sample)
+    demand_summary_path = _demand_summary_path(paths, selected_sample, specification_profile=canonical_profile)
+    if not demand_summary_path.exists():
+        fit_childcare(paths)
+    if not demand_summary_path.exists():
+        raise UnpaidWorkError(f"missing demand summary for selected sample: {demand_summary_path}")
+
+    eligible_column = f"eligible_{selected_sample}"
+    if eligible_column in state.columns:
+        state = state.loc[state[eligible_column].fillna(False).astype(bool)].copy()
+
+    from importlib import import_module
+
+    childcare_segmented_scenarios = import_module("unpaidwork.childcare.segmented_scenarios")
+    build_childcare_segmented_scenarios_impl = childcare_segmented_scenarios.build_childcare_segmented_scenarios
+
+    supply_summary = summarize_supply_elasticity(county)
+    project_config = load_yaml(paths.root / "configs" / "project.yaml")
+    alphas = [float(alpha) for alpha in project_config["alpha_grid"]]
+    outputs = build_childcare_segmented_scenarios_impl(
+        state_frame=state,
+        solver_baseline_state_year=read_parquet(baseline_path),
+        solver_elasticity_mapping=read_parquet(elasticity_path),
+        solver_policy_controls_state_year=read_parquet(controls_path) if controls_path.exists() else None,
+        alphas=alphas,
+        demand_summary=read_json(demand_summary_path),
+        supply_summary=supply_summary,
+    )
+
+    output_config = config.get("output_namespace", {})
+    output_namespace = _output_namespace_path(
+        paths,
+        str(output_config.get("namespace", "data/interim/childcare/segmented_scenarios")),
+    )
+    file_names = output_config.get("files", {})
+    channel_inputs_path = output_namespace / file_names.get(
+        "segmented_channel_inputs", "segmented_channel_inputs.parquet"
+    )
+    channel_scenarios_path = output_namespace / file_names.get(
+        "segmented_channel_scenarios", "segmented_channel_scenarios.parquet"
+    )
+    summary_path = output_namespace / file_names.get(
+        "segmented_state_year_summary", "segmented_state_year_summary.parquet"
+    )
+    diagnostics_path = output_namespace / file_names.get(
+        "segmented_state_year_diagnostics", "segmented_state_year_diagnostics.parquet"
+    )
+
+    write_parquet(outputs["segmented_channel_inputs"], channel_inputs_path)
+    write_parquet(outputs["segmented_channel_scenarios"], channel_scenarios_path)
+    write_parquet(outputs["segmented_state_year_summary"], summary_path)
+    write_parquet(outputs["segmented_state_year_diagnostics"], diagnostics_path)
+
+    provenance_kwargs = {
+        "source_files": [
+            state_path,
+            county_path,
+            comparison_path,
+            demand_summary_path,
+            baseline_path,
+            elasticity_path,
+            config_path,
+        ]
+        + ([controls_path] if controls_path.exists() else []),
+        "parameters": {
+            "sample_mode": sample,
+            "requested_year": year,
+            "selected_sample": selected_sample,
+            "selection_reason": selection_reason,
+            "extension_name": config.get("name", "segmented_scenarios"),
+            "mode": config.get("mode", "segmented_scenarios"),
+        },
+        "config": config,
+        "repo_root": paths.root,
+    }
+    write_provenance_sidecar(channel_inputs_path, **provenance_kwargs)
+    write_provenance_sidecar(channel_scenarios_path, **provenance_kwargs)
+    write_provenance_sidecar(summary_path, **provenance_kwargs)
+    write_provenance_sidecar(diagnostics_path, **provenance_kwargs)
+    LOGGER.info(
+        "built childcare segmented scenarios: inputs=%s scenarios=%s summary=%s diagnostics=%s",
+        len(outputs["segmented_channel_inputs"]),
+        len(outputs["segmented_channel_scenarios"]),
+        len(outputs["segmented_state_year_summary"]),
+        len(outputs["segmented_state_year_diagnostics"]),
+    )
+
+
+def build_ccdf_state_year(
+    paths,
+    sample: bool,
+    refresh: bool = False,
+    dry_run: bool = False,
+    year: int | None = None,
+    config_name_or_path: str = "ccdf_state_year",
+) -> None:
+    del year
+    config_path = resolve_extension_config_path(paths.root, config_name_or_path)
+    config = load_extension_config(paths.root, config_name_or_path)
+    if not config:
+        raise UnpaidWorkError(f"extension config is empty or missing: {config_path}")
+
+    ccdf_dir = paths.interim / "ccdf"
+    admin_long_path = ccdf_dir / "ccdf_admin_long.parquet"
+    policy_long_path = ccdf_dir / "ccdf_policy_long.parquet"
+    if refresh or not admin_long_path.exists() or not policy_long_path.exists():
+        result = ccdf.ingest(paths, sample=sample, refresh=refresh, dry_run=dry_run)
+        LOGGER.info(
+            "%s %s -> %s (%s)",
+            "planned" if result.dry_run else "ingested",
+            result.source_name,
+            result.normalized_path,
+            result.detail or ("skipped" if result.skipped else "ok"),
+        )
+
+    if dry_run:
+        LOGGER.info("planned CCDF state-year mapping build using %s", config_path)
+        return
+
+    if not admin_long_path.exists() or not policy_long_path.exists():
+        raise UnpaidWorkError(
+            f"missing normalized CCDF long inputs: {admin_long_path} and/or {policy_long_path}"
+        )
+
+    from unpaidwork.childcare import ccdf as childcare_ccdf
+
+    build_ccdf_admin_state_year = childcare_ccdf.build_ccdf_admin_state_year
+    build_ccdf_policy_features_state_year = childcare_ccdf.build_ccdf_policy_features_state_year
+    build_ccdf_policy_controls_state_year = childcare_ccdf.build_ccdf_policy_controls_state_year
+    build_ccdf_policy_feature_audit = childcare_ccdf.build_ccdf_policy_feature_audit
+    policy_feature_rows_from_policy_long = getattr(childcare_ccdf, "_policy_feature_rows_from_policy_long", None)
+    policy_features_state_year_from_feature_rows = getattr(
+        childcare_ccdf,
+        "_policy_features_state_year_from_feature_rows",
+        None,
+    )
+    policy_controls_state_year_from_feature_rows = getattr(
+        childcare_ccdf,
+        "_policy_controls_state_year_from_feature_rows",
+        None,
+    )
+    policy_controls_coverage_from_feature_rows = getattr(
+        childcare_ccdf,
+        "_policy_controls_coverage_from_feature_rows",
+        None,
+    )
+    policy_promoted_controls_state_year_from_feature_rows = getattr(
+        childcare_ccdf,
+        "_policy_promoted_controls_state_year_from_feature_rows",
+        None,
+    )
+    policy_feature_audit_from_feature_rows = getattr(
+        childcare_ccdf,
+        "_policy_feature_audit_from_feature_rows",
+        None,
+    )
+    build_ccdf_policy_controls_coverage = getattr(
+        childcare_ccdf,
+        "build_ccdf_policy_controls_coverage",
+        None,
+    )
+    build_ccdf_policy_promoted_controls_state_year = getattr(
+        childcare_ccdf,
+        "build_ccdf_policy_promoted_controls_state_year",
+        None,
+    )
+    if build_ccdf_policy_controls_coverage is None:
+        raise UnpaidWorkError(
+            "missing CCDF policy controls coverage builder: "
+            "unpaidwork.childcare.ccdf.build_ccdf_policy_controls_coverage"
+        )
+    if build_ccdf_policy_promoted_controls_state_year is None:
+        raise UnpaidWorkError(
+            "missing CCDF policy promoted controls builder: "
+            "unpaidwork.childcare.ccdf.build_ccdf_policy_promoted_controls_state_year"
+        )
+
+    output_config = config.get("output_namespace", {})
+    output_namespace = _output_namespace_path(
+        paths,
+        str(output_config.get("namespace", "data/interim/ccdf")),
+    )
+    file_names = output_config.get("files", {})
+    admin_state_year_path = output_namespace / file_names.get(
+        "admin_state_year", "ccdf_admin_state_year.parquet"
+    )
+    policy_features_path = output_namespace / file_names.get(
+        "policy_features_state_year", "ccdf_policy_features_state_year.parquet"
+    )
+    policy_controls_path = output_namespace / file_names.get(
+        "policy_controls_state_year", "ccdf_policy_controls_state_year.parquet"
+    )
+    policy_controls_coverage_path = output_namespace / file_names.get(
+        "policy_controls_coverage", "ccdf_policy_controls_coverage.parquet"
+    )
+    policy_promoted_controls_path = output_namespace / file_names.get(
+        "policy_promoted_controls_state_year",
+        "ccdf_policy_promoted_controls_state_year.parquet",
+    )
+    policy_audit_path = output_namespace / file_names.get(
+        "policy_feature_audit", "ccdf_policy_feature_audit.parquet"
+    )
+    promotion_config = config.get("policy_controls_promotion", {})
+    min_state_year_coverage = float(promotion_config.get("min_state_year_coverage", 0.75))
+
+    admin_long = read_parquet(admin_long_path)
+    policy_long = read_parquet(policy_long_path)
+    admin_state_year = build_ccdf_admin_state_year(admin_long)
+    if all(
+        helper is not None
+        for helper in (
+            policy_feature_rows_from_policy_long,
+            policy_features_state_year_from_feature_rows,
+            policy_controls_state_year_from_feature_rows,
+            policy_controls_coverage_from_feature_rows,
+            policy_promoted_controls_state_year_from_feature_rows,
+            policy_feature_audit_from_feature_rows,
+        )
+    ):
+        policy_feature_rows = policy_feature_rows_from_policy_long(policy_long)
+        policy_features = policy_features_state_year_from_feature_rows(policy_feature_rows)
+        policy_controls = policy_controls_state_year_from_feature_rows(policy_feature_rows)
+        policy_controls_coverage = policy_controls_coverage_from_feature_rows(policy_feature_rows)
+        policy_promoted_controls = policy_promoted_controls_state_year_from_feature_rows(
+            policy_feature_rows,
+            min_state_year_coverage=min_state_year_coverage,
+        )
+        policy_audit = policy_feature_audit_from_feature_rows(policy_feature_rows)
+    else:
+        policy_features = build_ccdf_policy_features_state_year(policy_long)
+        policy_controls = build_ccdf_policy_controls_state_year(policy_long)
+        policy_controls_coverage = build_ccdf_policy_controls_coverage(policy_long)
+        policy_promoted_controls = build_ccdf_policy_promoted_controls_state_year(
+            policy_long,
+            min_state_year_coverage=min_state_year_coverage,
+        )
+        policy_audit = build_ccdf_policy_feature_audit(policy_long)
+
+    write_parquet(admin_state_year, admin_state_year_path)
+    write_parquet(policy_features, policy_features_path)
+    write_parquet(policy_controls, policy_controls_path)
+    write_parquet(policy_controls_coverage, policy_controls_coverage_path)
+    write_parquet(policy_promoted_controls, policy_promoted_controls_path)
+    write_parquet(policy_audit, policy_audit_path)
+
+    provenance_kwargs = {
+        "source_files": [admin_long_path, policy_long_path, config_path],
+        "parameters": {
+            "sample_mode": sample,
+            "extension_name": config.get("name", "ccdf_state_year"),
+            "mode": config.get("mode", "state_year_mapping"),
+        },
+        "config": config,
+        "repo_root": paths.root,
+    }
+    write_provenance_sidecar(admin_state_year_path, **provenance_kwargs)
+    write_provenance_sidecar(policy_features_path, **provenance_kwargs)
+    write_provenance_sidecar(policy_controls_path, **provenance_kwargs)
+    write_provenance_sidecar(policy_controls_coverage_path, **provenance_kwargs)
+    write_provenance_sidecar(policy_promoted_controls_path, **provenance_kwargs)
+    write_provenance_sidecar(policy_audit_path, **provenance_kwargs)
+    LOGGER.info(
+        "built CCDF state-year outputs: admin=%s policy=%s controls=%s coverage=%s promoted=%s audit=%s",
+        len(admin_state_year),
+        len(policy_features),
+        len(policy_controls),
+        len(policy_controls_coverage),
+        len(policy_promoted_controls),
+        len(policy_audit),
+    )
+
+
+def _ensure_childcare_segmented_scenarios_artifacts(
+    paths,
+    sample: bool,
+    refresh: bool = False,
+    dry_run: bool = False,
+    year: int | None = None,
+) -> None:
+    segmented_namespace = paths.root / "data" / "interim" / "childcare" / "segmented_scenarios"
+    channel_scenarios_path = segmented_namespace / "segmented_channel_scenarios.parquet"
+    summary_path = segmented_namespace / "segmented_state_year_summary.parquet"
+    diagnostics_path = segmented_namespace / "segmented_state_year_diagnostics.parquet"
+    if not refresh and channel_scenarios_path.exists() and summary_path.exists() and diagnostics_path.exists():
+        return
+    build_childcare_segmented_scenarios(
+        paths,
+        sample=sample,
+        refresh=refresh,
+        dry_run=dry_run,
+        year=year,
+        config_name_or_path="segmented_scenarios",
+    )
+
+
+def _ensure_childcare_report_tables_artifacts(
+    paths,
+    sample: bool,
+    refresh: bool = False,
+    dry_run: bool = False,
+    year: int | None = None,
+) -> None:
+    report_namespace = paths.root / "data" / "interim" / "childcare" / "report_tables"
+    support_summary_path = report_namespace / "state_year_support_summary.parquet"
+    if not refresh and support_summary_path.exists():
+        return
+    build_childcare_report_tables(
+        paths,
+        sample=sample,
+        refresh=refresh,
+        dry_run=dry_run,
+        year=year,
+        config_name_or_path="report_tables",
+    )
+
+
+def _ensure_childcare_segmented_report_artifacts(
+    paths,
+    sample: bool,
+    refresh: bool = False,
+    dry_run: bool = False,
+    year: int | None = None,
+) -> None:
+    report_namespace = paths.root / "data" / "interim" / "childcare" / "segmented_reports"
+    response_summary_path = report_namespace / "segmented_channel_response_summary.parquet"
+    fallback_summary_path = report_namespace / "segmented_state_fallback_summary.parquet"
+    headline_summary_path = report_namespace / "childcare_segmented_headline_summary.json"
+    if not refresh and response_summary_path.exists() and fallback_summary_path.exists() and headline_summary_path.exists():
+        return
+    build_childcare_segmented_report(
+        paths,
+        sample=sample,
+        refresh=refresh,
+        dry_run=dry_run,
+        year=year,
+        config_name_or_path="segmented_reports",
+    )
+
+
+def build_childcare_segmented_report(
+    paths,
+    sample: bool,
+    refresh: bool = False,
+    dry_run: bool = False,
+    year: int | None = None,
+    config_name_or_path: str = "segmented_reports",
+) -> None:
+    config_path = resolve_extension_config_path(paths.root, config_name_or_path)
+    config = load_extension_config(paths.root, config_name_or_path)
+    if not config:
+        raise UnpaidWorkError(f"extension config is empty or missing: {config_path}")
+
+    segmented_namespace = paths.root / "data" / "interim" / "childcare" / "segmented_scenarios"
+    report_namespace = paths.root / "data" / "interim" / "childcare" / "report_tables"
+    channel_scenarios_path = segmented_namespace / "segmented_channel_scenarios.parquet"
+    summary_path = segmented_namespace / "segmented_state_year_summary.parquet"
+    diagnostics_path = segmented_namespace / "segmented_state_year_diagnostics.parquet"
+    support_summary_path = report_namespace / "state_year_support_summary.parquet"
+
+    if dry_run:
+        LOGGER.info("planned childcare segmented report build using %s", config_path)
+        return
+
+    _ensure_childcare_segmented_scenarios_artifacts(
+        paths,
+        sample=sample,
+        refresh=refresh,
+        dry_run=dry_run,
+        year=year,
+    )
+    _ensure_childcare_report_tables_artifacts(
+        paths,
+        sample=sample,
+        refresh=refresh,
+        dry_run=dry_run,
+        year=year,
+    )
+
+    if not channel_scenarios_path.exists() or not summary_path.exists() or not diagnostics_path.exists():
+        raise UnpaidWorkError(
+            "missing segmented childcare scenario artifacts required for report build: "
+            f"{channel_scenarios_path}, {summary_path}, and/or {diagnostics_path}"
+        )
+    if not support_summary_path.exists():
+        raise UnpaidWorkError(
+            f"missing segmented childcare support summary required for report build: {support_summary_path}"
+        )
+
+    from importlib import import_module
+
+    childcare_segmented_reports = import_module("unpaidwork.childcare.segmented_reports")
+    build_childcare_segmented_reports_impl = childcare_segmented_reports.build_childcare_segmented_reports
+
+    output_config = config.get("output_namespace", {})
+    output_namespace = _output_namespace_path(
+        paths,
+        str(output_config.get("namespace", "data/interim/childcare/segmented_reports")),
+    )
+    file_names = output_config.get("files", {})
+    response_summary_path = output_namespace / file_names.get(
+        "segmented_channel_response_summary", "segmented_channel_response_summary.parquet"
+    )
+    fallback_summary_path = output_namespace / file_names.get(
+        "segmented_state_fallback_summary", "segmented_state_fallback_summary.parquet"
+    )
+    headline_summary_path = output_namespace / file_names.get(
+        "childcare_segmented_headline_summary", "childcare_segmented_headline_summary.json"
+    )
+    report_path = output_namespace / file_names.get(
+        "childcare_segmented_report", "childcare_segmented_report.md"
+    )
+
+    outputs = build_childcare_segmented_reports_impl(
+        segmented_channel_scenarios=read_parquet(channel_scenarios_path),
+        segmented_state_year_summary=read_parquet(summary_path),
+        segmented_state_year_diagnostics=read_parquet(diagnostics_path),
+        state_year_support_summary=read_parquet(support_summary_path),
+    )
+
+    write_parquet(outputs["segmented_channel_response_summary"], response_summary_path)
+    write_parquet(outputs["segmented_state_fallback_summary"], fallback_summary_path)
+    write_json(outputs["segmented_headline_summary"], headline_summary_path)
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.write_text(outputs["segmented_report_markdown"], encoding="utf-8")
+
+    provenance_kwargs = {
+        "source_files": [channel_scenarios_path, summary_path, diagnostics_path, support_summary_path, config_path],
+        "parameters": {
+            "sample_mode": sample,
+            "requested_year": year,
+            "extension_name": config.get("name", "segmented_reports"),
+            "mode": config.get("mode", "segmented_reports"),
+        },
+        "config": config,
+        "repo_root": paths.root,
+    }
+    write_provenance_sidecar(response_summary_path, **provenance_kwargs)
+    write_provenance_sidecar(fallback_summary_path, **provenance_kwargs)
+    LOGGER.info(
+        "built childcare segmented report: response=%s fallback=%s headline=%s",
+        len(outputs["segmented_channel_response_summary"]),
+        len(outputs["segmented_state_fallback_summary"]),
+        headline_summary_path,
+    )
+
+
+def _build_childcare_segmented_parser_action_plan(
+    parser_focus_areas: pd.DataFrame,
+    admin_sheet_targets: pd.DataFrame,
+) -> tuple[pd.DataFrame, dict[str, object]]:
+    focus_columns = [
+        "focus_area",
+        "priority_tier",
+        "current_signal_present",
+        "matched_column_count",
+        "matched_column_examples",
+        "recommended_keywords",
+        "reason",
+    ]
+    target_columns = [
+        "filename",
+        "source_sheet",
+        "table_year",
+        "parse_status",
+        "parsed_row_count",
+        "matched_focus_areas",
+        "missing_priority_focus_areas",
+        "parser_target_recommendation",
+    ]
+
+    focus = parser_focus_areas.copy() if parser_focus_areas is not None else pd.DataFrame(columns=focus_columns)
+    target = admin_sheet_targets.copy() if admin_sheet_targets is not None else pd.DataFrame(columns=target_columns)
+
+    for column in focus_columns:
+        if column not in focus.columns:
+            focus[column] = pd.NA
+    for column in target_columns:
+        if column not in target.columns:
+            target[column] = pd.NA
+
+    focus = focus[focus_columns].copy()
+    target = target[target_columns].copy()
+    priority_order = {"high": 0, "medium": 1, "low": 2}
+    focus["priority_rank"] = focus["priority_tier"].astype(str).str.lower().map(priority_order).fillna(99).astype(int)
+
+    if target.empty and focus.empty:
+        plan_columns = focus_columns + target_columns + ["priority_rank", "missing_priority_focus_area"]
+        return pd.DataFrame(columns=plan_columns), {
+            "row_count": 0,
+            "focus_area_count": 0,
+            "target_row_count": 0,
+            "target_file_count": 0,
+            "parsed_target_count": 0,
+            "priority_tier_counts": {},
+            "rows": [],
+        }
+
+    target = target.copy()
+    target["missing_priority_focus_areas"] = target["missing_priority_focus_areas"].fillna("").astype(str)
+    target["missing_priority_focus_area"] = target["missing_priority_focus_areas"].str.split(r"\s*;\s*")
+    target = target.explode("missing_priority_focus_area", ignore_index=True)
+    target["missing_priority_focus_area"] = (
+        target["missing_priority_focus_area"].astype("string").str.strip().replace("", pd.NA)
+    )
+    target = target.dropna(subset=["missing_priority_focus_area"]).copy()
+    target["focus_area"] = target["missing_priority_focus_area"].astype(str)
+
+    if target.empty:
+        plan = focus.copy()
+        for column in target_columns:
+            plan[column] = pd.NA
+        plan["missing_priority_focus_area"] = plan["focus_area"]
+    else:
+        plan = target.merge(focus, on="focus_area", how="left", suffixes=("", "_focus"))
+        plan["missing_priority_focus_area"] = plan["focus_area"]
+
+    for column in ["current_signal_present"]:
+        if column in plan.columns:
+            plan[column] = plan[column].fillna(False).astype(bool)
+    for column in ["matched_column_count", "parsed_row_count", "table_year"]:
+        if column in plan.columns:
+            plan[column] = pd.to_numeric(plan[column], errors="coerce")
+
+    plan["target_rank"] = plan["parse_status"].astype(str).str.lower().ne("parsed").astype(int)
+    plan = plan.sort_values(
+        ["priority_rank", "target_rank", "filename", "source_sheet", "focus_area"],
+        ascending=[True, True, True, True, True],
+        kind="stable",
+    ).reset_index(drop=True)
+
+    plan = plan[
+        [
+            "priority_rank",
+            "focus_area",
+            "priority_tier",
+            "current_signal_present",
+            "matched_column_count",
+            "matched_column_examples",
+            "recommended_keywords",
+            "reason",
+            "filename",
+            "source_sheet",
+            "table_year",
+            "parse_status",
+            "parsed_row_count",
+            "matched_focus_areas",
+            "missing_priority_focus_areas",
+            "parser_target_recommendation",
+            "missing_priority_focus_area",
+            "target_rank",
+        ]
+    ].copy()
+
+    priority_counts = {}
+    if "priority_tier" in focus.columns and not focus.empty:
+        counts = focus["priority_tier"].astype(str).value_counts(dropna=False).to_dict()
+        priority_counts = {str(key): int(value) for key, value in counts.items()}
+
+    summary = {
+        "row_count": int(len(plan)),
+        "focus_area_count": int(focus["focus_area"].nunique()) if "focus_area" in focus.columns else 0,
+        "target_row_count": int(len(target)),
+        "target_file_count": int(target["filename"].astype(str).nunique()) if "filename" in target.columns else 0,
+        "parsed_target_count": int(target["parse_status"].astype(str).str.lower().eq("parsed").sum())
+        if "parse_status" in target.columns
+        else 0,
+        "priority_tier_counts": priority_counts,
+        "rows": plan.to_dict(orient="records"),
+    }
+    return plan, summary
+
+
+def report_childcare_segmented(
+    paths,
+    sample: bool,
+    refresh: bool = False,
+    dry_run: bool = False,
+    year: int | None = None,
+    config_name_or_path: str = "segmented_publication",
+) -> None:
+    config_path = resolve_extension_config_path(paths.root, config_name_or_path)
+    config = load_extension_config(paths.root, config_name_or_path)
+    if not config:
+        raise UnpaidWorkError(f"extension config is empty or missing: {config_path}")
+
+    report_namespace = paths.root / "data" / "interim" / "childcare" / "segmented_reports"
+    ccdf_namespace = paths.root / "data" / "interim" / "ccdf"
+    response_summary_path = report_namespace / "segmented_channel_response_summary.parquet"
+    fallback_summary_path = report_namespace / "segmented_state_fallback_summary.parquet"
+    headline_summary_path = report_namespace / "childcare_segmented_headline_summary.json"
+    ccdf_parse_inventory_path = ccdf_namespace / "ccdf_parse_inventory.parquet"
+    ccdf_admin_long_path = ccdf_namespace / "ccdf_admin_long.parquet"
+    ccdf_admin_state_year_path = ccdf_namespace / "ccdf_admin_state_year.parquet"
+
+    if dry_run:
+        LOGGER.info("planned childcare segmented publication using %s", config_path)
+        return
+
+    _ensure_childcare_segmented_report_artifacts(
+        paths,
+        sample=sample,
+        refresh=refresh,
+        dry_run=dry_run,
+        year=year,
+    )
+
+    if not response_summary_path.exists() or not fallback_summary_path.exists() or not headline_summary_path.exists():
+        raise UnpaidWorkError(
+            "missing segmented childcare report artifacts required for publication: "
+            f"{response_summary_path}, {fallback_summary_path}, and/or {headline_summary_path}"
+        )
+
+    from importlib import import_module
+
+    childcare_segmented_publication = import_module("unpaidwork.childcare.segmented_publication")
+    build_childcare_segmented_publication_outputs_impl = (
+        childcare_segmented_publication.build_childcare_segmented_publication_outputs
+    )
+
+    outputs = build_childcare_segmented_publication_outputs_impl(
+        segmented_headline_summary=read_json(headline_summary_path),
+        segmented_channel_response_summary=read_parquet(response_summary_path),
+        segmented_state_fallback_summary=read_parquet(fallback_summary_path),
+        ccdf_parse_inventory=read_parquet(ccdf_parse_inventory_path) if ccdf_parse_inventory_path.exists() else None,
+        ccdf_admin_long=read_parquet(ccdf_admin_long_path) if ccdf_admin_long_path.exists() else None,
+        ccdf_admin_state_year=read_parquet(ccdf_admin_state_year_path) if ccdf_admin_state_year_path.exists() else None,
+    )
+
+    output_config = config.get("outputs", {})
+    reports_namespace = _output_namespace_path(
+        paths,
+        str(output_config.get("reports_namespace", "outputs/reports")),
+    )
+    tables_namespace = _output_namespace_path(
+        paths,
+        str(output_config.get("tables_namespace", "outputs/tables")),
+    )
+    file_names = output_config.get("files", {})
+    publication_headline_summary_path = reports_namespace / file_names.get(
+        "headline_summary_json", "childcare_segmented_headline_summary.json"
+    )
+    publication_readout_path = reports_namespace / file_names.get(
+        "headline_readout_markdown", "childcare_segmented_headline_readout.md"
+    )
+    publication_report_path = reports_namespace / file_names.get(
+        "full_report_markdown", "childcare_segmented_report.md"
+    )
+    support_quality_summary_path = reports_namespace / file_names.get(
+        "support_quality_summary_json", "childcare_segmented_support_quality_summary.json"
+    )
+    support_priority_summary_path = reports_namespace / file_names.get(
+        "support_priority_summary_json", "childcare_segmented_support_priority_summary.json"
+    )
+    support_issue_breakdown_path = reports_namespace / file_names.get(
+        "support_issue_breakdown_json", "childcare_segmented_support_issue_breakdown.json"
+    )
+    parser_focus_summary_path = reports_namespace / file_names.get(
+        "parser_focus_summary_json", "childcare_segmented_parser_focus_summary.json"
+    )
+    parser_action_plan_summary_path = reports_namespace / file_names.get(
+        "parser_action_plan_summary_json", "childcare_segmented_parser_action_plan_summary.json"
+    )
+    publication_channel_table_path = tables_namespace / file_names.get(
+        "channel_response_csv", "childcare_segmented_channel_response_summary.csv"
+    )
+    publication_fallback_table_path = tables_namespace / file_names.get(
+        "fallback_csv", "childcare_segmented_state_fallback_summary.csv"
+    )
+    support_quality_table_path = tables_namespace / file_names.get(
+        "support_quality_csv", "childcare_segmented_support_quality_summary.csv"
+    )
+    support_priority_states_path = tables_namespace / file_names.get(
+        "support_priority_states_csv", "childcare_segmented_support_priority_states.csv"
+    )
+    support_issue_breakdown_table_path = tables_namespace / file_names.get(
+        "support_issue_breakdown_csv", "childcare_segmented_support_issue_breakdown.csv"
+    )
+    parser_focus_areas_path = tables_namespace / file_names.get(
+        "parser_focus_areas_csv", "childcare_segmented_parser_focus_areas.csv"
+    )
+    admin_sheet_targets_path = tables_namespace / file_names.get(
+        "admin_sheet_targets_csv", "childcare_segmented_admin_sheet_targets.csv"
+    )
+    parser_action_plan_path = tables_namespace / file_names.get(
+        "parser_action_plan_csv", "childcare_segmented_parser_action_plan.csv"
+    )
+
+    write_json(outputs["segmented_publication_headline_summary"], publication_headline_summary_path)
+    write_json(
+        {
+            "state_year_count_total": int(outputs["segmented_publication_support_quality_summary"]["state_year_count"].sum())
+            if not outputs["segmented_publication_support_quality_summary"].empty
+            else 0,
+            "tiers": outputs["segmented_publication_support_quality_summary"].to_dict(orient="records"),
+        },
+        support_quality_summary_path,
+    )
+    write_json(outputs["segmented_publication_priority_summary"], support_priority_summary_path)
+    write_json(
+        {"rows": outputs["segmented_publication_issue_breakdown"].to_dict(orient="records")},
+        support_issue_breakdown_path,
+    )
+    write_json(
+        {"rows": outputs["segmented_publication_parser_focus_areas"].to_dict(orient="records")},
+        parser_focus_summary_path,
+    )
+    parser_action_plan_table = outputs.get("segmented_publication_parser_action_plan")
+    parser_action_plan_summary = outputs.get("segmented_publication_parser_action_plan_summary")
+    if parser_action_plan_table is None or parser_action_plan_summary is None:
+        fallback_action_plan_table, fallback_action_plan_summary = _build_childcare_segmented_parser_action_plan(
+            outputs["segmented_publication_parser_focus_areas"],
+            outputs["segmented_publication_admin_sheet_targets"],
+        )
+        if parser_action_plan_table is None:
+            parser_action_plan_table = fallback_action_plan_table
+        if parser_action_plan_summary is None:
+            parser_action_plan_summary = fallback_action_plan_summary
+    write_json(parser_action_plan_summary, parser_action_plan_summary_path)
+    publication_readout_path.parent.mkdir(parents=True, exist_ok=True)
+    publication_readout_path.write_text(outputs["segmented_publication_readout_markdown"], encoding="utf-8")
+    publication_report_path.parent.mkdir(parents=True, exist_ok=True)
+    publication_report_path.write_text(outputs["segmented_publication_report_markdown"], encoding="utf-8")
+    publication_channel_table_path.parent.mkdir(parents=True, exist_ok=True)
+    outputs["segmented_publication_channel_table"].to_csv(publication_channel_table_path, index=False)
+    publication_fallback_table_path.parent.mkdir(parents=True, exist_ok=True)
+    outputs["segmented_publication_fallback_table"].to_csv(publication_fallback_table_path, index=False)
+    support_quality_table_path.parent.mkdir(parents=True, exist_ok=True)
+    outputs["segmented_publication_support_quality_summary"].to_csv(support_quality_table_path, index=False)
+    support_priority_states_path.parent.mkdir(parents=True, exist_ok=True)
+    outputs["segmented_publication_priority_states"].to_csv(support_priority_states_path, index=False)
+    support_issue_breakdown_table_path.parent.mkdir(parents=True, exist_ok=True)
+    outputs["segmented_publication_issue_breakdown"].to_csv(support_issue_breakdown_table_path, index=False)
+    parser_focus_areas_path.parent.mkdir(parents=True, exist_ok=True)
+    outputs["segmented_publication_parser_focus_areas"].to_csv(parser_focus_areas_path, index=False)
+    admin_sheet_targets_path.parent.mkdir(parents=True, exist_ok=True)
+    outputs["segmented_publication_admin_sheet_targets"].to_csv(admin_sheet_targets_path, index=False)
+    parser_action_plan_path.parent.mkdir(parents=True, exist_ok=True)
+    parser_action_plan_table.to_csv(parser_action_plan_path, index=False)
+
+    source_files = [response_summary_path, fallback_summary_path, headline_summary_path]
+    for optional_path in (ccdf_parse_inventory_path, ccdf_admin_long_path, ccdf_admin_state_year_path):
+        if optional_path.exists():
+            source_files.append(optional_path)
+    source_files.append(config_path)
+    provenance_kwargs = {
+        "source_files": source_files,
+        "parameters": {
+            "sample_mode": sample,
+            "requested_year": year,
+            "extension_name": config.get("name", "segmented_publication"),
+            "mode": config.get("mode", "segmented_publication"),
+        },
+        "config": config,
+        "repo_root": paths.root,
+    }
+    write_provenance_sidecar(publication_headline_summary_path, **provenance_kwargs)
+    write_provenance_sidecar(support_quality_summary_path, **provenance_kwargs)
+    write_provenance_sidecar(support_priority_summary_path, **provenance_kwargs)
+    write_provenance_sidecar(support_issue_breakdown_path, **provenance_kwargs)
+    write_provenance_sidecar(parser_focus_summary_path, **provenance_kwargs)
+    write_provenance_sidecar(publication_channel_table_path, **provenance_kwargs)
+    write_provenance_sidecar(publication_fallback_table_path, **provenance_kwargs)
+    write_provenance_sidecar(support_quality_table_path, **provenance_kwargs)
+    write_provenance_sidecar(support_priority_states_path, **provenance_kwargs)
+    write_provenance_sidecar(support_issue_breakdown_table_path, **provenance_kwargs)
+    write_provenance_sidecar(parser_focus_areas_path, **provenance_kwargs)
+    write_provenance_sidecar(admin_sheet_targets_path, **provenance_kwargs)
+    write_provenance_sidecar(parser_action_plan_summary_path, **provenance_kwargs)
+    write_provenance_sidecar(parser_action_plan_path, **provenance_kwargs)
+    LOGGER.info(
+        "published childcare segmented outputs: report=%s channel_rows=%s fallback_rows=%s support_tiers=%s priority_states=%s issue_rows=%s parser_focus_rows=%s admin_targets=%s parser_action_rows=%s",
+        publication_report_path,
+        len(outputs["segmented_publication_channel_table"]),
+        len(outputs["segmented_publication_fallback_table"]),
+        len(outputs["segmented_publication_support_quality_summary"]),
+        len(outputs["segmented_publication_priority_states"]),
+        len(outputs["segmented_publication_issue_breakdown"]),
+        len(outputs["segmented_publication_parser_focus_areas"]),
+        len(outputs["segmented_publication_admin_sheet_targets"]),
+        len(parser_action_plan_table),
+    )
+
+
+def _ensure_licensing_harmonization_artifacts(
+    paths,
+    sample: bool,
+    refresh: bool = False,
+    dry_run: bool = False,
+    year: int | None = None,
+    config_name_or_path: str = "licensing_iv",
+) -> None:
+    config = load_extension_config(paths.root, config_name_or_path)
+    output_config = config.get("output_namespace", {}) if config else {}
+    file_names = output_config.get("files", {}) if output_config else {}
+    namespace = _output_namespace_path(
+        paths,
+        str(output_config.get("namespace", "data/interim/childcare/licensing_iv")),
+    )
+    required_paths = [
+        namespace / file_names.get("rule_audit", "licensing_rules_raw_audit.parquet"),
+        namespace / file_names.get("harmonized_rules", "licensing_rules_harmonized.parquet"),
+        namespace / file_names.get("stringency_index", "licensing_stringency_index.parquet"),
+        namespace / file_names.get("harmonization_summary", "licensing_harmonization_summary.parquet"),
+    ]
+    if not refresh and all(path.exists() for path in required_paths):
+        return
+    build_licensing_harmonization(
+        paths,
+        sample=sample,
+        refresh=refresh,
+        dry_run=dry_run,
+        year=year,
+        config_name_or_path=config_name_or_path,
+    )
+
+
+def _ensure_licensing_iv_artifacts(
+    paths,
+    sample: bool,
+    refresh: bool = False,
+    dry_run: bool = False,
+    year: int | None = None,
+    config_name_or_path: str = "licensing_iv",
+) -> None:
+    config = load_extension_config(paths.root, config_name_or_path)
+    output_config = config.get("output_namespace", {}) if config else {}
+    file_names = output_config.get("files", {}) if output_config else {}
+    namespace = _output_namespace_path(
+        paths,
+        str(output_config.get("namespace", "data/interim/childcare/licensing_iv")),
+    )
+    required_paths = [
+        namespace / file_names.get("event_study_results", "licensing_event_study_results.parquet"),
+        namespace / file_names.get("iv_results", "licensing_iv_results.parquet"),
+        namespace / file_names.get("iv_usability_summary", "licensing_iv_usability_summary.parquet"),
+        namespace / file_names.get("first_stage_diagnostics", "licensing_first_stage_diagnostics.parquet"),
+        namespace / file_names.get("treatment_timing", "licensing_treatment_timing.parquet"),
+        namespace / file_names.get("leave_one_state_out", "licensing_leave_one_state_out.parquet"),
+        namespace / file_names.get("iv_summary_json", "licensing_iv_summary.json"),
+    ]
+    if not refresh and all(path.exists() for path in required_paths):
+        return
+    build_licensing_iv(
+        paths,
+        sample=sample,
+        refresh=refresh,
+        dry_run=dry_run,
+        year=year,
+        config_name_or_path=config_name_or_path,
+    )
+
+
+def build_licensing_harmonization(
+    paths,
+    sample: bool,
+    refresh: bool = False,
+    dry_run: bool = False,
+    year: int | None = None,
+    config_name_or_path: str = "licensing_iv",
+) -> None:
+    config_path = resolve_extension_config_path(paths.root, config_name_or_path)
+    config = load_extension_config(paths.root, config_name_or_path)
+    if not config:
+        raise UnpaidWorkError(f"extension config is empty or missing: {config_path}")
+
+    licensing_output = paths.interim / "licensing" / ("licensing.parquet" if sample else "licensing_supply_shocks.parquet")
+    licensing_rules_long_path = paths.interim / "licensing" / "licensing_rules_long.parquet"
+    licensing_raw_dir = paths.raw / "licensing"
+    raw_rule_level_present = (
+        (licensing_raw_dir / "licensing_rules_long.csv").exists()
+        or (licensing_raw_dir / "icpsr_2017" / "ICPSR_37700" / "DS0001" / "37700-0001-Data.tsv").exists()
+        or (licensing_raw_dir / "icpsr_2020" / "ICPSR_38539" / "DS0001" / "38539-0001-Data.tsv").exists()
+    )
+    should_refresh_licensing_ingest = refresh or (
+        raw_rule_level_present and not licensing_rules_long_path.exists()
+    ) or (
+        not licensing_output.exists() and not licensing_rules_long_path.exists()
+    )
+    if should_refresh_licensing_ingest:
+        result = licensing.ingest(paths, sample=sample, refresh=refresh, dry_run=dry_run, year=year)
+        LOGGER.info(
+            "%s %s -> %s (%s)",
+            "planned" if result.dry_run else "ingested",
+            result.source_name,
+            result.normalized_path,
+            result.detail or ("skipped" if result.skipped else "ok"),
+        )
+        licensing_output = result.normalized_path
+        licensing_rules_long_path = paths.interim / "licensing" / "licensing_rules_long.parquet"
+
+    if dry_run:
+        LOGGER.info("planned licensing harmonization build using %s", config_path)
+        return
+
+    selected_input_path = licensing_rules_long_path if licensing_rules_long_path.exists() else licensing_output
+    if not selected_input_path.exists():
+        raise UnpaidWorkError(
+            f"missing normalized licensing inputs: {licensing_output} and/or {licensing_rules_long_path}"
+        )
+
+    from unpaidwork.childcare.licensing_harmonization import build_licensing_backend_outputs
+
+    output_config = config.get("output_namespace", {})
+    output_namespace = _output_namespace_path(
+        paths,
+        str(output_config.get("namespace", "data/interim/childcare/licensing_iv")),
+    )
+    file_names = output_config.get("files", {})
+    raw_audit_path = output_namespace / file_names.get("rule_audit", "licensing_rules_raw_audit.parquet")
+    harmonized_rules_path = output_namespace / file_names.get("harmonized_rules", "licensing_rules_harmonized.parquet")
+    stringency_index_path = output_namespace / file_names.get("stringency_index", "licensing_stringency_index.parquet")
+    harmonization_summary_path = output_namespace / file_names.get(
+        "harmonization_summary", "licensing_harmonization_summary.parquet"
+    )
+
+    outputs = build_licensing_backend_outputs(read_parquet(selected_input_path))
+    write_parquet(outputs["licensing_rules_raw_audit"], raw_audit_path)
+    write_parquet(outputs["licensing_rules_harmonized"], harmonized_rules_path)
+    write_parquet(outputs["licensing_stringency_index"], stringency_index_path)
+    write_parquet(outputs["licensing_harmonization_summary"], harmonization_summary_path)
+
+    provenance_kwargs = {
+        "source_files": [path for path in (licensing_output, licensing_rules_long_path, config_path) if path.exists()],
+        "parameters": {
+            "sample_mode": sample,
+            "requested_year": year,
+            "extension_name": config.get("name", "licensing_iv"),
+            "mode": "licensing_harmonization",
+            "selected_input_path": str(selected_input_path),
+            "selected_input_contract": "rule_level" if selected_input_path == licensing_rules_long_path else "wide_shock",
+        },
+        "config": config,
+        "repo_root": paths.root,
+    }
+    for path in (
+        raw_audit_path,
+        harmonized_rules_path,
+        stringency_index_path,
+        harmonization_summary_path,
+    ):
+        write_provenance_sidecar(path, **provenance_kwargs)
+    LOGGER.info(
+        "built licensing harmonization outputs: raw=%s harmonized=%s stringency=%s summary=%s",
+        len(outputs["licensing_rules_raw_audit"]),
+        len(outputs["licensing_rules_harmonized"]),
+        len(outputs["licensing_stringency_index"]),
+        len(outputs["licensing_harmonization_summary"]),
+    )
+
+
+def build_licensing_iv(
+    paths,
+    sample: bool,
+    refresh: bool = False,
+    dry_run: bool = False,
+    year: int | None = None,
+    config_name_or_path: str = "licensing_iv",
+) -> None:
+    config_path = resolve_extension_config_path(paths.root, config_name_or_path)
+    config = load_extension_config(paths.root, config_name_or_path)
+    if not config:
+        raise UnpaidWorkError(f"extension config is empty or missing: {config_path}")
+
+    county_path = paths.processed / "childcare_county_year_price_panel.parquet"
+    state_path = paths.processed / "childcare_state_year_panel.parquet"
+    if not county_path.exists() or not state_path.exists():
+        build_childcare(paths, sample=sample, refresh=refresh, dry_run=dry_run, year=year)
+    _ensure_licensing_harmonization_artifacts(
+        paths,
+        sample=sample,
+        refresh=refresh,
+        dry_run=dry_run,
+        year=year,
+        config_name_or_path=config_name_or_path,
+    )
+
+    if dry_run:
+        LOGGER.info("planned licensing IV backend build using %s", config_path)
+        return
+
+    if not county_path.exists() or not state_path.exists():
+        raise UnpaidWorkError(f"missing childcare county/state panels: {county_path} and/or {state_path}")
+
+    output_config = config.get("output_namespace", {})
+    output_namespace = _output_namespace_path(
+        paths,
+        str(output_config.get("namespace", "data/interim/childcare/licensing_iv")),
+    )
+    file_names = output_config.get("files", {})
+    harmonized_rules_path = output_namespace / file_names.get("harmonized_rules", "licensing_rules_harmonized.parquet")
+    stringency_index_path = output_namespace / file_names.get("stringency_index", "licensing_stringency_index.parquet")
+    event_study_results_path = output_namespace / file_names.get(
+        "event_study_results", "licensing_event_study_results.parquet"
+    )
+    iv_results_path = output_namespace / file_names.get("iv_results", "licensing_iv_results.parquet")
+    iv_usability_summary_path = output_namespace / file_names.get(
+        "iv_usability_summary", "licensing_iv_usability_summary.parquet"
+    )
+    first_stage_path = output_namespace / file_names.get(
+        "first_stage_diagnostics", "licensing_first_stage_diagnostics.parquet"
+    )
+    treatment_timing_path = output_namespace / file_names.get(
+        "treatment_timing", "licensing_treatment_timing.parquet"
+    )
+    leave_one_state_out_path = output_namespace / file_names.get(
+        "leave_one_state_out", "licensing_leave_one_state_out.parquet"
+    )
+    elasticity_panel_path = output_namespace / file_names.get("elasticity_panel", "supply_iv_elasticities.parquet")
+    iv_summary_path = output_namespace / file_names.get("iv_summary_json", "licensing_iv_summary.json")
+
+    if not harmonized_rules_path.exists() or not stringency_index_path.exists():
+        raise UnpaidWorkError(
+            f"missing harmonized licensing inputs: {harmonized_rules_path} and/or {stringency_index_path}"
+        )
+
+    from unpaidwork.childcare.licensing_iv_backend import build_licensing_iv_backend_outputs
+
+    licensing_output = paths.interim / "licensing" / ("licensing.parquet" if sample else "licensing_supply_shocks.parquet")
+    if not licensing_output.exists():
+        result = licensing.ingest(paths, sample=sample, refresh=refresh, dry_run=False, year=year)
+        licensing_output = result.normalized_path
+
+    county = read_parquet(county_path)
+    state = read_parquet(state_path)
+    harmonized_rules = read_parquet(harmonized_rules_path)
+    stringency_index = read_parquet(stringency_index_path)
+    outputs = build_licensing_iv_backend_outputs(
+        harmonized_rules,
+        stringency_index,
+        county,
+        state,
+    )
+    elasticity_panel_source = pd.DataFrame()
+    elasticity_panel_source_name = "missing"
+    if licensing_output.exists():
+        raw_elasticity_source = read_parquet(licensing_output)
+        if {"state_fips", "year"} <= set(raw_elasticity_source.columns) and (
+            "center_labor_intensity_index" in raw_elasticity_source.columns
+            or {
+                "center_infant_ratio",
+                "center_toddler_ratio",
+                "center_infant_group_size",
+                "center_toddler_group_size",
+            }
+            & set(raw_elasticity_source.columns)
+        ):
+            elasticity_panel_source = raw_elasticity_source
+            elasticity_panel_source_name = "licensing_shock_panel"
+    if elasticity_panel_source.empty:
+        elasticity_panel_source = stringency_index.rename(
+            columns={"stringency_equal_weight_index": "center_labor_intensity_index"}
+        )
+        if not elasticity_panel_source.empty:
+            elasticity_panel_source_name = "stringency_index_fallback"
+    elasticity_panel = (
+        build_supply_iv_panel(county, elasticity_panel_source)
+        if not elasticity_panel_source.empty
+        else pd.DataFrame()
+    )
+
+    write_parquet(outputs["event_study_results"], event_study_results_path)
+    write_parquet(outputs["iv_results"], iv_results_path)
+    write_parquet(outputs["iv_usability_summary"], iv_usability_summary_path)
+    write_parquet(outputs["first_stage_diagnostics"], first_stage_path)
+    write_parquet(outputs["treatment_timing"], treatment_timing_path)
+    write_parquet(outputs["leave_one_state_out"], leave_one_state_out_path)
+    write_parquet(elasticity_panel, elasticity_panel_path)
+    write_json(outputs["summary"], iv_summary_path)
+
+    provenance_kwargs = {
+        "source_files": [
+            path
+            for path in (
+                county_path,
+                state_path,
+                harmonized_rules_path,
+                stringency_index_path,
+                licensing_output,
+                config_path,
+            )
+            if path.exists()
+        ],
+        "parameters": {
+            "sample_mode": sample,
+            "requested_year": year,
+            "extension_name": config.get("name", "licensing_iv"),
+            "mode": "licensing_iv_backend",
+            "elasticity_panel_source": elasticity_panel_source_name,
+        },
+        "config": config,
+        "repo_root": paths.root,
+    }
+    for path in (
+        event_study_results_path,
+        iv_results_path,
+        iv_usability_summary_path,
+        first_stage_path,
+        treatment_timing_path,
+        leave_one_state_out_path,
+        elasticity_panel_path,
+        iv_summary_path,
+    ):
+        write_provenance_sidecar(path, **provenance_kwargs)
+    LOGGER.info(
+        "built licensing IV backend outputs: event=%s iv=%s usability=%s first_stage=%s timing=%s loo=%s elasticity=%s",
+        len(outputs["event_study_results"]),
+        len(outputs["iv_results"]),
+        len(outputs["iv_usability_summary"]),
+        len(outputs["first_stage_diagnostics"]),
+        len(outputs["treatment_timing"]),
+        len(outputs["leave_one_state_out"]),
+        len(elasticity_panel),
+    )
+
+
+def build_childcare_release_backend(
+    paths,
+    sample: bool,
+    refresh: bool = False,
+    dry_run: bool = False,
+    year: int | None = None,
+    config_name_or_path: str = "release_backend",
+) -> None:
+    config_path = resolve_extension_config_path(paths.root, config_name_or_path)
+    config = load_extension_config(paths.root, config_name_or_path)
+    if not config:
+        raise UnpaidWorkError(f"extension config is empty or missing: {config_path}")
+
+    if dry_run:
+        LOGGER.info("planned childcare backend release build using %s", config_path)
+        return
+
+    ccdf_namespace = paths.root / "data" / "interim" / "ccdf"
+    required_ccdf_paths = (
+        ccdf_namespace / "ccdf_admin_state_year.parquet",
+        ccdf_namespace / "ccdf_policy_controls_coverage.parquet",
+        ccdf_namespace / "ccdf_policy_promoted_controls_state_year.parquet",
+    )
+    if refresh or not all(path.exists() for path in required_ccdf_paths):
+        build_ccdf_state_year(
+            paths,
+            sample=sample,
+            refresh=refresh,
+            dry_run=False,
+            year=year,
+            config_name_or_path="ccdf_state_year",
+        )
+    _ensure_childcare_segmented_report_artifacts(
+        paths,
+        sample=sample,
+        refresh=refresh,
+        dry_run=False,
+        year=year,
+    )
+    _ensure_licensing_iv_artifacts(
+        paths,
+        sample=sample,
+        refresh=refresh,
+        dry_run=False,
+        year=year,
+        config_name_or_path="licensing_iv",
+    )
+
+    from unpaidwork.childcare.release_backend import (
+        build_childcare_release_backend_outputs,
+        build_childcare_release_bundle_index,
+        build_childcare_frontend_handoff_summary,
+        build_childcare_release_contract,
+        build_childcare_release_manifest,
+        build_childcare_release_manual_requirements,
+        build_childcare_release_schema_inventory,
+        build_childcare_release_source_readiness,
+    )
+
+    segmented_report_namespace = paths.root / "data" / "interim" / "childcare" / "segmented_reports"
+    segmented_scenario_namespace = paths.root / "data" / "interim" / "childcare" / "segmented_scenarios"
+    licensing_namespace = paths.root / "data" / "interim" / "childcare" / "licensing_iv"
+
+    pooled_summary = _load_pooled_backend_summary(paths, sample=sample, refresh=refresh)
+    source_config = config.get("sources", {})
+    source_readiness = build_childcare_release_source_readiness(
+        required_sources=list(source_config.get("required", []) or []),
+        optional_sources=list(source_config.get("optional", []) or []),
+        sample_mode=sample,
+        repo_root=paths.root,
+    )
+    manual_requirements = build_childcare_release_manual_requirements(
+        source_readiness,
+        sample_mode=sample,
+    )
+    release_outputs = build_childcare_release_backend_outputs(
+        pooled_headline_summary=pooled_summary,
+        ccdf_admin_state_year=_read_optional_parquet(ccdf_namespace / "ccdf_admin_state_year.parquet"),
+        ccdf_policy_controls_coverage=_read_optional_parquet(ccdf_namespace / "ccdf_policy_controls_coverage.parquet"),
+        ccdf_policy_promoted_controls_state_year=_read_optional_parquet(
+            ccdf_namespace / "ccdf_policy_promoted_controls_state_year.parquet"
+        ),
+        segmented_state_year_summary=_read_optional_parquet(
+            segmented_scenario_namespace / "segmented_state_year_summary.parquet"
+        ),
+        segmented_state_fallback_summary=_read_optional_parquet(
+            segmented_report_namespace / "segmented_state_fallback_summary.parquet"
+        ),
+        segmented_channel_scenarios=_read_optional_parquet(
+            segmented_scenario_namespace / "segmented_channel_scenarios.parquet"
+        ),
+        licensing_rules_raw_audit=_read_optional_parquet(licensing_namespace / "licensing_rules_raw_audit.parquet"),
+        licensing_harmonized_rules=_read_optional_parquet(
+            licensing_namespace / "licensing_rules_harmonized.parquet"
+        ),
+        licensing_stringency_index=_read_optional_parquet(
+            licensing_namespace / "licensing_stringency_index.parquet"
+        ),
+        licensing_iv_summary=_read_optional_json(licensing_namespace / "licensing_iv_summary.json"),
+        licensing_iv_results=_read_optional_parquet(licensing_namespace / "licensing_iv_results.parquet"),
+        licensing_iv_usability_summary=_read_optional_parquet(
+            licensing_namespace / "licensing_iv_usability_summary.parquet"
+        ),
+        licensing_first_stage_diagnostics=_read_optional_parquet(
+            licensing_namespace / "licensing_first_stage_diagnostics.parquet"
+        ),
+        licensing_treatment_timing=_read_optional_parquet(
+            licensing_namespace / "licensing_treatment_timing.parquet"
+        ),
+        licensing_leave_one_state_out=_read_optional_parquet(
+            licensing_namespace / "licensing_leave_one_state_out.parquet"
+        ),
+        release_source_readiness=source_readiness,
+        release_manual_requirements=manual_requirements,
+    )
+
+    output_config = config.get("outputs", {})
+    reports_namespace = _output_namespace_path(
+        paths,
+        str(output_config.get("reports_namespace", "outputs/reports")),
+    )
+    tables_namespace = _output_namespace_path(
+        paths,
+        str(output_config.get("tables_namespace", "outputs/tables")),
+    )
+    file_names = output_config.get("files", {})
+    headline_summary_json_path = reports_namespace / file_names.get(
+        "headline_summary_json", "childcare_backend_release_headline_summary.json"
+    )
+    methods_summary_json_path = reports_namespace / file_names.get(
+        "methods_summary_json", "childcare_backend_release_methods_summary.json"
+    )
+    methods_markdown_path = reports_namespace / file_names.get(
+        "methods_markdown", "childcare_backend_release_methods.md"
+    )
+    rebuild_markdown_path = reports_namespace / file_names.get(
+        "rebuild_markdown", "childcare_backend_release_rebuild.md"
+    )
+    manifest_json_path = reports_namespace / file_names.get(
+        "manifest_json", "childcare_backend_release_manifest.json"
+    )
+    source_readiness_json_path = reports_namespace / file_names.get(
+        "source_readiness_json", "childcare_backend_release_source_readiness.json"
+    )
+    manual_requirements_json_path = reports_namespace / file_names.get(
+        "manual_requirements_json", "childcare_backend_release_manual_requirements.json"
+    )
+    manual_requirements_markdown_path = reports_namespace / file_names.get(
+        "manual_requirements_markdown", "childcare_backend_release_manual_requirements.md"
+    )
+    schema_inventory_json_path = reports_namespace / file_names.get(
+        "schema_inventory_json", "childcare_backend_release_schema_inventory.json"
+    )
+    contract_json_path = reports_namespace / file_names.get(
+        "contract_json",
+        file_names.get("release_contract_json", "childcare_backend_release_contract.json"),
+    )
+    bundle_index_json_path = reports_namespace / file_names.get(
+        "bundle_index_json", "childcare_backend_release_bundle_index.json"
+    )
+    headline_summary_csv_path = tables_namespace / file_names.get(
+        "headline_summary_csv", "childcare_backend_release_headline_summary.csv"
+    )
+    support_quality_csv_path = tables_namespace / file_names.get(
+        "support_quality_csv", "childcare_backend_support_quality_summary.csv"
+    )
+    ccdf_support_mix_csv_path = tables_namespace / file_names.get(
+        "ccdf_support_mix_csv", "childcare_backend_ccdf_support_mix_summary.csv"
+    )
+    policy_coverage_csv_path = tables_namespace / file_names.get(
+        "policy_coverage_csv", "childcare_backend_policy_coverage_summary.csv"
+    )
+    ccdf_proxy_gap_summary_csv_path = tables_namespace / file_names.get(
+        "ccdf_proxy_gap_summary_csv", "childcare_backend_ccdf_proxy_gap_summary.csv"
+    )
+    ccdf_proxy_gap_state_years_csv_path = tables_namespace / file_names.get(
+        "ccdf_proxy_gap_state_years_csv", "childcare_backend_ccdf_proxy_gap_state_years.csv"
+    )
+    segmented_comparison_csv_path = tables_namespace / file_names.get(
+        "segmented_comparison_csv", "childcare_backend_segmented_comparison.csv"
+    )
+    licensing_iv_results_csv_path = tables_namespace / file_names.get(
+        "licensing_iv_results_csv", "childcare_backend_licensing_iv_results.csv"
+    )
+    licensing_iv_usability_csv_path = tables_namespace / file_names.get(
+        "licensing_iv_usability_summary_csv",
+        "childcare_backend_licensing_iv_usability_summary.csv",
+    )
+    first_stage_csv_path = tables_namespace / file_names.get(
+        "licensing_first_stage_diagnostics_csv",
+        "childcare_backend_licensing_first_stage_diagnostics.csv",
+    )
+    treatment_timing_csv_path = tables_namespace / file_names.get(
+        "licensing_treatment_timing_csv", "childcare_backend_licensing_treatment_timing.csv"
+    )
+    leave_one_state_out_csv_path = tables_namespace / file_names.get(
+        "licensing_leave_one_state_out_csv", "childcare_backend_licensing_leave_one_state_out.csv"
+    )
+    manifest_csv_path = tables_namespace / file_names.get(
+        "manifest_csv", "childcare_backend_release_manifest.csv"
+    )
+    source_readiness_csv_path = tables_namespace / file_names.get(
+        "source_readiness_csv", "childcare_backend_release_source_readiness.csv"
+    )
+    manual_requirements_csv_path = tables_namespace / file_names.get(
+        "manual_requirements_csv", "childcare_backend_release_manual_requirements.csv"
+    )
+    schema_artifact_csv_path = tables_namespace / file_names.get(
+        "schema_artifact_csv", "childcare_backend_release_schema_artifact_summary.csv"
+    )
+    schema_columns_csv_path = tables_namespace / file_names.get(
+        "schema_columns_csv", "childcare_backend_release_schema_column_summary.csv"
+    )
+    contract_artifacts_csv_path = tables_namespace / file_names.get(
+        "contract_artifacts_csv",
+        file_names.get("release_artifact_contracts_csv", "childcare_backend_release_artifact_contracts.csv"),
+    )
+    contract_columns_csv_path = tables_namespace / file_names.get(
+        "contract_columns_csv",
+        file_names.get("release_column_dictionary_csv", "childcare_backend_release_column_dictionary.csv"),
+    )
+    frontend_handoff_summary_json_path = reports_namespace / file_names.get(
+        "frontend_handoff_summary_json",
+        "childcare_backend_release_frontend_handoff_summary.json",
+    )
+    bundle_index_csv_path = tables_namespace / file_names.get(
+        "bundle_index_csv", "childcare_backend_release_bundle_index.csv"
+    )
+
+    headline_summary = release_outputs["release_headline_summary"]
+    support_tables = release_outputs["release_support_tables"]
+    proxy_gap_tables = release_outputs["release_ccdf_proxy_gap_tables"]
+    methods_summary = release_outputs["release_methods_summary"]
+    segmented_comparison = release_outputs["release_segmented_comparison"]
+    source_readiness_output = release_outputs["release_source_readiness"]
+    manual_requirements_output = release_outputs["release_manual_requirements"]
+    licensing_iv_results = _read_optional_parquet(licensing_namespace / "licensing_iv_results.parquet")
+    if licensing_iv_results is None:
+        licensing_iv_results = pd.DataFrame()
+    licensing_iv_usability_summary = _read_optional_parquet(
+        licensing_namespace / "licensing_iv_usability_summary.parquet"
+    )
+    if licensing_iv_usability_summary is None:
+        licensing_iv_usability_summary = pd.DataFrame()
+    first_stage_diagnostics = _read_optional_parquet(
+        licensing_namespace / "licensing_first_stage_diagnostics.parquet"
+    )
+    if first_stage_diagnostics is None:
+        first_stage_diagnostics = pd.DataFrame()
+    treatment_timing = _read_optional_parquet(licensing_namespace / "licensing_treatment_timing.parquet")
+    if treatment_timing is None:
+        treatment_timing = pd.DataFrame()
+    leave_one_state_out = _read_optional_parquet(licensing_namespace / "licensing_leave_one_state_out.parquet")
+    if leave_one_state_out is None:
+        leave_one_state_out = pd.DataFrame()
+
+    write_json(headline_summary["json"], headline_summary_json_path)
+    _write_csv_output(headline_summary["table"], headline_summary_csv_path)
+    write_json(methods_summary["json"], methods_summary_json_path)
+    methods_markdown_path.parent.mkdir(parents=True, exist_ok=True)
+    methods_markdown_path.write_text(methods_summary["markdown"], encoding="utf-8")
+    rebuild_markdown = "\n".join(
+        [
+            "# Childcare backend rebuild",
+            "",
+            "Run the backend release with these commands:",
+            "",
+            f"1. `python -m unpaidwork.cli pull-ccdf {'--sample' if sample else '--real'}{' --refresh' if refresh else ''}`",
+            f"2. `python -m unpaidwork.cli build-ccdf-state-year {'--sample' if sample else '--real'}{' --refresh' if refresh else ''}`",
+            f"3. `python -m unpaidwork.cli build-childcare-segmented-report {'--sample' if sample else '--real'}{' --refresh' if refresh else ''}`",
+            f"4. `python -m unpaidwork.cli build-licensing-harmonization {'--sample' if sample else '--real'}{' --refresh' if refresh else ''}`",
+            f"5. `python -m unpaidwork.cli build-licensing-iv {'--sample' if sample else '--real'}{' --refresh' if refresh else ''}`",
+            f"6. `python -m unpaidwork.cli build-childcare-release-backend {'--sample' if sample else '--real'}{' --refresh' if refresh else ''}`",
+            "",
+            "The pooled childcare path remains canonical. Segmented outputs are additive-only.",
+        ]
+    )
+    rebuild_markdown_path.parent.mkdir(parents=True, exist_ok=True)
+    rebuild_markdown_path.write_text(rebuild_markdown, encoding="utf-8")
+    write_json(source_readiness_output["json"], source_readiness_json_path)
+    write_json(manual_requirements_output["json"], manual_requirements_json_path)
+    manual_requirements_markdown_path.parent.mkdir(parents=True, exist_ok=True)
+    manual_requirements_markdown_path.write_text(manual_requirements_output["markdown"], encoding="utf-8")
+    _write_csv_output(support_tables["support_quality_summary"], support_quality_csv_path)
+    _write_csv_output(support_tables["ccdf_support_mix_summary"], ccdf_support_mix_csv_path)
+    _write_csv_output(support_tables["policy_coverage_summary"], policy_coverage_csv_path)
+    _write_csv_output(proxy_gap_tables["proxy_gap_summary"], ccdf_proxy_gap_summary_csv_path)
+    _write_csv_output(proxy_gap_tables["proxy_gap_state_years"], ccdf_proxy_gap_state_years_csv_path)
+    _write_csv_output(segmented_comparison, segmented_comparison_csv_path)
+    _write_csv_output(licensing_iv_results, licensing_iv_results_csv_path)
+    _write_csv_output(licensing_iv_usability_summary, licensing_iv_usability_csv_path)
+    _write_csv_output(first_stage_diagnostics, first_stage_csv_path)
+    _write_csv_output(treatment_timing, treatment_timing_csv_path)
+    _write_csv_output(leave_one_state_out, leave_one_state_out_csv_path)
+    _write_csv_output(source_readiness_output["table"], source_readiness_csv_path)
+    _write_csv_output(manual_requirements_output["table"], manual_requirements_csv_path)
+
+    source_files = [
+        ccdf_namespace / "ccdf_admin_state_year.parquet",
+        ccdf_namespace / "ccdf_policy_controls_coverage.parquet",
+        ccdf_namespace / "ccdf_policy_promoted_controls_state_year.parquet",
+        segmented_report_namespace / "segmented_state_fallback_summary.parquet",
+        segmented_scenario_namespace / "segmented_channel_scenarios.parquet",
+        licensing_namespace / "licensing_rules_raw_audit.parquet",
+        licensing_namespace / "licensing_rules_harmonized.parquet",
+        licensing_namespace / "licensing_stringency_index.parquet",
+        licensing_namespace / "licensing_iv_results.parquet",
+        licensing_namespace / "licensing_iv_usability_summary.parquet",
+        licensing_namespace / "licensing_first_stage_diagnostics.parquet",
+        licensing_namespace / "licensing_treatment_timing.parquet",
+        licensing_namespace / "licensing_leave_one_state_out.parquet",
+        licensing_namespace / "licensing_iv_summary.json",
+        config_path,
+    ]
+    provenance_kwargs = {
+        "source_files": [path for path in source_files if path.exists()],
+        "parameters": {
+            "sample_mode": sample,
+            "requested_year": year,
+            "extension_name": config.get("name", "release_backend"),
+            "mode": config.get("mode", "backend_release"),
+        },
+        "config": config,
+        "repo_root": paths.root,
+    }
+    producer_command = (
+        f"python -m unpaidwork.cli build-childcare-release-backend "
+        f"{'--sample' if sample else '--real'}{' --refresh' if refresh else ''}"
+    )
+
+    def _published_artifact(
+        artifact_name: str,
+        artifact_group: str,
+        artifact_kind: str,
+        artifact_status: str,
+        frontend_priority: str,
+        publication_tier: str,
+        output_path: Path,
+    ) -> dict[str, object]:
+        return {
+            "artifact_name": artifact_name,
+            "artifact_group": artifact_group,
+            "artifact_kind": artifact_kind,
+            "artifact_status": artifact_status,
+            "frontend_priority": frontend_priority,
+            "publication_tier": publication_tier,
+            "producer_command": producer_command,
+            "output_path": output_path,
+            "provenance_path": Path(f"{output_path}.provenance.json"),
+            "sample_available": True,
+            "real_available": True,
+            "upstream_dependencies": provenance_kwargs["source_files"],
+        }
+
+    provisional_published_artifacts = [
+        _published_artifact("release_headline_summary", "release", "json", "canonical", "high", "headline", headline_summary_json_path),
+        _published_artifact("release_headline_summary_csv", "release", "csv", "canonical", "high", "headline", headline_summary_csv_path),
+        _published_artifact("methods_summary", "release", "json", "canonical", "high", "methods", methods_summary_json_path),
+        _published_artifact("methods_markdown", "release", "markdown", "canonical", "medium", "methods", methods_markdown_path),
+        _published_artifact("release_rebuild_markdown", "release", "markdown", "canonical", "medium", "methods", rebuild_markdown_path),
+        _published_artifact("release_source_readiness_json", "release", "json", "diagnostic", "medium", "appendix", source_readiness_json_path),
+        _published_artifact("release_manual_requirements_json", "release", "json", "diagnostic", "medium", "appendix", manual_requirements_json_path),
+        _published_artifact("release_manual_requirements_markdown", "release", "markdown", "diagnostic", "low", "appendix", manual_requirements_markdown_path),
+        _published_artifact("support_quality_summary", "release", "csv", "canonical", "high", "appendix", support_quality_csv_path),
+        _published_artifact("ccdf_support_mix_summary", "release", "csv", "canonical", "high", "appendix", ccdf_support_mix_csv_path),
+        _published_artifact("policy_coverage_summary", "release", "csv", "canonical", "medium", "appendix", policy_coverage_csv_path),
+        _published_artifact("ccdf_proxy_gap_summary", "release", "csv", "diagnostic", "medium", "appendix", ccdf_proxy_gap_summary_csv_path),
+        _published_artifact("ccdf_proxy_gap_state_years", "release", "csv", "diagnostic", "low", "appendix", ccdf_proxy_gap_state_years_csv_path),
+        _published_artifact("segmented_comparison", "segmented", "csv", "additive", "medium", "appendix", segmented_comparison_csv_path),
+        _published_artifact("licensing_iv_results", "licensing", "csv", "canonical", "high", "appendix", licensing_iv_results_csv_path),
+        _published_artifact("licensing_iv_usability_summary", "licensing", "csv", "diagnostic", "high", "appendix", licensing_iv_usability_csv_path),
+        _published_artifact("licensing_first_stage_diagnostics", "licensing", "csv", "diagnostic", "medium", "appendix", first_stage_csv_path),
+        _published_artifact("licensing_treatment_timing", "licensing", "csv", "diagnostic", "medium", "appendix", treatment_timing_csv_path),
+        _published_artifact("licensing_leave_one_state_out", "licensing", "csv", "diagnostic", "low", "appendix", leave_one_state_out_csv_path),
+    ]
+    frontend_handoff_summary = build_childcare_frontend_handoff_summary(
+        published_artifacts=provisional_published_artifacts,
+        headline_summary=headline_summary["json"],
+        methods_summary=methods_summary["json"],
+    )
+    write_json(frontend_handoff_summary, frontend_handoff_summary_json_path)
+
+    release_artifacts = {
+        "release_headline_summary": headline_summary["table"],
+        "release_headline_summary_json": headline_summary["json"],
+        "support_quality_summary": support_tables["support_quality_summary"],
+        "ccdf_support_mix_summary": support_tables["ccdf_support_mix_summary"],
+        "policy_coverage_summary": support_tables["policy_coverage_summary"],
+        "ccdf_proxy_gap_summary": proxy_gap_tables["proxy_gap_summary"],
+        "ccdf_proxy_gap_state_years": proxy_gap_tables["proxy_gap_state_years"],
+        "segmented_comparison": segmented_comparison,
+        "methods_summary": methods_summary["json"],
+        "methods_markdown": methods_summary["markdown"],
+        "release_source_readiness_table": source_readiness_output["table"],
+        "release_source_readiness_summary": source_readiness_output["summary"],
+        "release_manual_requirements_table": manual_requirements_output["table"],
+        "release_manual_requirements_summary": manual_requirements_output["summary"],
+        "release_manual_requirements_markdown": manual_requirements_output["markdown"],
+        "release_frontend_handoff_summary": frontend_handoff_summary,
+        "licensing_iv_results": licensing_iv_results,
+        "licensing_iv_usability_summary": licensing_iv_usability_summary,
+        "licensing_first_stage_diagnostics": first_stage_diagnostics,
+        "licensing_treatment_timing": treatment_timing,
+        "licensing_leave_one_state_out": leave_one_state_out,
+    }
+    schema_inventory = build_childcare_release_schema_inventory(release_artifacts)
+    contract_inventory = build_childcare_release_contract(release_artifacts)
+    manifest = build_childcare_release_manifest(
+        release_artifacts
+        | {
+            "release_schema_artifact_summary": schema_inventory["artifact_summary"],
+            "release_schema_column_schema": schema_inventory["column_schema"],
+            "release_artifact_contracts": contract_inventory["artifact_contracts"],
+            "release_column_dictionary": contract_inventory["column_dictionary"],
+        }
+    )
+
+    write_json({"rows": manifest.to_dict(orient="records")}, manifest_json_path)
+    write_json(schema_inventory["json"], schema_inventory_json_path)
+    write_json(contract_inventory["json"], contract_json_path)
+    _write_csv_output(manifest, manifest_csv_path)
+    _write_csv_output(schema_inventory["artifact_summary"], schema_artifact_csv_path)
+    _write_csv_output(schema_inventory["column_schema"], schema_columns_csv_path)
+    _write_csv_output(contract_inventory["artifact_contracts"], contract_artifacts_csv_path)
+    _write_csv_output(contract_inventory["column_dictionary"], contract_columns_csv_path)
+
+    published_artifacts = provisional_published_artifacts + [
+        _published_artifact("release_frontend_handoff_summary", "release", "json", "canonical", "high", "contract", frontend_handoff_summary_json_path),
+        _published_artifact("release_manifest_json", "release", "json", "diagnostic", "medium", "appendix", manifest_json_path),
+        _published_artifact("release_manifest_csv", "release", "csv", "diagnostic", "medium", "appendix", manifest_csv_path),
+        _published_artifact("release_schema_inventory_json", "release", "json", "diagnostic", "medium", "appendix", schema_inventory_json_path),
+        _published_artifact("release_schema_artifact_summary", "release", "csv", "diagnostic", "medium", "appendix", schema_artifact_csv_path),
+        _published_artifact("release_schema_column_summary", "release", "csv", "diagnostic", "medium", "appendix", schema_columns_csv_path),
+        _published_artifact("release_contract_json", "release", "json", "diagnostic", "high", "contract", contract_json_path),
+        _published_artifact("release_artifact_contracts_csv", "release", "csv", "diagnostic", "high", "contract", contract_artifacts_csv_path),
+        _published_artifact("release_column_dictionary_csv", "release", "csv", "diagnostic", "high", "contract", contract_columns_csv_path),
+        _published_artifact("release_source_readiness_csv", "release", "csv", "diagnostic", "medium", "appendix", source_readiness_csv_path),
+        _published_artifact("release_manual_requirements_csv", "release", "csv", "diagnostic", "medium", "appendix", manual_requirements_csv_path),
+    ]
+    bundle_index = build_childcare_release_bundle_index(
+        published_artifacts=published_artifacts,
+        current_mode="sample" if sample else "real",
+    )
+    write_json(bundle_index["json"], bundle_index_json_path)
+    _write_csv_output(bundle_index["table"], bundle_index_csv_path)
+
+    release_artifacts_with_bundle = release_artifacts | {
+        "release_bundle_index": bundle_index["table"],
+        "release_bundle_index_json": bundle_index["json"],
+    }
+    schema_inventory = build_childcare_release_schema_inventory(release_artifacts_with_bundle)
+    contract_inventory = build_childcare_release_contract(release_artifacts_with_bundle)
+    manifest = build_childcare_release_manifest(
+        release_artifacts_with_bundle
+        | {
+            "release_schema_artifact_summary": schema_inventory["artifact_summary"],
+            "release_schema_column_schema": schema_inventory["column_schema"],
+            "release_artifact_contracts": contract_inventory["artifact_contracts"],
+            "release_column_dictionary": contract_inventory["column_dictionary"],
+        }
+    )
+    write_json({"rows": manifest.to_dict(orient="records")}, manifest_json_path)
+    write_json(schema_inventory["json"], schema_inventory_json_path)
+    write_json(contract_inventory["json"], contract_json_path)
+    _write_csv_output(manifest, manifest_csv_path)
+    _write_csv_output(schema_inventory["artifact_summary"], schema_artifact_csv_path)
+    _write_csv_output(schema_inventory["column_schema"], schema_columns_csv_path)
+    _write_csv_output(contract_inventory["artifact_contracts"], contract_artifacts_csv_path)
+    _write_csv_output(contract_inventory["column_dictionary"], contract_columns_csv_path)
+
+    for path in (
+        headline_summary_json_path,
+        methods_summary_json_path,
+        methods_markdown_path,
+        rebuild_markdown_path,
+        manifest_json_path,
+        source_readiness_json_path,
+        manual_requirements_json_path,
+        manual_requirements_markdown_path,
+        schema_inventory_json_path,
+        contract_json_path,
+        frontend_handoff_summary_json_path,
+        bundle_index_json_path,
+        headline_summary_csv_path,
+        support_quality_csv_path,
+        ccdf_support_mix_csv_path,
+        policy_coverage_csv_path,
+        ccdf_proxy_gap_summary_csv_path,
+        ccdf_proxy_gap_state_years_csv_path,
+        segmented_comparison_csv_path,
+        licensing_iv_results_csv_path,
+        licensing_iv_usability_csv_path,
+        first_stage_csv_path,
+        treatment_timing_csv_path,
+        leave_one_state_out_csv_path,
+        manifest_csv_path,
+        source_readiness_csv_path,
+        manual_requirements_csv_path,
+        schema_artifact_csv_path,
+        schema_columns_csv_path,
+        contract_artifacts_csv_path,
+        contract_columns_csv_path,
+    ):
+        write_provenance_sidecar(path, **provenance_kwargs)
+    bundle_index = build_childcare_release_bundle_index(
+        published_artifacts=published_artifacts,
+        current_mode="sample" if sample else "real",
+    )
+    write_json(bundle_index["json"], bundle_index_json_path)
+    _write_csv_output(bundle_index["table"], bundle_index_csv_path)
+    write_provenance_sidecar(bundle_index_json_path, **provenance_kwargs)
+    write_provenance_sidecar(bundle_index_csv_path, **provenance_kwargs)
+    LOGGER.info(
+        "built childcare backend release outputs: support=%s policy=%s proxy_summary=%s proxy_rows=%s segmented=%s manifest=%s",
+        len(support_tables["support_quality_summary"]),
+        len(support_tables["policy_coverage_summary"]),
+        len(proxy_gap_tables["proxy_gap_summary"]),
+        len(proxy_gap_tables["proxy_gap_state_years"]),
+        len(segmented_comparison),
+        len(manifest),
     )
 
 
@@ -968,8 +3283,12 @@ def fit_supply_iv(
         shocks_path = paths.interim / "licensing" / "licensing_supply_shocks.parquet"
     county = read_parquet(county_path)
     if not shocks_path.exists():
-        ingest_result = licensing.ingest(paths, sample=sample, refresh=refresh)
-        shocks_path = ingest_result.normalized_path
+        try:
+            ingest_result = licensing.ingest(paths, sample=sample, refresh=refresh)
+        except SourceAccessError:
+            ingest_result = None
+        if ingest_result is not None:
+            shocks_path = ingest_result.normalized_path
     expected_name = "licensing.parquet" if sample else "licensing_supply_shocks.parquet"
     if not shocks_path.exists() or shocks_path.name != expected_name:
         write_json(
@@ -1114,11 +3433,59 @@ def build_parser() -> argparse.ArgumentParser:
     pull_parser = subparsers.add_parser("pull-core")
     add_ingest_args(pull_parser)
 
+    ccdf_parser = subparsers.add_parser("pull-ccdf")
+    add_ingest_args(ccdf_parser)
+
+    ccdf_state_year_parser = subparsers.add_parser("build-ccdf-state-year")
+    add_ingest_args(ccdf_state_year_parser)
+    ccdf_state_year_parser.add_argument("--config", default="ccdf_state_year")
+
     licensing_parser = subparsers.add_parser("pull-licensing")
     add_ingest_args(licensing_parser)
 
+    licensing_harmonization_parser = subparsers.add_parser("build-licensing-harmonization")
+    add_ingest_args(licensing_harmonization_parser)
+    licensing_harmonization_parser.add_argument("--config", default="licensing_iv")
+
+    licensing_iv_parser = subparsers.add_parser("build-licensing-iv")
+    add_ingest_args(licensing_iv_parser)
+    licensing_iv_parser.add_argument("--config", default="licensing_iv")
+
     childcare_parser = subparsers.add_parser("build-childcare")
     add_ingest_args(childcare_parser)
+
+    segmented_parser = subparsers.add_parser("build-childcare-segments")
+    add_ingest_args(segmented_parser)
+    segmented_parser.add_argument("--config", default="segmented_solver")
+
+    utilization_parser = subparsers.add_parser("build-childcare-utilization")
+    add_ingest_args(utilization_parser)
+    utilization_parser.add_argument("--config", default="utilization_stack")
+    utilization_parser.add_argument("--segmented-config", default="segmented_solver")
+
+    solver_inputs_parser = subparsers.add_parser("build-childcare-solver-inputs")
+    add_ingest_args(solver_inputs_parser)
+    solver_inputs_parser.add_argument("--config", default="solver_inputs")
+
+    report_tables_parser = subparsers.add_parser("build-childcare-report-tables")
+    add_ingest_args(report_tables_parser)
+    report_tables_parser.add_argument("--config", default="report_tables")
+
+    segmented_report_parser = subparsers.add_parser("build-childcare-segmented-report")
+    add_ingest_args(segmented_report_parser)
+    segmented_report_parser.add_argument("--config", default="segmented_reports")
+
+    segmented_publication_parser = subparsers.add_parser("report-childcare-segmented")
+    add_ingest_args(segmented_publication_parser)
+    segmented_publication_parser.add_argument("--config", default="segmented_publication")
+
+    segmented_scenarios_parser = subparsers.add_parser("simulate-childcare-segmented")
+    add_ingest_args(segmented_scenarios_parser)
+    segmented_scenarios_parser.add_argument("--config", default="segmented_scenarios")
+
+    release_backend_parser = subparsers.add_parser("build-childcare-release-backend")
+    add_ingest_args(release_backend_parser)
+    release_backend_parser.add_argument("--config", default="release_backend")
 
     home_parser = subparsers.add_parser("build-home")
     add_ingest_args(home_parser)
@@ -1144,6 +3511,23 @@ def main(argv: list[str] | None = None) -> None:
                 dry_run=args.dry_run,
                 year=args.year,
             )
+        elif args.command == "pull-ccdf":
+            ccdf.ingest(
+                paths,
+                sample=sample,
+                refresh=args.refresh,
+                dry_run=args.dry_run,
+                year=args.year,
+            )
+        elif args.command == "build-ccdf-state-year":
+            build_ccdf_state_year(
+                paths,
+                sample=sample,
+                refresh=args.refresh,
+                dry_run=args.dry_run,
+                year=args.year,
+                config_name_or_path=args.config,
+            )
         elif args.command == "pull-licensing":
             licensing.ingest(
                 paths,
@@ -1152,6 +3536,24 @@ def main(argv: list[str] | None = None) -> None:
                 dry_run=args.dry_run,
                 year=args.year,
             )
+        elif args.command == "build-licensing-harmonization":
+            build_licensing_harmonization(
+                paths,
+                sample=sample,
+                refresh=args.refresh,
+                dry_run=args.dry_run,
+                year=args.year,
+                config_name_or_path=args.config,
+            )
+        elif args.command == "build-licensing-iv":
+            build_licensing_iv(
+                paths,
+                sample=sample,
+                refresh=args.refresh,
+                dry_run=args.dry_run,
+                year=args.year,
+                config_name_or_path=args.config,
+            )
         elif args.command == "build-childcare":
             build_childcare(
                 paths,
@@ -1159,6 +3561,79 @@ def main(argv: list[str] | None = None) -> None:
                 refresh=args.refresh,
                 dry_run=args.dry_run,
                 year=args.year,
+            )
+        elif args.command == "build-childcare-segments":
+            build_childcare_segments(
+                paths,
+                sample=sample,
+                refresh=args.refresh,
+                dry_run=args.dry_run,
+                year=args.year,
+                config_name_or_path=args.config,
+            )
+        elif args.command == "build-childcare-utilization":
+            build_childcare_utilization(
+                paths,
+                sample=sample,
+                refresh=args.refresh,
+                dry_run=args.dry_run,
+                year=args.year,
+                config_name_or_path=args.config,
+                segmented_config_name_or_path=args.segmented_config,
+            )
+        elif args.command == "build-childcare-solver-inputs":
+            build_childcare_solver_inputs(
+                paths,
+                sample=sample,
+                refresh=args.refresh,
+                dry_run=args.dry_run,
+                year=args.year,
+                config_name_or_path=args.config,
+            )
+        elif args.command == "build-childcare-report-tables":
+            build_childcare_report_tables(
+                paths,
+                sample=sample,
+                refresh=args.refresh,
+                dry_run=args.dry_run,
+                year=args.year,
+                config_name_or_path=args.config,
+            )
+        elif args.command == "build-childcare-segmented-report":
+            build_childcare_segmented_report(
+                paths,
+                sample=sample,
+                refresh=args.refresh,
+                dry_run=args.dry_run,
+                year=args.year,
+                config_name_or_path=args.config,
+            )
+        elif args.command == "report-childcare-segmented":
+            report_childcare_segmented(
+                paths,
+                sample=sample,
+                refresh=args.refresh,
+                dry_run=args.dry_run,
+                year=args.year,
+                config_name_or_path=args.config,
+            )
+        elif args.command == "simulate-childcare-segmented":
+            build_childcare_segmented_scenarios(
+                paths,
+                sample=sample,
+                refresh=args.refresh,
+                dry_run=args.dry_run,
+                year=args.year,
+                config_name_or_path=args.config,
+            )
+        elif args.command == "build-childcare-release-backend":
+            build_childcare_release_backend(
+                paths,
+                sample=sample,
+                refresh=args.refresh,
+                dry_run=args.dry_run,
+                year=args.year,
+                config_name_or_path=args.config,
             )
         elif args.command == "fit-childcare":
             fit_childcare(paths)

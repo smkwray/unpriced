@@ -253,6 +253,15 @@ def ingest_remote_csv(
     return _result(spec, raw_path, normalized_path, False)
 
 
+def require_manual_source_path(raw_path: Path, landing_page: str, source_name: str) -> Path:
+    if raw_path.exists():
+        return raw_path
+    raise SourceAccessError(
+        f"missing manual source input for {source_name}: expected local path at {raw_path}; "
+        f"download it from {landing_page} and place it there before running the real ingest"
+    )
+
+
 def ingest_placeholder(paths: ProjectPaths, spec: SourceSpec) -> IngestResult:
     raw_path = paths.raw / spec.name / f"{spec.name}_placeholder.txt"
     raw_path.parent.mkdir(parents=True, exist_ok=True)

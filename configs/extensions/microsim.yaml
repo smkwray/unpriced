@@ -1,0 +1,53 @@
+name: microsim
+sector: childcare
+mode: household_microsimulation
+description: Add reduced-form household-level response simulation after segment and utilization layers are in place.
+
+geography:
+  causal_core: state_year
+  simulation_layer: county_year
+
+year_window:
+  start: 2008
+  end: 2024
+  sensitivity_year: 2020
+
+sources:
+  required:
+    - name: sipp
+      path: data/interim/sipp/sipp.parquet
+    - name: segmentation_inputs
+      path: data/interim/childcare/segmented_solver
+      namespace: true
+    - name: atus_panel
+      path: data/interim/atus/atus_state_year_panel.parquet
+  optional:
+    - name: utilization_inputs
+      path: data/interim/childcare/utilization_stack
+      namespace: true
+    - name: licensing_inputs
+      path: data/interim/childcare/licensing_iv
+      namespace: true
+
+model_options:
+  segment_mapping:
+    strategy: household_child_age_weighting
+    fallback_channel: private
+  scenario_types:
+    - delta_alpha
+    - program_replacement
+    - subsidy_targeting
+  outputs:
+    preserve_weights: true
+    stratification:
+      - income_group
+      - child_count
+      - household_type
+
+output_namespace:
+  namespace: data/processed/childcare/microsim
+  files:
+    household_base: microsim_household_base.parquet
+    scenario_results: microsim_scenario_results.parquet
+    distributional_tables: microsim_distributional_tables.csv
+    diagnostics: microsim_diagnostics.parquet

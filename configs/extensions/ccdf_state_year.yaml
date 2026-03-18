@@ -1,0 +1,28 @@
+name: ccdf_state_year
+sector: childcare
+mode: state_year_mapping
+description: Map normalized CCDF admin and policy long-form tables into additive state-year features.
+
+geography:
+  canonical_core: state_year
+  support_level: state_year
+
+sources:
+  required:
+    - name: ccdf_admin_long
+      path: data/interim/ccdf/ccdf_admin_long.parquet
+    - name: ccdf_policy_long
+      path: data/interim/ccdf/ccdf_policy_long.parquet
+
+output_namespace:
+  namespace: data/interim/ccdf
+  files:
+    admin_state_year: ccdf_admin_state_year.parquet
+    policy_features_state_year: ccdf_policy_features_state_year.parquet
+    policy_controls_state_year: ccdf_policy_controls_state_year.parquet
+    policy_controls_coverage: ccdf_policy_controls_coverage.parquet
+    policy_promoted_controls_state_year: ccdf_policy_promoted_controls_state_year.parquet
+    policy_feature_audit: ccdf_policy_feature_audit.parquet
+
+policy_controls_promotion:
+  min_state_year_coverage: 0.75
