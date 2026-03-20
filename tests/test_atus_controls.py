@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import pandas as pd
 
-from unpaidwork.clean.atus import build_state_year_panel
-from unpaidwork.ingest.acs import ingest as ingest_acs
-from unpaidwork.ingest.atus import ingest as ingest_atus
-from unpaidwork.ingest.cdc_wonder import ingest as ingest_cdc_wonder
-from unpaidwork.ingest.laus import ingest as ingest_laus
-from unpaidwork.storage import read_parquet, write_parquet
+from unpriced.clean.atus import build_state_year_panel
+from unpriced.ingest.acs import ingest as ingest_acs
+from unpriced.ingest.atus import ingest as ingest_atus
+from unpriced.ingest.cdc_wonder import ingest as ingest_cdc_wonder
+from unpriced.ingest.laus import ingest as ingest_laus
+from unpriced.storage import read_parquet, write_parquet
 
 
 def test_state_year_panel_prefers_observed_acs_and_laus_controls(project_paths):

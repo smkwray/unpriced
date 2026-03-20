@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from unpaidwork.config import load_extension_config, resolve_extension_config_path
+from unpriced.config import load_extension_config, resolve_extension_config_path
 
 
 def test_resolve_extension_config_path_uses_extensions_directory(project_paths) -> None:

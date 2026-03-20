@@ -6,31 +6,31 @@ import zipfile
 
 import pandas as pd
 
-from unpaidwork.ingest import common as ingest_common
-from unpaidwork.ingest.acs import ingest as ingest_acs
-from unpaidwork.ingest.ahs import _parse_ahs_archive, ingest as ingest_ahs
-from unpaidwork.ingest import atus as atus_ingest
-from unpaidwork.ingest.atus import (
+from unpriced.ingest import common as ingest_common
+from unpriced.ingest.acs import ingest as ingest_acs
+from unpriced.ingest.ahs import _parse_ahs_archive, ingest as ingest_ahs
+from unpriced.ingest import atus as atus_ingest
+from unpriced.ingest.atus import (
     _parse_atus_activity_zip,
     _parse_atus_respondent_weights_zip,
     ingest as ingest_atus,
 )
-from unpaidwork.ingest import ce as ce_ingest
-from unpaidwork.ingest.ce import _parse_ce_zip, ingest as ingest_ce
-from unpaidwork.ingest import head_start as head_start_ingest
-from unpaidwork.ingest.head_start import _normalize_head_start_frame, ingest as ingest_head_start
-from unpaidwork.ingest import nces_ccd as nces_ccd_ingest
-from unpaidwork.ingest.nces_ccd import _normalize_ccd_zip, ingest as ingest_nces_ccd
-from unpaidwork.ingest import nes as nes_ingest
-from unpaidwork.ingest.nes import _normalize_nes_rows, ingest as ingest_nes
-from unpaidwork.ingest import ndcp as ndcp_ingest
-from unpaidwork.ingest.ndcp import _parse_ndcp_workbook, ingest as ingest_ndcp
-from unpaidwork.ingest import oews as oews_ingest
-from unpaidwork.ingest.oews import _normalize_oews_zip, ingest as ingest_oews
-from unpaidwork.ingest.qcew import ingest as ingest_qcew
-from unpaidwork.ingest import sipp as sipp_ingest
-from unpaidwork.ingest.sipp import _parse_sipp_zip, ingest as ingest_sipp
-from unpaidwork.storage import read_parquet
+from unpriced.ingest import ce as ce_ingest
+from unpriced.ingest.ce import _parse_ce_zip, ingest as ingest_ce
+from unpriced.ingest import head_start as head_start_ingest
+from unpriced.ingest.head_start import _normalize_head_start_frame, ingest as ingest_head_start
+from unpriced.ingest import nces_ccd as nces_ccd_ingest
+from unpriced.ingest.nces_ccd import _normalize_ccd_zip, ingest as ingest_nces_ccd
+from unpriced.ingest import nes as nes_ingest
+from unpriced.ingest.nes import _normalize_nes_rows, ingest as ingest_nes
+from unpriced.ingest import ndcp as ndcp_ingest
+from unpriced.ingest.ndcp import _parse_ndcp_workbook, ingest as ingest_ndcp
+from unpriced.ingest import oews as oews_ingest
+from unpriced.ingest.oews import _normalize_oews_zip, ingest as ingest_oews
+from unpriced.ingest.qcew import ingest as ingest_qcew
+from unpriced.ingest import sipp as sipp_ingest
+from unpriced.ingest.sipp import _parse_sipp_zip, ingest as ingest_sipp
+from unpriced.storage import read_parquet
 
 
 def _excel_col(index: int) -> str:
@@ -763,7 +763,7 @@ def test_acs_sample_ingest_preserves_multiple_years(project_paths):
 
 def test_acs_merge_existing_years_preserves_old_years(project_paths):
     """When ingesting a new year, existing years must be kept."""
-    from unpaidwork.ingest.acs import _merge_existing_years
+    from unpriced.ingest.acs import _merge_existing_years
     import numpy as np
 
     normalized_path = project_paths.interim / "acs" / "acs.parquet"
@@ -779,7 +779,7 @@ def test_acs_merge_existing_years_preserves_old_years(project_paths):
         "parent_employment_rate": [0.76],
         "under6_population": [np.nan],
     })
-    from unpaidwork.storage import write_parquet as wp
+    from unpriced.storage import write_parquet as wp
     wp(old, normalized_path)
 
     # Merge a new year
@@ -801,7 +801,7 @@ def test_acs_merge_existing_years_preserves_old_years(project_paths):
 
 def test_acs_merge_existing_years_replaces_overlapping_year(project_paths):
     """When re-ingesting an existing year, the new data must replace the old."""
-    from unpaidwork.ingest.acs import _merge_existing_years
+    from unpriced.ingest.acs import _merge_existing_years
     import numpy as np
 
     normalized_path = project_paths.interim / "acs" / "acs.parquet"
@@ -816,7 +816,7 @@ def test_acs_merge_existing_years_replaces_overlapping_year(project_paths):
         "parent_employment_rate": [0.76],
         "under6_population": [np.nan],
     })
-    from unpaidwork.storage import write_parquet as wp
+    from unpriced.storage import write_parquet as wp
     wp(old, normalized_path)
 
     # Re-ingest 2019 with updated data
@@ -837,8 +837,8 @@ def test_acs_merge_existing_years_replaces_overlapping_year(project_paths):
 
 
 def test_qcew_merge_existing_years_preserves_old_years(project_paths):
-    from unpaidwork.ingest.qcew import _merge_existing_years
-    from unpaidwork.storage import write_parquet as wp
+    from unpriced.ingest.qcew import _merge_existing_years
+    from unpriced.storage import write_parquet as wp
 
     normalized_path = project_paths.interim / "qcew" / "qcew.parquet"
     old = pd.DataFrame({
@@ -867,8 +867,8 @@ def test_qcew_merge_existing_years_preserves_old_years(project_paths):
 
 
 def test_laus_merge_existing_years_preserves_old_years(project_paths):
-    from unpaidwork.ingest.laus import _merge_existing_years
-    from unpaidwork.storage import write_parquet as wp
+    from unpriced.ingest.laus import _merge_existing_years
+    from unpriced.storage import write_parquet as wp
 
     normalized_path = project_paths.interim / "laus" / "laus.parquet"
     old = pd.DataFrame({
@@ -899,14 +899,14 @@ def test_laus_merge_existing_years_preserves_old_years(project_paths):
 
 
 def test_qcew_sample_ingest_preserves_multiple_years(project_paths):
-    from unpaidwork.ingest.qcew import ingest as ingest_qcew_fn
+    from unpriced.ingest.qcew import ingest as ingest_qcew_fn
     result = ingest_qcew_fn(project_paths, sample=True)
     frame = read_parquet(result.normalized_path)
     assert len(frame["year"].unique()) == 3
 
 
 def test_laus_sample_ingest_preserves_multiple_years(project_paths):
-    from unpaidwork.ingest.laus import ingest as ingest_laus_fn
+    from unpriced.ingest.laus import ingest as ingest_laus_fn
     result = ingest_laus_fn(project_paths, sample=True)
     frame = read_parquet(result.normalized_path)
     # Sample LAUS has 1 year (2021)

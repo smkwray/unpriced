@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pandas as pd
 
-from unpaidwork.errors import SourceAccessError
-from unpaidwork.ingest import cdc_wonder
-from unpaidwork.ingest.cdc_wonder import _parse_wonder_tsv, ingest
-from unpaidwork.storage import read_parquet, write_parquet
+from unpriced.errors import SourceAccessError
+from unpriced.ingest import cdc_wonder
+from unpriced.ingest.cdc_wonder import _parse_wonder_tsv, ingest
+from unpriced.storage import read_parquet, write_parquet
 
 
 def _build_wonder_tsv() -> str:

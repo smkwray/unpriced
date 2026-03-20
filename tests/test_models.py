@@ -3,16 +3,16 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from unpaidwork.features.childcare_panel import build_childcare_panels
-from unpaidwork.features import home_maintenance_panel as home_panel
-from unpaidwork.features.home_maintenance_panel import build_home_maintenance_panel
-from unpaidwork.ingest.acs import ingest as ingest_acs
-from unpaidwork.ingest.ahs import ingest as ingest_ahs
-from unpaidwork.ingest.atus import ingest as ingest_atus
-from unpaidwork.ingest.laus import ingest as ingest_laus
-from unpaidwork.ingest.ndcp import ingest as ingest_ndcp
-from unpaidwork.ingest.qcew import ingest as ingest_qcew
-from unpaidwork.models.demand_iv import (
+from unpriced.features.childcare_panel import build_childcare_panels
+from unpriced.features import home_maintenance_panel as home_panel
+from unpriced.features.home_maintenance_panel import build_home_maintenance_panel
+from unpriced.ingest.acs import ingest as ingest_acs
+from unpriced.ingest.ahs import ingest as ingest_ahs
+from unpriced.ingest.atus import ingest as ingest_atus
+from unpriced.ingest.laus import ingest as ingest_laus
+from unpriced.ingest.ndcp import ingest as ingest_ndcp
+from unpriced.ingest.qcew import ingest as ingest_qcew
+from unpriced.models.demand_iv import (
     CANONICAL_COMPARISON_SPECIFICATION_PROFILE,
     CANONICAL_OBSERVED_SPECIFICATION_PROFILE,
     build_childcare_demand_sample_comparison,
@@ -25,8 +25,8 @@ from unpaidwork.models.demand_iv import (
     normalize_specification_profile,
     select_headline_sample,
 )
-from unpaidwork.models.price_surface import fit_price_surface
-from unpaidwork.models.scenario_solver import (
+from unpriced.models.price_surface import fit_price_surface
+from unpriced.models.scenario_solver import (
     bootstrap_childcare_intervals,
     prepare_childcare_scenario_inputs,
     resolve_solver_demand_elasticity,
@@ -34,12 +34,12 @@ from unpaidwork.models.scenario_solver import (
     solve_alpha_grid_piecewise_supply,
     summarize_childcare_scenario_diagnostics,
 )
-from unpaidwork.models.supply_curve import (
+from unpriced.models.supply_curve import (
     calibrate_supply_elasticity,
     summarize_piecewise_supply_curve,
     summarize_supply_elasticity,
 )
-from unpaidwork.models.switching import fit_home_switching
+from unpriced.models.switching import fit_home_switching
 
 
 def test_price_surface_and_demand_iv(project_paths):

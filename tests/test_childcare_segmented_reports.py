@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from unpaidwork.childcare.segmented_reports import (
+from unpriced.childcare.segmented_reports import (
     build_childcare_segmented_reports,
     build_segmented_channel_response_summary,
     build_segmented_headline_summary,

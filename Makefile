@@ -6,7 +6,7 @@ else
 PYTHON ?= $(PROJECT_VENV_ROOT)/bin/python
 PIP ?= $(PROJECT_VENV_ROOT)/bin/pip
 endif
-PROJECT_SLUG ?= unpaidwork
+PROJECT_SLUG ?= unpriced
 export PYTHONDONTWRITEBYTECODE = 1
 export PYTHONPYCACHEPREFIX = /tmp/$(PROJECT_SLUG)-pycache
 export UV_CACHE_DIR = /tmp/uv-cache-$(PROJECT_SLUG)
@@ -16,28 +16,28 @@ export RUFF_CACHE_DIR = /tmp/ruff-cache-$(PROJECT_SLUG)
 
 bootstrap:
 	$(PIP) install -e '.[dev]'
-	$(PYTHON) -m unpaidwork.cli bootstrap
+	$(PYTHON) -m unpriced.cli bootstrap
 
 pull-core:
-	$(PYTHON) -m unpaidwork.cli pull-core --sample
+	$(PYTHON) -m unpriced.cli pull-core --sample
 
 build-childcare:
-	$(PYTHON) -m unpaidwork.cli build-childcare
+	$(PYTHON) -m unpriced.cli build-childcare
 
 fit-childcare:
-	$(PYTHON) -m unpaidwork.cli fit-childcare
+	$(PYTHON) -m unpriced.cli fit-childcare
 
 simulate-childcare:
-	$(PYTHON) -m unpaidwork.cli simulate-childcare
+	$(PYTHON) -m unpriced.cli simulate-childcare
 
 build-home:
-	$(PYTHON) -m unpaidwork.cli build-home
+	$(PYTHON) -m unpriced.cli build-home
 
 fit-home:
-	$(PYTHON) -m unpaidwork.cli fit-home
+	$(PYTHON) -m unpriced.cli fit-home
 
 report:
-	$(PYTHON) -m unpaidwork.cli report
+	$(PYTHON) -m unpriced.cli report
 
 test:
 	$(PYTHON) -B -m pytest -q -p no:cacheprovider

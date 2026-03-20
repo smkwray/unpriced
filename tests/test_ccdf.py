@@ -3,9 +3,9 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from unpaidwork.errors import SourceAccessError
-from unpaidwork.ingest.ccdf import ingest as ingest_ccdf
-from unpaidwork.storage import read_parquet
+from unpriced.errors import SourceAccessError
+from unpriced.ingest.ccdf import ingest as ingest_ccdf
+from unpriced.storage import read_parquet
 
 
 MANIFEST_REQUIRED_COLUMNS = {

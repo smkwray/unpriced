@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import pandas as pd
 
-from unpaidwork import cli
-from unpaidwork.models.supply_iv import build_supply_iv_panel, fit_supply_iv_exposure_design
-from unpaidwork.storage import read_json, read_parquet, write_parquet
+from unpriced import cli
+from unpriced.models.supply_iv import build_supply_iv_panel, fit_supply_iv_exposure_design
+from unpriced.storage import read_json, read_parquet, write_parquet
 
 
 def _county_panel() -> pd.DataFrame:

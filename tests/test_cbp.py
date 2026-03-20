@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from unpaidwork.features.childcare_panel import build_childcare_panels
-from unpaidwork.ingest.acs import ingest as ingest_acs
-from unpaidwork.ingest.atus import ingest as ingest_atus
-from unpaidwork.ingest.cbp import _normalize_cbp_rows, ingest as ingest_cbp
-from unpaidwork.ingest.head_start import ingest as ingest_head_start
-from unpaidwork.ingest.nces_ccd import ingest as ingest_nces_ccd
-from unpaidwork.ingest.ndcp import ingest as ingest_ndcp
-from unpaidwork.ingest.nes import ingest as ingest_nes
-from unpaidwork.ingest.oews import ingest as ingest_oews
-from unpaidwork.ingest.qcew import ingest as ingest_qcew
-from unpaidwork.storage import read_parquet
+from unpriced.features.childcare_panel import build_childcare_panels
+from unpriced.ingest.acs import ingest as ingest_acs
+from unpriced.ingest.atus import ingest as ingest_atus
+from unpriced.ingest.cbp import _normalize_cbp_rows, ingest as ingest_cbp
+from unpriced.ingest.head_start import ingest as ingest_head_start
+from unpriced.ingest.nces_ccd import ingest as ingest_nces_ccd
+from unpriced.ingest.ndcp import ingest as ingest_ndcp
+from unpriced.ingest.nes import ingest as ingest_nes
+from unpriced.ingest.oews import ingest as ingest_oews
+from unpriced.ingest.qcew import ingest as ingest_qcew
+from unpriced.storage import read_parquet
 
 
 def test_normalize_cbp_rows_builds_county_panel():

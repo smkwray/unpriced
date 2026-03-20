@@ -3,7 +3,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from unpaidwork.childcare.ccdf import (
+from unpriced.childcare.ccdf import (
     build_ccdf_admin_state_year,
     build_ccdf_policy_feature_audit,
     build_ccdf_policy_controls_coverage,
@@ -11,7 +11,7 @@ from unpaidwork.childcare.ccdf import (
     build_ccdf_policy_controls_state_year,
     build_ccdf_policy_features_state_year,
 )
-from unpaidwork.sample_data import ccdf_admin_long, ccdf_policy_long
+from unpriced.sample_data import ccdf_admin_long, ccdf_policy_long
 
 
 def _admin_long_frame(

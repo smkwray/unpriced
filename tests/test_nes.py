@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from unpaidwork.ingest import nes as nes_ingest
-from unpaidwork.ingest.nes import _fetch_nes_rows, _naics_field
+from unpriced.ingest import nes as nes_ingest
+from unpriced.ingest.nes import _fetch_nes_rows, _naics_field
 
 
 def test_naics_field_switches_by_year():

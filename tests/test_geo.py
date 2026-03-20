@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from unpaidwork.geo.crosswalks import ensure_fips, harmonize_cbsa, state_from_county
+from unpriced.geo.crosswalks import ensure_fips, harmonize_cbsa, state_from_county
 
 
 def test_geo_helpers():

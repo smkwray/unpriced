@@ -3,9 +3,9 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from unpaidwork.errors import SourceAccessError
-from unpaidwork.ingest.licensing import ingest as ingest_licensing
-from unpaidwork.storage import read_parquet
+from unpriced.errors import SourceAccessError
+from unpriced.ingest.licensing import ingest as ingest_licensing
+from unpriced.storage import read_parquet
 
 
 def test_licensing_sample_ingest_writes_expected_columns(project_paths):

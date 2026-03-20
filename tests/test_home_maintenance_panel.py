@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import pandas as pd
 
-from unpaidwork.features import home_maintenance_panel as home_panel
-from unpaidwork.features.home_maintenance_panel import (
+from unpriced.features import home_maintenance_panel as home_panel
+from unpriced.features.home_maintenance_panel import (
     AHS_NONGEOGRAPHIC_CBSA,
     build_home_maintenance_panel,
 )
-from unpaidwork.ingest.ahs import ingest as ingest_ahs
-from unpaidwork.ingest.laus import ingest as ingest_laus
-from unpaidwork.ingest.noaa import ingest as ingest_noaa
+from unpriced.ingest.ahs import ingest as ingest_ahs
+from unpriced.ingest.laus import ingest as ingest_laus
+from unpriced.ingest.noaa import ingest as ingest_noaa
 
 
 def _mock_crosswalk(paths):
@@ -85,7 +85,7 @@ def test_noaa_merge_fills_nongeographic_cbsa_with_national_avg(project_paths, mo
              "storm_exposure": 0.0},
         ]
     )
-    from unpaidwork.storage import write_parquet
+    from unpriced.storage import write_parquet
     write_parquet(ahs_rows, project_paths.interim / "ahs" / "ahs.parquet")
 
     monkeypatch.setattr(home_panel, "load_cbsa_county_crosswalk", _mock_crosswalk)

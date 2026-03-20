@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-from unpaidwork.features.childcare_panel import build_childcare_panels
-from unpaidwork.ingest.acs import ingest as ingest_acs
-from unpaidwork.ingest.atus import ingest as ingest_atus
-from unpaidwork.ingest.head_start import ingest as ingest_head_start
-from unpaidwork.ingest.laus import _normalize_laus_payload, ingest as ingest_laus
-from unpaidwork.ingest.nces_ccd import ingest as ingest_nces_ccd
-from unpaidwork.ingest.ndcp import ingest as ingest_ndcp
-from unpaidwork.ingest.oews import ingest as ingest_oews
-from unpaidwork.ingest.qcew import ingest as ingest_qcew
-from unpaidwork.storage import read_parquet
+from unpriced.features.childcare_panel import build_childcare_panels
+from unpriced.ingest.acs import ingest as ingest_acs
+from unpriced.ingest.atus import ingest as ingest_atus
+from unpriced.ingest.head_start import ingest as ingest_head_start
+from unpriced.ingest.laus import _normalize_laus_payload, ingest as ingest_laus
+from unpriced.ingest.nces_ccd import ingest as ingest_nces_ccd
+from unpriced.ingest.ndcp import ingest as ingest_ndcp
+from unpriced.ingest.oews import ingest as ingest_oews
+from unpriced.ingest.qcew import ingest as ingest_qcew
+from unpriced.storage import read_parquet
 
 
 def test_normalize_laus_payload_builds_county_and_state_rows():

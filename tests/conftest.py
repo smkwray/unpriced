@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from unpaidwork.config import ProjectPaths, ensure_project_dirs
+from unpriced.config import ProjectPaths, ensure_project_dirs
 
 
 @pytest.fixture

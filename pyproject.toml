@@ -3,7 +3,7 @@ requires = ["hatchling>=1.27.0"]
 build-backend = "hatchling.build"
 
 [project]
-name = "unpaidwork"
+name = "unpriced"
 version = "0.1.0"
 description = "Sectoral marketization engine for unpaid work"
 readme = "README.md"
@@ -24,10 +24,10 @@ dev = [
 ]
 
 [project.scripts]
-unpaidwork = "unpaidwork.cli:main"
+unpriced = "unpriced.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/unpaidwork"]
+packages = ["src/unpriced"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

@@ -3,8 +3,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from unpaidwork import cli
-from unpaidwork.childcare.segmentation import (
+from unpriced import cli
+from unpriced.childcare.segmentation import (
     aggregate_segment_panel_to_pooled,
     build_ndcp_segment_price_panel,
     build_pooled_ndcp_price_benchmark,
@@ -12,8 +12,8 @@ from unpaidwork.childcare.segmentation import (
     build_segment_to_pooled_mapping,
     load_segment_config,
 )
-from unpaidwork.ingest.provenance import sidecar_path
-from unpaidwork.storage import read_parquet, write_parquet
+from unpriced.ingest.provenance import sidecar_path
+from unpriced.storage import read_parquet, write_parquet
 
 
 def _sample_ndcp_frame() -> pd.DataFrame:

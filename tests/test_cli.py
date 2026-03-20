@@ -8,12 +8,12 @@ import types
 import pandas as pd
 import pytest
 
-from unpaidwork.assumptions import childcare_model_assumptions
-from unpaidwork import cli
-from unpaidwork.childcare import ccdf as childcare_ccdf
-from unpaidwork.errors import UnpaidWorkError
-from unpaidwork.ingest.ndcp import ingest as ingest_ndcp
-from unpaidwork.storage import read_json, read_parquet, write_json, write_parquet
+from unpriced.assumptions import childcare_model_assumptions
+from unpriced import cli
+from unpriced.childcare import ccdf as childcare_ccdf
+from unpriced.errors import UnpaidWorkError
+from unpriced.ingest.ndcp import ingest as ingest_ndcp
+from unpriced.storage import read_json, read_parquet, write_json, write_parquet
 
 
 def _write_licensing_iv_config(config_dir: Path) -> None:
@@ -121,7 +121,7 @@ def test_real_pull_dry_run_is_ok_from_cli():
         [
             sys.executable,
             "-m",
-            "unpaidwork.cli",
+            "unpriced.cli",
             "pull-core",
             "--real",
             "--dry-run",
@@ -141,7 +141,7 @@ def test_real_pull_ccdf_dry_run_is_ok_from_cli():
         [
             sys.executable,
             "-m",
-            "unpaidwork.cli",
+            "unpriced.cli",
             "pull-ccdf",
             "--real",
             "--dry-run",
@@ -2671,7 +2671,7 @@ def _write_childcare_additive_extension_configs(project_paths) -> None:
 
 
 def _install_fake_childcare_solver_inputs_module(monkeypatch):
-    module = types.ModuleType("unpaidwork.childcare.solver_inputs")
+    module = types.ModuleType("unpriced.childcare.solver_inputs")
     observed: dict[str, object] = {}
 
     def build_childcare_solver_inputs(**kwargs):
@@ -2813,12 +2813,12 @@ def _install_fake_childcare_solver_inputs_module(monkeypatch):
         }
 
     module.build_childcare_solver_inputs = build_childcare_solver_inputs
-    monkeypatch.setitem(sys.modules, "unpaidwork.childcare.solver_inputs", module)
+    monkeypatch.setitem(sys.modules, "unpriced.childcare.solver_inputs", module)
     return observed
 
 
 def _install_fake_childcare_report_tables_module(monkeypatch):
-    module = types.ModuleType("unpaidwork.childcare.report_tables")
+    module = types.ModuleType("unpriced.childcare.report_tables")
     observed: dict[str, object] = {}
 
     def build_childcare_report_tables(**kwargs):
@@ -2927,12 +2927,12 @@ def _install_fake_childcare_report_tables_module(monkeypatch):
         }
 
     module.build_childcare_report_tables = build_childcare_report_tables
-    monkeypatch.setitem(sys.modules, "unpaidwork.childcare.report_tables", module)
+    monkeypatch.setitem(sys.modules, "unpriced.childcare.report_tables", module)
     return observed
 
 
 def _install_fake_childcare_segmented_scenarios_module(monkeypatch):
-    module = types.ModuleType("unpaidwork.childcare.segmented_scenarios")
+    module = types.ModuleType("unpriced.childcare.segmented_scenarios")
     observed: dict[str, object] = {}
 
     def build_childcare_segmented_scenarios(**kwargs):
@@ -3017,7 +3017,7 @@ def _install_fake_childcare_segmented_scenarios_module(monkeypatch):
         }
 
     module.build_childcare_segmented_scenarios = build_childcare_segmented_scenarios
-    monkeypatch.setitem(sys.modules, "unpaidwork.childcare.segmented_scenarios", module)
+    monkeypatch.setitem(sys.modules, "unpriced.childcare.segmented_scenarios", module)
     return observed
 
 

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from unpaidwork.childcare.release_backend import (
+from unpriced.childcare.release_backend import (
     build_childcare_release_backend_outputs,
     build_childcare_release_ccdf_proxy_gap_tables,
     build_childcare_release_headline_summary,
@@ -204,8 +204,8 @@ def _release_bundle_index() -> pd.DataFrame:
                 "outputs/tables/childcare_backend_release_bundle_index.csv.provenance.json",
             ],
             "producer_command": [
-                "python -m unpaidwork.cli build-childcare-release-backend --real --refresh",
-                "python -m unpaidwork.cli build-childcare-release-backend --real --refresh",
+                "python -m unpriced.cli build-childcare-release-backend --real --refresh",
+                "python -m unpriced.cli build-childcare-release-backend --real --refresh",
             ],
             "checksum": ["abc123", "def456"],
             "release_tier": ["release", "release"],

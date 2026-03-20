@@ -3,16 +3,16 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from unpaidwork.features.childcare_panel import build_childcare_panels, diagnose_childcare_pipeline
-from unpaidwork.features.demand import aggregate_counties_to_state
-from unpaidwork.ingest.acs import ingest as ingest_acs
-from unpaidwork.ingest.atus import ingest as ingest_atus
-from unpaidwork.ingest.head_start import ingest as ingest_head_start
-from unpaidwork.ingest.nces_ccd import ingest as ingest_nces_ccd
-from unpaidwork.ingest.ndcp import ingest as ingest_ndcp
-from unpaidwork.ingest.oews import ingest as ingest_oews
-from unpaidwork.ingest.qcew import ingest as ingest_qcew
-from unpaidwork.storage import read_parquet, write_parquet
+from unpriced.features.childcare_panel import build_childcare_panels, diagnose_childcare_pipeline
+from unpriced.features.demand import aggregate_counties_to_state
+from unpriced.ingest.acs import ingest as ingest_acs
+from unpriced.ingest.atus import ingest as ingest_atus
+from unpriced.ingest.head_start import ingest as ingest_head_start
+from unpriced.ingest.nces_ccd import ingest as ingest_nces_ccd
+from unpriced.ingest.ndcp import ingest as ingest_ndcp
+from unpriced.ingest.oews import ingest as ingest_oews
+from unpriced.ingest.qcew import ingest as ingest_qcew
+from unpriced.storage import read_parquet, write_parquet
 
 
 def test_build_childcare_panels(project_paths):
@@ -146,7 +146,7 @@ def test_diagnose_childcare_pipeline_produces_artifact(project_paths):
     artifact_path = project_paths.outputs_reports / "childcare_pipeline_diagnostics.json"
     assert artifact_path.exists()
 
-    from unpaidwork.storage import read_json
+    from unpriced.storage import read_json
     loaded = read_json(artifact_path)
     assert loaded["state_year_rows"] == diag["state_year_rows"]
 

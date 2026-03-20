@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import pandas as pd
 
-from unpaidwork.ingest.noaa import (
+from unpriced.ingest.noaa import (
     _parse_damage,
     normalize_storm_events,
     ingest as ingest_noaa,
 )
-from unpaidwork.storage import read_parquet
+from unpriced.storage import read_parquet
 
 EXPECTED_COLUMNS = {
     "county_fips",

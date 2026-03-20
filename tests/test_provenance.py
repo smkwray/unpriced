@@ -3,7 +3,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from unpaidwork.ingest.provenance import (
+from unpriced.ingest.provenance import (
     read_provenance_sidecar,
     resolve_git_commit_hash,
     sidecar_path,

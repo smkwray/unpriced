@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from unpaidwork.childcare.segmented_publication import (
+from unpriced.childcare.segmented_publication import (
     build_segmented_publication_admin_sheet_targets,
     build_childcare_segmented_publication_outputs,
     build_segmented_publication_parser_action_plan,
