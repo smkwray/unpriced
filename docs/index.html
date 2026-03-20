@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
-  <meta name="description" content="Reproducible estimates of what unpaid childcare would cost at market prices. National satellite-account benchmark and counterfactual marketization price.">
-  <title>Unpriced &mdash; Valuing Unpaid Childcare</title>
+  <meta name="description" content="Reproducible estimates of what unpaid household work would cost at market prices. National satellite-account benchmark and counterfactual marketization price for childcare, with a home-maintenance preview.">
+  <title>Unpriced &mdash; Valuing Unpaid Household Work</title>
   <script src="js/theme.js"></script>
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
@@ -21,6 +21,7 @@
         <li><a href="#model">Model</a></li>
         <li><a href="#data">Data</a></li>
         <li><a href="#evidence">Evidence</a></li>
+        <li><a href="#home-maintenance">Home</a></li>
         <li><a href="#limitations">Limitations</a></li>
       </ul></nav>
       <div class="header-controls">
@@ -34,8 +35,8 @@
   <section class="hero">
     <div class="hero-inner">
       <h1>Unpriced</h1>
-      <p class="hero-subtitle">What would unpaid childcare cost at market prices?</p>
-      <p class="hero-desc">Reproducible estimates pairing a national satellite-account benchmark with a counterfactual marketization price&mdash;what the childcare sector would clear at if unpaid care entered the paid market at scale.</p>
+      <p class="hero-subtitle">What would unpaid household work cost at market prices?</p>
+      <p class="hero-desc">Reproducible estimates pairing a national satellite-account benchmark with a counterfactual marketization price&mdash;what the childcare sector would clear at if unpaid care entered the paid market at scale. The flagship module is childcare; a home-maintenance preview demonstrates the framework&rsquo;s generality.</p>
       <div class="stats-row">
         <div class="stat-chip"><div class="stat-value">$41.38B</div><div class="stat-label">Preferred benchmark</div></div>
         <div class="stat-chip"><div class="stat-value">$8,737</div><div class="stat-label">Market price (&alpha;=0.50)</div></div>
@@ -316,8 +317,17 @@
             <li>Licensing IV outputs are diagnostics-only in their current form.</li>
             <li>Segmented outputs are additive-only and should not be presented as the canonical marketization result.</li>
           </ul>
-          <p>The full pipeline is rebuildable from source data with no manual steps. Zero manual actions required.</p>
+          <p>The core pipeline is rebuildable from source data with no manual steps. Three optional inputs enrich the release bundle but require manual download: CCDF policy workbooks from ACF and ICPSR Child Care Licensing Study archives. The machine-readable <code>manual_requirements</code> output documents exactly which files are needed.</p>
         </div></div>
+      </div>
+    </section>
+
+    <!-- ══════════════════ HOME MAINTENANCE ══════════════════ -->
+    <section class="section" id="home-maintenance">
+      <div class="section-header"><h2>Home Maintenance</h2><span class="section-tag">Preview</span></div>
+      <p>A secondary module estimates the cost of outsourcing unpaid home-maintenance labor using AHS housing survey data, NOAA weather-exposure controls, and the same ATUS time-use framework. The pipeline builds a CBSA-wave panel of outsourced home-maintenance prices and fits a DIY-vs-outsourced switching model.</p>
+      <div class="insight-box">
+        <p>This module is functional but not yet featured in the headline outputs. It demonstrates the framework&rsquo;s generality beyond childcare.</p>
       </div>
     </section>
 
@@ -384,7 +394,7 @@
 
   <footer class="site-footer">
     <div class="footer-inner">
-      <span>Unpriced &middot; MIT License &middot; Built entirely from free public data</span>
+      <span>Unpriced &middot; MIT License &middot; Built entirely from free public data &middot; Demonstration-grade</span>
       <a href="https://github.com/smkwray/unpriced">GitHub</a>
     </div>
   </footer>
