@@ -183,7 +183,7 @@ def test_summarize_childcare_scenario_diagnostics():
     summary = summarize_childcare_scenario_diagnostics(
         scenarios,
         skipped_state_rows=3,
-        demand_summary={"first_stage_r2": 1.0},
+        demand_summary={"first_stage_r2": 1.0, "instrument": "outside_option_wage"},
     )
 
     assert summary["scenario_rows"] == 2
@@ -196,6 +196,7 @@ def test_summarize_childcare_scenario_diagnostics():
     assert summary["scenario_price_nowcast_rows"] == 1
     assert summary["scenario_contains_nowcast_rows"] is True
     assert summary["scenario_price_nowcast_years"] == [2023]
+    assert summary["demand_instrument"] == "outside_option_wage"
     assert summary["baseline_price_p50"] == 110.0
     assert summary["baseline_direct_care_price_p50"] == 52.5
     assert summary["alpha_50_price_p50"] == 97.0
@@ -213,6 +214,7 @@ def test_demand_iv_baseline_includes_core_diagnostics(project_paths):
     assert summary["n_obs"] > 0
     assert summary["n_states"] > 0
     assert summary["n_years"] > 0
+    assert summary["instrument"] == "outside_option_wage"
     assert summary["specification_profile"] == "full_controls"
     assert "first_stage_r2" in summary
     assert "elasticity_at_mean" in summary

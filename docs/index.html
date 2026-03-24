@@ -225,7 +225,7 @@
 
       <!-- Specification Comparison -->
       <h3>Specification Comparison</h3>
-      <p>The demand elasticity is the most consequential parameter in the model. It determines how much price rises when outsourced care enters the market. To test robustness, four different instrumental-variable specifications are estimated, each using state birth rates as the demand instrument but varying which demographic controls are included.</p>
+      <p>The demand elasticity is the most consequential parameter in the model. It determines how much price rises when outsourced care enters the market. The four checked-in specification profiles all use the same current instrument, <code>outside_option_wage</code>, while varying which demographic controls are included. A separate births-based IV sensitivity was tested and quarantined because it produced a positive elasticity and weak first-stage fit in the observed-core sample.</p>
       <div class="table-wrap">
         <table class="data-table">
           <thead><tr><th>Specification</th><th class="num">Elasticity</th><th class="num">LOO State R&sup2;</th><th class="num">LOO Year R&sup2;</th><th>Status</th></tr></thead>
@@ -253,7 +253,7 @@
         <strong>LOO R&sup2;</strong> (leave-one-out R-squared) measures out-of-sample prediction: each state or year is held out, the model is re-estimated on the rest, and R&sup2; is computed on the held-out data. Negative values mean the model predicts worse than a simple mean&mdash;confirming this is demonstration-grade, not a high-powered empirical design.
       </p>
       <div class="warning-box">
-        <p><strong>Quarantined specifications</strong> produce positive demand elasticities&mdash;economically inadmissible (demand should fall when price rises). The <code>instrument_only</code> specification omits all controls, leaving the birth-rate IV to absorb confounders it cannot handle alone. The <code>full_controls</code> specification adds median income, which likely absorbs the price signal rather than controlling for it. Both are retained for diagnostic comparison but excluded from headline results. The canonical <code>household_parsimonious</code> uses parent employment rate and single-parent share&mdash;variables that shift demand for childcare without directly affecting its price.</p>
+        <p><strong>Quarantined specifications</strong> produce positive demand elasticities&mdash;economically inadmissible (demand should fall when price rises). In the current checked-in model, the <code>instrument_only</code> specification omits all controls and leaves the wage-based IV to absorb confounders it cannot handle alone. The <code>full_controls</code> specification adds median income, which likely absorbs the price signal rather than controlling for it. Both are retained for diagnostic comparison but excluded from headline results. The canonical <code>household_parsimonious</code> uses parent employment rate and single-parent share. A births-based IV sensitivity was also tested and quarantined because it yielded a positive elasticity (<code>+0.150</code>) with weak first-stage fit (<code>R² = 0.148</code>).</p>
       </div>
     </section>
 
@@ -342,7 +342,7 @@
         </div>
         <div class="limitation-item">
           <strong>Causal identification is weak.</strong>
-          <p>The demand elasticity is estimated with birth-rate instruments that have plausible exclusion-restriction stories but limited statistical power in a 21-state panel. The negative leave-one-out diagnostics confirm the model does not generalize well out of sample. This is the primary limitation.</p>
+          <p>The current canonical demand elasticity uses <code>outside_option_wage</code> as the instrument, and the demand side remains statistically weak. A births-based IV sensitivity was tested but is not used because it becomes economically inadmissible in the observed-core sample. The negative leave-one-out diagnostics confirm the model does not generalize well out of sample. This is the primary limitation.</p>
         </div>
         <div class="limitation-item">
           <strong>Geography mismatch.</strong>

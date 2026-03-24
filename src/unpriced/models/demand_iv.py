@@ -283,12 +283,14 @@ def estimate_childcare_demand_summary(
 
     if len(dataset) == 0:
         summary = _empty_summary(normalized)
+        summary["instrument"] = instrument
         summary["specification_profile"] = normalized_spec
         summary["exog_features"] = exog_features
         return summary, dataset
 
     summary, predicted_price, fitted_hours = _run_2sls(dataset, instrument, exog_features=exog_features)
     dataset["predicted_state_price"] = predicted_price
+    summary["instrument"] = instrument
     summary["mode"] = normalized
     summary["specification_profile"] = normalized_spec
     summary["exog_features"] = exog_features

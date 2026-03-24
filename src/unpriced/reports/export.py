@@ -94,6 +94,7 @@ def build_markdown_report(
         f"- headline childcare sample: {selected_sample}",
         f"- demand estimation mode: {demand_iv.get('mode', 'broad_complete')}",
         f"- demand retained rows: {demand_iv.get('n_obs', '?')} ({demand_iv.get('n_states', '?')} states, {demand_iv.get('year_min', '?')}-{demand_iv.get('year_max', '?')})",
+        f"- demand instrument: {demand_iv.get('instrument', 'outside_option_wage')}",
         f"- demand specification profile: {demand_iv.get('specification_profile', 'full_controls')}",
         f"- demand price coefficient: {demand_iv['price_coefficient']:.4f}",
         f"- demand elasticity at mean: {demand_iv['elasticity_at_mean']:.4f}",

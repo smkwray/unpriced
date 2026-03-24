@@ -219,7 +219,7 @@ The observed market price (**P₀**) is where current paid supply meets current 
 - **Baseline price P₀** — the state-year median of county-level annual childcare prices from the National Database of Childcare Prices (NDCP), covering center-based and family-based care.
 - **Baseline quantity Q₀** — a state-year market-quantity proxy, currently constructed from under-5 population scaled by a configured weekly-hours assumption. This is not a direct estimate of paid-care enrollment or utilization.
 - **Unpaid quantity** — hours of unpaid childcare per state-year from the American Time Use Survey (ATUS), converted to full-time-equivalent childcare slots.
-- **Demand elasticity (-0.021)** — estimated via two-stage least squares at the state-year level. The instrument is the state birth rate (lagged), which shifts the number of children needing care without directly affecting price. The specification controls for parent employment rate and single-parent share. The signed elasticity is negative: higher prices reduce quantity demanded.
+- **Demand elasticity (-0.021)** — estimated via two-stage least squares at the state-year level using `outside_option_wage` as the current canonical instrument, with parent employment rate and single-parent share as controls. A births-based IV sensitivity was tested on the same observed-core sample, but it produced a positive elasticity (`+0.150`), weak first-stage fit (`R² = 0.148`), and much worse leave-one-state-out performance, so it is quarantined rather than used in the headline pipeline. The canonical signed elasticity remains negative: higher prices reduce quantity demanded.
 - **Supply elasticity (4.078)** — the employment-weighted median of county-level log-log slopes of provider density on annual price within each state-year cell. This is a reduced-form price-quantity gradient, not a structural supply function. A multi-state licensing-shock IV demo is documented below but is not used in the canonical estimates.
 
 ### Solver mechanics and supply curve extensions
@@ -310,7 +310,7 @@ All inputs are free public data. The pipeline joins six sources into county-year
 
 ![Pipeline Provenance](outputs/figures/childcare_pipeline_provenance.svg)
 
-The pipeline assembles county-year and state-year panels from six public sources. Green bars show observed-data coverage; beige shows synthetic fallbacks. **State births** (66%) come from CDC WONDER natality data used as the demand instrument. **State controls** (55%) are ACS demographic variables at the state level. **County ACS** (96%) provides household demographics. **County wages** and **county jobs** (~65% each) come from QCEW; the remaining ~35% are imputed from price-derived fallbacks for counties without QCEW childcare-sector data.
+The pipeline assembles county-year and state-year panels from six public sources. Green bars show observed-data coverage; beige shows synthetic fallbacks. **State births** (66%) come from CDC WONDER natality data and are retained as demographic / diagnostic inputs, including a quarantined demand-IV sensitivity. **State controls** (55%) are ACS demographic variables at the state level. **County ACS** (96%) provides household demographics. **County wages** and **county jobs** (~65% each) come from QCEW; the remaining ~35% are imputed from price-derived fallbacks for counties without QCEW childcare-sector data.
 
 | Source | Provides | Geography | Years |
 |--------|----------|-----------|-------|
@@ -318,7 +318,7 @@ The pipeline assembles county-year and state-year panels from six public sources
 | ATUS | Unpaid childcare hours | State-year | 2003-2024 |
 | ACS | Demographics, household structure | County and state | 2009-2023 |
 | QCEW | Childcare wages and employment | County and state | 2014-2024 |
-| CDC WONDER | Birth counts (demand instrument) | State-year | varies |
+| CDC WONDER | Birth counts (state-year demographics; quarantined demand-IV sensitivity) | State-year | varies |
 | ACF/CCDF | Subsidy admin data, licensing rules | State-year | 2017-2020 |
 | State licensing agencies | Licensing shock panel (supply IV demo) | County (VA, MT, LA, SC) | 2017-2022 |
 | SIPP, CE | Validation benchmarks | National | 2020-2024 |
@@ -347,7 +347,7 @@ Each point is the median marketization price across canonical scenario rows at a
 
 ![Scenario Specification Comparison](outputs/figures/childcare_scenario_specification_comparison.svg)
 
-Four demand specifications are compared. The left panel shows holdout R² (leave-one-out by state in blue, by year in amber). The right panel shows the median alpha-interval width — how much the marketization price varies across the alpha range. The canonical **household parsimonious** specification uses parent employment rate and single-parent share as controls. **Labor parsimonious** adds unemployment. **Instrument only** (no controls beyond the birth-rate IV) and **full controls** (adding median income) are quarantined because they produce positive demand elasticities — economically inadmissible.
+Four demand specifications are compared. The left panel shows holdout R² (leave-one-out by state in blue, by year in amber). The right panel shows the median alpha-interval width — how much the marketization price varies across the alpha range. All four checked-in specifications use the same current instrument, `outside_option_wage`, while varying the control set. The canonical **household parsimonious** specification uses parent employment rate and single-parent share as controls. **Labor parsimonious** adds unemployment. **Instrument only** (no controls beyond the wage IV) and **full controls** (adding median income) are quarantined because they produce positive demand elasticities — economically inadmissible. A separate births-based IV sensitivity was tested and also quarantined because it produced a positive elasticity (`+0.150`) with weak first-stage fit.
 
 | Specification | Elasticity | LOO state R² | LOO year R² | Status |
 |--------------|-----------|----------------|---------------|--------|
@@ -374,7 +374,7 @@ This section is the most important part of the documentation.
 
 **The satellite account is still partial-equilibrium.** Even the preferred direct-care benchmark is an accounting construct, not a GE valuation. It says what unpaid childcare would be worth at a current marginal replacement price, not what would happen if all unpaid childcare actually moved into the paid market. That is precisely the gap the marketization metric is designed to address, but the marketization estimate itself is demonstration-grade.
 
-**Causal identification is weak.** The demand elasticity is estimated with birth-rate instruments that have plausible exclusion-restriction stories but limited statistical power in a 21-state panel. The negative leave-one-out diagnostics confirm the model does not generalize well out of sample. The canonical supply elasticity has no instrument — a multi-state licensing-shock demo exists but does not feed into the canonical estimates. This is the primary limitation.
+**Causal identification is weak.** The current canonical demand elasticity uses an outside-option-wage IV rather than a strong quasi-experimental design, and the out-of-sample diagnostics remain weak. A births-based IV sensitivity was tested but is not used because it becomes economically inadmissible in the current observed-core sample. The negative leave-one-out diagnostics confirm the demand side does not generalize well out of sample. The canonical supply elasticity has no instrument — a multi-state licensing-shock demo exists but does not feed into the canonical estimates. This is the primary limitation.
 
 **Geography mismatch.** Prices are observed at the county level (NDCP), but the causal core is estimated at the state level (ATUS). County-to-state aggregation loses real variation.
 
