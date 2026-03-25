@@ -3441,6 +3441,59 @@ def test_simulate_childcare_real_rejects_sample_built_demand_summary(project_pat
         cli.simulate_childcare(project_paths, sample=False)
 
 
+def test_simulate_childcare_real_persists_failing_diagnostics_before_gate(project_paths, monkeypatch):
+    _write_childcare_simulation_inputs(project_paths)
+
+    state_path = project_paths.processed / "childcare_state_year_panel.parquet"
+    county_path = project_paths.processed / "childcare_county_year_price_panel.parquet"
+    comparison_path = project_paths.outputs_reports / "childcare_demand_sample_comparison.json"
+    broad_path = project_paths.outputs_reports / "childcare_demand_iv_broad_complete_household_parsimonious.json"
+    observed_path = project_paths.outputs_reports / "childcare_demand_iv_observed_core_household_parsimonious.json"
+    low_impute_path = project_paths.outputs_reports / "childcare_demand_iv_observed_core_low_impute_household_parsimonious.json"
+    instrument_only_path = project_paths.outputs_reports / "childcare_demand_iv_observed_core_instrument_only.json"
+
+    for path in (state_path, county_path, comparison_path, broad_path, observed_path, low_impute_path, instrument_only_path):
+        _write_mode_provenance(project_paths, path, sample_mode=False)
+
+    def _fake_simulate_sample(paths, state, county, alphas, demand_summary, sample_name, sample, selection_reason="comparison_only", specification_profile=None):
+        scenarios = pd.DataFrame(
+            [
+                {
+                    "demand_sample_name": sample_name,
+                    "alpha": 0.5,
+                    "p_baseline": 100.0,
+                    "p_alpha": 110.0,
+                }
+            ]
+        )
+        diagnostics = {
+            "current_mode": "real",
+            "demand_sample_name": sample_name,
+            "demand_specification_profile": specification_profile or "household_parsimonious",
+            "demand_instrument": "outside_option_wage",
+            "scenario_rows": 1,
+            "scenario_states": 1,
+            "skipped_state_rows": 0,
+            "bootstrap_acceptance_rate": 0.78 if sample_name == "observed_core" else 0.95,
+            "bootstrap_draws_requested": 100,
+            "bootstrap_draws_accepted": 78 if sample_name == "observed_core" else 95,
+            "bootstrap_draws_rejected": 22 if sample_name == "observed_core" else 5,
+        }
+        return scenarios, diagnostics
+
+    monkeypatch.setattr(cli, "_simulate_childcare_sample", _fake_simulate_sample)
+    monkeypatch.setattr(cli, "_selected_sample_specification_profiles", lambda paths, selected_sample: [])
+
+    with pytest.raises(UnpaidWorkError, match="below the headline threshold"):
+        cli.simulate_childcare(project_paths, sample=False)
+
+    diagnostics = read_json(project_paths.outputs_reports / "childcare_scenario_diagnostics.json")
+    assert diagnostics["current_mode"] == "real"
+    assert diagnostics["demand_sample_name"] == "observed_core"
+    assert diagnostics["bootstrap_acceptance_rate"] == pytest.approx(0.78)
+    assert diagnostics["headline_gate_passed"] is False
+
+
 def test_report_real_rejects_sample_built_scenarios(project_paths):
     scenarios_path = project_paths.processed / "childcare_marketization_scenarios.parquet"
     state_path = project_paths.processed / "childcare_state_year_panel.parquet"

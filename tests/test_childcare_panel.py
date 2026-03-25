@@ -54,6 +54,7 @@ def test_build_childcare_panels(project_paths):
         "observed_archival_exclusion_reason",
         "observed_archival_low_impute_exclusion_reason",
         "observed_core_exclusion_reason",
+        "observed_core_low_impute_exclusion_reason",
     } <= set(state.columns)
     assert len(state) >= 3
     assert county["direct_care_price_index"].le(county["annual_price"]).all()
@@ -140,6 +141,7 @@ def test_diagnose_childcare_pipeline_produces_artifact(project_paths):
     assert "atus_sensitivity_year_rows" in diag
     assert "eligible_observed_core" in diag
     assert "observed_core_exclusion_counts" in diag
+    assert "observed_core_low_impute_exclusion_counts" in diag
     assert "state_qcew_labor_observed_share_mean" in diag
     assert "state_price_observation_status_counts" in diag
     assert "state_price_post_support_nowcast_rows" in diag

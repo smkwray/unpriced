@@ -90,6 +90,32 @@ def _fetch_laus_series(series_ids: list[str], year: int) -> dict[str, object]:
     return payload
 
 
+def _fetch_laus_series_range(series_ids: list[str], start_year: int, end_year: int) -> dict[str, object]:
+    try:
+        response = requests.post(
+            BLS_TIMESERIES_URL,
+            json={
+                "seriesid": series_ids,
+                "startyear": str(start_year),
+                "endyear": str(end_year),
+                "annualaverage": True,
+            },
+            timeout=180,
+        )
+    except requests.RequestException as exc:
+        raise SourceAccessError(
+            f"failed to fetch LAUS API for years {start_year}-{end_year}: {exc}"
+        ) from exc
+    if response.status_code >= 400:
+        raise SourceAccessError(
+            f"LAUS API request failed for years {start_year}-{end_year} (HTTP {response.status_code})"
+        )
+    payload = response.json()
+    if payload.get("status") != "REQUEST_SUCCEEDED":
+        raise SourceAccessError(f"LAUS API request did not succeed for years {start_year}-{end_year}")
+    return payload
+
+
 def _download_laus_text(url: str) -> str:
     try:
         response = requests.get(url, headers=BROWSER_HEADERS, timeout=240)
@@ -101,40 +127,58 @@ def _download_laus_text(url: str) -> str:
 
 
 def _normalize_laus_payload(payload: dict[str, object], year: int) -> pd.DataFrame:
+    return _normalize_laus_payload_years(payload, {int(year)}, default_year=int(year))
+
+
+def _normalize_laus_payload_years(
+    payload: dict[str, object],
+    years: set[int] | None = None,
+    default_year: int | None = None,
+) -> pd.DataFrame:
     series = payload.get("Results", {}).get("series", [])
     rows: list[dict[str, object]] = []
     for item in series:
         series_id = str(item.get("seriesID", ""))
-        annual = next((point for point in item.get("data", []) if point.get("period") == "M13"), None)
-        if not series_id or not annual:
+        if not series_id:
             continue
         measure = series_id[-2:]
-        value = pd.to_numeric(annual.get("value"), errors="coerce")
-        if measure == "03":
-            value = value / 100.0
         area_code = series_id[3:-2]
-        row: dict[str, object]
+        geography: str | None = None
+        state_fips: str | None = None
+        county_fips: str | object = pd.NA
         if area_code.startswith("CN"):
+            geography = "county"
             state_fips = area_code[2:4]
             county_fips = state_fips + area_code[4:7]
-            row = {
-                "geography": "county",
+        elif area_code.startswith("ST"):
+            geography = "state"
+            state_fips = area_code[2:4]
+        if geography is None or state_fips is None:
+            continue
+
+        for annual in item.get("data", []):
+            if annual.get("period") != "M13":
+                continue
+            annual_year = pd.to_numeric(annual.get("year"), errors="coerce")
+            if pd.isna(annual_year):
+                if default_year is None:
+                    continue
+                annual_year = int(default_year)
+            else:
+                annual_year = int(annual_year)
+            if years is not None and annual_year not in years:
+                continue
+            value = pd.to_numeric(annual.get("value"), errors="coerce")
+            if measure == "03":
+                value = value / 100.0
+            row: dict[str, object] = {
+                "geography": geography,
                 "state_fips": state_fips,
                 "county_fips": county_fips,
-                "year": int(year),
+                "year": annual_year,
             }
-        elif area_code.startswith("ST"):
-            state_fips = area_code[2:4]
-            row = {
-                "geography": "state",
-                "state_fips": state_fips,
-                "county_fips": pd.NA,
-                "year": int(year),
-            }
-        else:
-            continue
-        row[MEASURE_MAP[measure]] = value
-        rows.append(row)
+            row[MEASURE_MAP[measure]] = value
+            rows.append(row)
 
     frame = pd.DataFrame(rows)
     if frame.empty:
@@ -298,9 +342,27 @@ def ingest_year_range(
     # Use a representative year for geography (latest available ACS year)
     county_fips, state_fips = _collect_laus_geographies(paths, need[-1])
     LOGGER.info("fetching LAUS flat files for %s years (%s-%s)", len(need), need[0], need[-1])
-    county_text = _download_laus_text(COUNTY_DATA_URL)
-    state_text = _download_laus_text(STATE_DATA_URL)
-    frame = _normalize_laus_downloads_multiyear(county_text, state_text, county_fips, state_fips, need)
+    try:
+        county_text = _download_laus_text(COUNTY_DATA_URL)
+        state_text = _download_laus_text(STATE_DATA_URL)
+        frame = _normalize_laus_downloads_multiyear(county_text, state_text, county_fips, state_fips, need)
+    except SourceAccessError as exc:
+        LOGGER.warning(
+            "LAUS flat-file range ingest failed (%s); falling back to BLS API chunking for %s-%s",
+            exc,
+            need[0],
+            need[-1],
+        )
+        series_ids = []
+        for county in county_fips:
+            series_ids.extend(_county_series_id(county, measure) for measure in MEASURE_MAP)
+        for state in state_fips:
+            series_ids.extend(_state_series_id(state, measure) for measure in MEASURE_MAP)
+        frames = []
+        for chunk in _chunked(series_ids, 50):
+            payload = _fetch_laus_series_range(chunk, need[0], need[-1])
+            frames.append(_normalize_laus_payload_years(payload, set(need)))
+        frame = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
     if frame.empty:
         return IngestResult(SPEC.name, normalized_path, normalized_path, False, skipped=True, detail="no data in flat files")

@@ -306,6 +306,7 @@ def _annotate_state_sample_ladder(
     result["observed_core_exclusion_reason"] = active_core_reason
     result["eligible_observed_core"] = active_core_reason.eq("eligible")
     result["eligible_observed_core_low_impute"] = result["eligible_observed_core"].copy()
+    result["observed_core_low_impute_exclusion_reason"] = active_core_reason.copy()
     if "state_ndcp_imputed_share" in result.columns:
         observed_core_low_impute = result["eligible_observed_core"] & (
             pd.to_numeric(result["state_ndcp_imputed_share"], errors="coerce").le(low_impute_threshold)
@@ -313,6 +314,11 @@ def _annotate_state_sample_ladder(
         result.loc[:, "eligible_observed_core_low_impute"] = (
             observed_core_low_impute.fillna(False).astype(bool)
         )
+        result.loc[
+            result["eligible_observed_core"].fillna(False).astype(bool)
+            & ~result["eligible_observed_core_low_impute"].fillna(False).astype(bool),
+            "observed_core_low_impute_exclusion_reason",
+        ] = "imputation_share_above_threshold"
     return result
 
 
@@ -727,6 +733,7 @@ def diagnose_childcare_pipeline(
             diag[column] = int(state[column].fillna(False).astype(bool).sum())
     for reason_col in (
         "observed_core_exclusion_reason",
+        "observed_core_low_impute_exclusion_reason",
         "observed_archival_exclusion_reason",
         "observed_archival_low_impute_exclusion_reason",
     ):

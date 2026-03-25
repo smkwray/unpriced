@@ -3732,14 +3732,26 @@ def simulate_childcare(paths, sample: bool = True) -> None:
             selected_diagnostics["skipped_state_rows"],
             selected_sample,
         )
-    if not sample and float(selected_diagnostics.get("bootstrap_acceptance_rate", 0.0)) < 0.80:
+    acceptance_rate = float(selected_diagnostics.get("bootstrap_acceptance_rate", 0.0))
+    headline_gate_passed = sample or acceptance_rate >= 0.80
+    selected_diagnostics["headline_gate_passed"] = headline_gate_passed
+    write_json(selected_diagnostics, paths.outputs_reports / "childcare_scenario_diagnostics.json")
+    write_json(
+        scenario_sample_comparison,
+        paths.outputs_reports / "childcare_scenario_sample_comparison.json",
+    )
+    if specification_frames or scenario_specification_comparison.get("profiles"):
+        write_json(
+            scenario_specification_comparison,
+            paths.outputs_reports / "childcare_scenario_specification_comparison.json",
+        )
+    if not headline_gate_passed:
         raise UnpaidWorkError(
             f"childcare bootstrap acceptance rate is below the headline threshold for {selected_sample}: "
-            f"{float(selected_diagnostics.get('bootstrap_acceptance_rate', 0.0)):.1%}. "
+            f"{acceptance_rate:.1%}. "
             "Revisit the demand/solver diagnostics before publishing results."
         )
     write_parquet(selected_scenarios, paths.processed / "childcare_marketization_scenarios.parquet")
-    write_json(selected_diagnostics, paths.outputs_reports / "childcare_scenario_diagnostics.json")
     summarize_scenarios(selected_scenarios).to_csv(
         paths.outputs_tables / "childcare_marketization_scenarios.csv", index=False
     )
@@ -3775,10 +3787,6 @@ def simulate_childcare(paths, sample: bool = True) -> None:
         write_json(piecewise_demo_summary, paths.outputs_reports / "childcare_piecewise_supply_demo.json")
         write_parquet(piecewise_demo, paths.processed / "childcare_piecewise_supply_demo.parquet")
     _run_price_decomposition_sensitivity(selected_scenarios, paths)
-    write_json(
-        scenario_sample_comparison,
-        paths.outputs_reports / "childcare_scenario_sample_comparison.json",
-    )
     if specification_frames:
         specification_frame = pd.concat(specification_frames, ignore_index=True)
         write_parquet(
@@ -3787,10 +3795,6 @@ def simulate_childcare(paths, sample: bool = True) -> None:
         )
         summarize_scenarios(specification_frame).to_csv(
             paths.outputs_tables / "childcare_marketization_scenarios_specifications.csv", index=False
-        )
-        write_json(
-            scenario_specification_comparison,
-            paths.outputs_reports / "childcare_scenario_specification_comparison.json",
         )
     output_artifacts = [
         paths.processed / "childcare_marketization_scenarios.parquet",

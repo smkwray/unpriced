@@ -10,7 +10,7 @@ Replacement cost is useful for saying what unpaid care is worth if purchased one
 
 The canonical childcare headline in this repo remains a short-run fixed-supply-shape benchmark: marketization shifts demand, so positive alpha raises price by construction. An additive dual-shift sensitivity layer is now available for pooled childcare as a parallel medium-run estimand. In that layer, marketization can also shift supply outward through entry and formalization or inward through cost pressure, so the sign of the price effect is no longer fixed.
 
-Both products are demonstration-grade: honest about their limitations, transparent about their assumptions, and fully reproducible from public data.
+Both products are demonstration-grade: honest about their limitations, transparent about their assumptions, and fully reproducible from public data. The public-facing demo is intended to show the current outputs alongside their caveats, not to hide them until they clear a publication-grade evidence bar.
 
 ---
 
@@ -112,6 +112,8 @@ Canonical sample: `observed_core`, `household_parsimonious`, **21 states**, **20
 | LOO year R² | -0.000 | held-out fit |
 
 This is a **demonstration-grade sectoral counterfactual**, not a full-economy GE model. The small alpha-price response is driven mainly by the fitted elasticities: demand is very steep and supply is fairly elastic, so outsourcing shifts move mostly through quantity rather than price.
+
+The site and README intentionally keep this result visible even when stricter internal publication gates are not fully satisfied. In the latest real-mode audit on March 25, 2026, the selected `observed_core` scenario run remained economically admissible but cleared only `78 / 100` bootstrap draws. That is a reason to add caveats and sensitivity comparisons, not a reason to pretend the current demo result does not exist.
 
 <details>
 <summary><strong>What is alpha?</strong></summary>

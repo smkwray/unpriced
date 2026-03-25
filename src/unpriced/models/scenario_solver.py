@@ -1019,7 +1019,7 @@ def summarize_childcare_scenario_diagnostics(
     )
     boundary_rows = int(solver_status.isin(["root_at_low", "root_at_high"]).sum()) if not solver_status.empty else 0
     nonconverged_rows = (
-        int(~solver_status.isin(["converged", "root_at_low", "root_at_high"]).sum())
+        int((~solver_status.isin(["converged", "root_at_low", "root_at_high"])).sum())
         if not solver_status.empty
         else 0
     )

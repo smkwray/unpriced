@@ -9,6 +9,7 @@ from unpriced.models.scenario_solver import (
     dual_shift_zero_price_frontier,
     solve_price,
     solve_price_dual_shift,
+    summarize_childcare_scenario_diagnostics,
 )
 from unpriced.models.supply_curve import summarize_supply_elasticity
 
@@ -242,3 +243,41 @@ def test_dual_shift_zero_price_frontier_matches_formula():
     )
 
     assert abs(frontier - (2.5 / 10.0 + 0.8 * 0.1)) < 1e-12
+
+
+def test_summarize_childcare_scenario_diagnostics_counts_nonconverged_rows_correctly():
+    scenarios = pd.DataFrame(
+        {
+            "state_fips": ["01", "01", "02"],
+            "year": [2020, 2020, 2021],
+            "alpha": [0.0, 0.5, 0.5],
+            "p_baseline": [100.0, 100.0, 120.0],
+            "p_baseline_direct_care": [70.0, 70.0, 85.0],
+            "p_baseline_non_direct_care": [30.0, 30.0, 35.0],
+            "p_alpha": [100.0, 110.0, 130.0],
+            "p_alpha_direct_care": [70.0, 78.0, 92.0],
+            "p_alpha_non_direct_care": [30.0, 32.0, 38.0],
+            "p_shadow_marginal": [100.0, 100.1, 120.2],
+            "p_shadow_marginal_lower": [99.9, 100.0, 120.0],
+            "p_shadow_marginal_upper": [100.1, 100.2, 120.4],
+            "p_alpha_lower": [99.8, 109.0, 129.0],
+            "p_alpha_upper": [100.2, 111.0, 131.0],
+            "wage_baseline_implied": [10.0, 10.0, 11.0],
+            "wage_alpha_implied": [10.0, 10.8, 12.0],
+            "direct_care_labor_share": [0.7, 0.71, 0.72],
+            "direct_care_price_clip_binding": [False, False, True],
+            "unpaid_quantity_proxy": [0.0, 1.0, 2.0],
+            "solver_status": ["converged", "root_at_low", "failed_to_bracket"],
+            "solver_iterations": [12, 3, 0],
+            "solver_expansion_steps": [0, 0, 5],
+        }
+    )
+    diagnostics = summarize_childcare_scenario_diagnostics(scenarios, skipped_state_rows=0)
+
+    assert diagnostics["solver_status_counts"] == {
+        "converged": 1,
+        "failed_to_bracket": 1,
+        "root_at_low": 1,
+    }
+    assert diagnostics["solver_root_at_boundary_rows"] == 1
+    assert diagnostics["solver_nonconverged_rows"] == 1

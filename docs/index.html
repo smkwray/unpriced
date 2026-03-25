@@ -36,7 +36,7 @@
     <div class="hero-inner">
       <h1>Unpriced</h1>
       <p class="hero-subtitle">What would unpaid household work cost at market prices?</p>
-      <p class="hero-desc">Reproducible estimates pairing a national satellite-account benchmark with a counterfactual marketization price&mdash;what the childcare sector would clear at if unpaid care entered the paid market at scale. The flagship module is childcare; a home-maintenance preview demonstrates the framework&rsquo;s generality.</p>
+      <p class="hero-desc">Reproducible estimates pairing a national satellite-account benchmark with a counterfactual marketization price&mdash;what the childcare sector would clear at if unpaid care entered the paid market at scale. The flagship module is childcare; a home-maintenance preview demonstrates the framework&rsquo;s generality. This site is a proof-of-concept demo: it shows the current results together with their caveats rather than hiding them behind a publication-only threshold.</p>
       <div class="stats-row">
         <div class="stat-chip"><div class="stat-value">$41.38B</div><div class="stat-label">Preferred benchmark</div></div>
         <div class="stat-chip"><div class="stat-value">$8,737</div><div class="stat-label">Market price (&alpha;=0.50)</div></div>
@@ -99,7 +99,7 @@
     <!-- ══════════════════ MARKETIZATION PRICE ══════════════════ -->
     <section class="section" id="marketization">
       <div class="section-header"><h2>Counterfactual Marketization Price</h2><span class="section-tag">Headline</span></div>
-      <p>If some share (&alpha;) of currently unpaid childcare entered the paid market, what price would the sector clear at? &alpha; is the outsourcing share: &alpha;&nbsp;=&nbsp;0 is the status quo, &alpha;&nbsp;=&nbsp;0.50 means half of unpaid hours enter the market, and &alpha;&nbsp;=&nbsp;1.00 means full outsourcing. Canonical sample: <code>observed_core</code>, <code>household_parsimonious</code>, 21 states, 2014&ndash;2022, 556 scenario rows.</p>
+      <p>If some share (&alpha;) of currently unpaid childcare entered the paid market, what price would the sector clear at? &alpha; is the outsourcing share: &alpha;&nbsp;=&nbsp;0 is the status quo, &alpha;&nbsp;=&nbsp;0.50 means half of unpaid hours enter the market, and &alpha;&nbsp;=&nbsp;1.00 means full outsourcing. Canonical sample: <code>observed_core</code>, <code>household_parsimonious</code>, 21 states, 2014&ndash;2022, 556 scenario rows. The point here is to show the current proof-of-concept result and the caveats around it at the same time, not to pretend the result disappears whenever the internal credibility screen gets stricter.</p>
       <div class="table-wrap">
         <table class="data-table">
           <thead><tr><th>Measure</th><th class="num">Value</th><th>Unit</th></tr></thead>
@@ -116,6 +116,9 @@
             <tr><td>LOO year R&sup2;</td><td class="num">&minus;0.000</td><td>held-out fit</td></tr>
           </tbody>
         </table>
+      </div>
+      <div class="insight-box">
+        <p><strong>Current caveat:</strong> the latest real-mode audit on March 25, 2026 still leaves this pooled headline in proof-of-concept territory. The selected <code>observed_core</code> run is economically admissible, but only <strong>78 of 100</strong> bootstrap draws were accepted. That is a warning label about stability, not a reason to remove the demo result.</p>
       </div>
     </section>
 
@@ -191,7 +194,7 @@
 
       <!-- Sample ladder -->
       <h3>Sample Ladder</h3>
-      <p>Three samples are tested. The <strong>observed core</strong> is the headline: 139 state-year rows, 21 states, restricted to years with observed NDCP prices and QCEW labor coverage above 94%.</p>
+      <p>Three samples are tested. The <strong>observed core</strong> is the main demo headline: 139 state-year rows, 21 states, restricted to years with observed NDCP prices and QCEW labor coverage above 94%. A stricter internal review can still flag it as fragile without removing it from the proof-of-concept site.</p>
       <div class="ladder-grid">
         <div class="ladder-card">
           <div class="lc-name">Broad Complete</div>
@@ -209,6 +212,7 @@
           <div class="lc-badges">
             <span class="badge badge-amber">LOO state R&sup2;: &minus;0.097</span>
             <span class="badge badge-teal">LOO year R&sup2;: &minus;0.000</span>
+            <span class="badge badge-red">Real bootstrap accept: 78%</span>
           </div>
         </div>
         <div class="ladder-card">
@@ -371,7 +375,7 @@
         </div>
         <div class="limitation-item">
           <strong>Sample size.</strong>
-          <p>139 state-year rows is sufficient for demonstration, not robust inference.</p>
+          <p>139 state-year rows is sufficient for demonstration, not robust inference. The site intentionally keeps that demo visible and labels the weakness instead of hiding the output.</p>
         </div>
         <div class="limitation-item">
           <strong>No behavioral response.</strong>
