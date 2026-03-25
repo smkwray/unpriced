@@ -224,9 +224,9 @@ def _solve_with_metadata(
 ) -> SolverMetadata | float:
     if not np.isfinite(unpaid_quantity):
         raise ValueError("unpaid_quantity must be finite")
-    demand_function = lambda price: (
-        _demand_quantity(price, baseline_price, market_quantity, demand_elasticity) + alpha * unpaid_quantity
-    )
+    def demand_function(price):
+        return _demand_quantity(price, baseline_price, market_quantity, demand_elasticity) + alpha * unpaid_quantity
+
     return _solve_equilibrium_with_metadata(
         baseline_price,
         market_quantity,
@@ -383,18 +383,19 @@ def solve_price_dual_shift(
 ) -> float | SolverMetadata:
     if not np.isfinite(unpaid_quantity):
         raise ValueError("unpaid_quantity must be finite")
-    demand_function = lambda price: (
-        _demand_quantity(price, baseline_price, market_quantity, demand_elasticity) + alpha * unpaid_quantity
-    )
-    supply_function = lambda price: _supply_quantity_dual_shift(
-        price=price,
-        baseline_price=baseline_price,
-        market_quantity=market_quantity,
-        alpha=alpha,
-        elasticity=supply_elasticity,
-        kappa_q=kappa_q,
-        kappa_c=kappa_c,
-    )
+    def demand_function(price):
+        return _demand_quantity(price, baseline_price, market_quantity, demand_elasticity) + alpha * unpaid_quantity
+
+    def supply_function(price):
+        return _supply_quantity_dual_shift(
+            price=price,
+            baseline_price=baseline_price,
+            market_quantity=market_quantity,
+            alpha=alpha,
+            elasticity=supply_elasticity,
+            kappa_q=kappa_q,
+            kappa_c=kappa_c,
+        )
     return _solve_equilibrium_with_metadata(
         baseline_price,
         market_quantity,

@@ -218,7 +218,6 @@ def _run_2sls(
     x_second = design_matrix([predicted_price] + x_exog)
     stage2_beta = weighted_least_squares(x_second, y, weights=weights)
     fitted_hours = x_second @ stage2_beta
-    stage2_fitted = fitted_hours
 
     first_stage_r2 = _weighted_r2(p, predicted_price, weights)
     stage1_coef = float(stage1_beta[1])
