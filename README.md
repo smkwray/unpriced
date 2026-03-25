@@ -120,7 +120,7 @@ Canonical scenario outputs use `observed_core` and `household_parsimonious`: **5
 
 Displayed non-direct-care remainders are the arithmetic remainder from displayed gross and direct-care medians so public decomposition displays read cleanly. The separate report artifacts still retain component medians.
 
-**Status:** proof-of-concept headline. The selected `observed_core` run is economically admissible, and the latest real-mode audit on March 25, 2026 accepted `78 / 100` bootstrap draws.
+**Status:** proof-of-concept headline. The selected `observed_core` run is economically admissible, and the latest checked-in real-mode audit accepted `78 / 100` bootstrap draws.
 
 This is a **demonstration-grade sectoral counterfactual**, not a full-economy GE model. The small alpha-price response is driven mainly by the fitted elasticities: demand is very steep and supply is fairly elastic, so outsourcing shifts move mostly through quantity rather than price.
 
@@ -153,7 +153,7 @@ Beyond the pooled headline estimates, the project maintains an **evidence-qualit
 
 **Why this matters for economists and policy readers.** Replacement-cost and marketization-price estimates gain credibility when readers can verify how much of the underlying decomposition rests on direct administrative evidence. Policy readers evaluating formalization need to know which components are robust headline objects and which are still under empirical construction. The licensing and segmentation layers matter because formalization policy operates differently on public-admin care, subsidized-private care, and unsubsidized-private care — expanding public pre-K, increasing CCDF subsidy rates, and deregulating private providers are distinct policy levers that act on distinct segments of the market. The project is unusual in pairing a simple pooled headline with a transparent support-quality audit, rather than presenting a single number and hiding the empirical uncertainty behind it.
 
-Of the 163 CCDF administrative state-year rows, **107** (explicit + inferred) are headline-eligible for decomposition claims; **56** (retained or downgraded proxy) are excluded from headline use. The licensing IV produces diagnostics-only outputs in its current form (weak first-stage, F = 1.24). Segmented outputs are additive scaffolding — they complement but do not replace the canonical pooled model. The full pipeline is rebuildable from source data with no manual steps.
+Of the 163 CCDF administrative state-year rows, **107** (explicit + inferred) are headline-eligible for decomposition claims; **56** (retained or downgraded proxy) are excluded from headline use. The licensing IV produces diagnostics-only outputs in its current form (weak first-stage, F = 1.24). Segmented outputs are additive scaffolding — they complement but do not replace the canonical pooled model. The core pipeline is rebuildable from source data with no manual steps; three optional inputs (CCDF policy workbooks, ICPSR licensing archives) enrich the release bundle but require manual download.
 
 <details>
 <summary><strong>CCDF decomposition and support quality</strong></summary>

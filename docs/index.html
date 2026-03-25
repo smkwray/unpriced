@@ -21,7 +21,7 @@
         <li><a href="#model">Model</a></li>
         <li><a href="#data">Data</a></li>
         <li><a href="#evidence">Evidence</a></li>
-        <li><a href="#home-maintenance">Home</a></li>
+        <li><a href="#home-maintenance">Home Maint.</a></li>
         <li><a href="#limitations">Limitations</a></li>
       </ul></nav>
       <div class="header-controls">
@@ -39,8 +39,8 @@
       <p class="hero-desc">Reproducible estimates pairing a national satellite-account benchmark with a counterfactual marketization price&mdash;what the childcare sector would clear at if unpaid care entered the paid market at scale. The flagship module is childcare; a home-maintenance preview demonstrates the framework&rsquo;s generality. This site is a proof-of-concept demo: it shows the current results together with their caveats rather than hiding them behind a publication-only threshold.</p>
       <div class="stats-row">
         <div class="stat-chip"><div class="stat-value">$41.38B</div><div class="stat-label">Preferred benchmark</div></div>
-        <div class="stat-chip"><div class="stat-value">$8,737</div><div class="stat-label">Market price (&alpha;=0.50)</div></div>
-        <div class="stat-chip"><div class="stat-value">21</div><div class="stat-label">States in sample</div></div>
+        <div class="stat-chip"><div class="stat-value">$8,737</div><div class="stat-label">Short-run pooled marketization price (&alpha;=0.50)</div></div>
+        <div class="stat-chip"><div class="stat-value">21</div><div class="stat-label">States in headline sample</div></div>
       </div>
     </div>
   </section>
@@ -141,7 +141,7 @@
       </div>
       <p class="table-note">Displayed non-direct-care remainders are the arithmetic remainder from displayed gross and direct-care medians so decomposition displays read cleanly. The separate report artifacts still retain component medians.</p>
       <div class="status-line-box">
-        <p><strong>Status:</strong> proof-of-concept headline. The selected <code>observed_core</code> run is economically admissible, and the latest real-mode audit on March 25, 2026 accepted <strong>78 / 100</strong> bootstrap draws.</p>
+        <p><strong>Status:</strong> proof-of-concept headline. The selected <code>observed_core</code> run is economically admissible, and the latest checked-in real-mode audit accepted <strong>78 / 100</strong> bootstrap draws.</p>
       </div>
     </section>
 
@@ -239,7 +239,7 @@
         <div class="ladder-card">
           <div class="lc-name">Broad Complete</div>
           <div class="lc-rows">228</div>
-          <div class="lc-detail">22 states &times; 15 years</div>
+          <div class="lc-detail">22 states, 2008&ndash;2022 (unbalanced panel)</div>
           <div class="lc-badges">
             <span class="badge badge-amber">LOO state R&sup2;: &minus;0.092</span>
             <span class="badge badge-red">LOO year R&sup2;: &minus;2.592</span>
@@ -248,7 +248,7 @@
         <div class="ladder-card headline">
           <div class="lc-name">Observed Core</div>
           <div class="lc-rows">139</div>
-          <div class="lc-detail">21 states &times; 8 years (headline)</div>
+          <div class="lc-detail">21 states, 2014&ndash;2022 (headline, unbalanced)</div>
           <div class="lc-badges">
             <span class="badge badge-amber">LOO state R&sup2;: &minus;0.097</span>
             <span class="badge badge-teal">LOO year R&sup2;: &minus;0.000</span>
@@ -258,7 +258,7 @@
         <div class="ladder-card">
           <div class="lc-name">Low-Impute</div>
           <div class="lc-rows">55</div>
-          <div class="lc-detail">13 states &times; 8 years</div>
+          <div class="lc-detail">13 states, 2014&ndash;2022 (unbalanced panel)</div>
           <div class="lc-badges">
             <span class="badge badge-amber">LOO state R&sup2;: &minus;0.248</span>
             <span class="badge badge-amber">LOO year R&sup2;: &minus;0.107</span>
