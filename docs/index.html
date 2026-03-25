@@ -167,6 +167,15 @@
         <div class="chart-canvas-wrap tall"><canvas id="piecewiseChart"></canvas></div>
         <p class="chart-note">Only 22 of 107 eligible state-years have directly estimated positive slopes on both sides of the baseline. Most rows (79.4%) borrow a pooled fallback on at least one side. This is a methodology demonstration, not a richly estimated piecewise supply system.</p>
       </div>
+
+      <!-- Dual-shift Supply Sensitivity -->
+      <h3 id="dual-shift">Dual-Shift Marketization Frontier</h3>
+      <p>The canonical headline above is a short-run fixed-supply benchmark: marketization shifts demand only, so positive &alpha; raises price by construction. A new additive medium-run dual-shift sensitivity lets marketization also move supply outward through entry and formalization (<code>kappa_q</code>) and inward through cost pressure (<code>kappa_c</code>). On the site, those raw kappas are translated into a more concrete childcare question: if marketization pulls more caregivers and providers into the paid sector, how much does paid-care capacity expand, and how much do provider costs rise at the same time?</p>
+      <div class="chart-container">
+        <p class="chart-subtitle">Generated pooled headline-alpha frontier at <strong>&alpha; = 0.50</strong>. The horizontal axis converts <code>kappa_c</code> into a headline-alpha cost-pressure increase. The vertical axis converts <code>kappa_q</code> into a headline-alpha supply-expansion increase. Cooler cells indicate parameter combinations where median price falls relative to baseline; warmer cells indicate increases. The overlaid line marks the median zero-price frontier.</p>
+        <div class="chart-canvas-wrap tall"><canvas id="dualShiftChart"></canvas></div>
+        <p class="chart-note">At <strong>&alpha; = 0.50</strong>, the current default grid spans about <strong>0% to 112%</strong> extra supply expansion and <strong>0% to 11%</strong> extra cost pressure. Median headline price changes range from about <strong>&minus;11.8%</strong> at the highest-supply / zero-cost corner to <strong>+16.3%</strong> at the zero-supply / highest-cost corner. Example: if moving half of unpaid childcare into the market expands paid-care capacity by about <strong>45%</strong> while raising provider costs by about <strong>5%</strong>, the model implies only about a <strong>+1.3%</strong> median price change. The short-run benchmark remains the canonical pooled headline; this figure is a parallel medium-run sensitivity surface.</p>
+      </div>
     </section>
 
     <!-- ══════════════════ SAMPLE AND DATA ══════════════════ -->

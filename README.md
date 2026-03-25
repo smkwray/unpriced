@@ -8,6 +8,8 @@ So this project produces two things. First, a marginal replacement-cost satellit
 
 Replacement cost is useful for saying what unpaid care is worth if purchased one unit at a time at current prices. But policy does not operate one unit at a time. Real policy asks what happens when many households shift behavior together. At that point, prices, wages, and capacity matter. Replacement cost prices unpaid care as if markets were passive. Marketization price asks what happens when markets have to absorb it. One is a spot price. The other is a transition price.
 
+The canonical childcare headline in this repo remains a short-run fixed-supply-shape benchmark: marketization shifts demand, so positive alpha raises price by construction. An additive dual-shift sensitivity layer is now available for pooled childcare as a parallel medium-run estimand. In that layer, marketization can also shift supply outward through entry and formalization or inward through cost pressure, so the sign of the price effect is no longer fixed.
+
 Both products are demonstration-grade: honest about their limitations, transparent about their assumptions, and fully reproducible from public data.
 
 ---
@@ -235,7 +237,22 @@ Supply:  Qs(P) = Q₀ × (P / P₀)^(εs)          εs = 4.078
 
 Both curves pass through the baseline point (Q₀, P₀) by construction. The demand curve is very steep (highly inelastic) and supply is flatter (highly elastic), so outsourcing demand shifts are absorbed mainly through quantity increases with modest price effects. At α = 0.50 the price rises ~$519; at α = 1.00, ~$907. These are **solver-implied curves from the canonical elasticities**, not nonparametric empirical schedules.
 
-The solver finds each marketization price by bisection: for a given α, it solves `Qd(P) + α × U₀ = Qs(P)` where U₀ is the unpaid quantity proxy.
+The canonical short-run solver finds each marketization price by bisection: for a given α, it solves `Qd(P) + α × U₀ = Qs(P)` where U₀ is the unpaid quantity proxy. That is a demand-only marketization shift, so price rises mechanically once `α > 0`.
+
+An additive pooled-only dual-shift sensitivity command, `simulate-childcare-dual-shift`, keeps the same demand block but lets marketization also move supply:
+
+```
+Qd(P, α) = Q₀ × (P / P₀)^(-|εd|) + α × U₀
+Qs(P, α) = Q₀ × exp(kappa_q × α) × (P / (P₀ × exp(kappa_c × α)))^(εs)
+```
+
+`kappa_q` is an outward supply shifter from entry / formalization / capacity expansion. `kappa_c` is an upward cost shifter from wages / regulation / Baumol-type pressure. This medium-run layer is sensitivity-only in v1: it does not replace the canonical pooled headline, but it does publish the frontier where marketization prices switch from rising to falling.
+
+A more interpretable way to read the knobs is at the chosen headline alpha itself. At `α = 0.50`, the current `kappa_q` grid (`0.00` through `1.50`) corresponds to roughly `0%`, `13%`, `28%`, `45%`, `65%`, `87%`, and `112%` extra supply expansion. The current `kappa_c` grid (`0.00` through `0.20`) corresponds to roughly `0%`, `3%`, `5%`, `8%`, and `11%` extra cost pressure. That is usually easier to interpret than the raw kappa values themselves.
+
+![Dual-Shift Price Frontier](outputs/figures/childcare_dual_shift_frontier.svg)
+
+In the current sample-mode default grid at headline `α = 0.50`, median price changes range from about `-11.8%` (`kappa_q = 1.50`, `kappa_c = 0.00`) to `+16.3%` (`kappa_q = 0.00`, `kappa_c = 0.20`). A childcare-specific reading is: if moving half of unpaid care into the market increases paid childcare capacity by about `45%` while raising provider costs by about `5%`, the model implies only about a `+1.3%` median price change. The median zero-price frontier is around `kappa_q* = 0.50` when `kappa_c = 0.00`, rising to about `0.91` when `kappa_c = 0.10`.
 
 ---
 
@@ -429,6 +446,7 @@ PYTHONPYCACHEPREFIX=/tmp python -B -m pytest -q -p no:cacheprovider
 PYTHONPYCACHEPREFIX=/tmp python -m unpriced.cli build-childcare --real
 PYTHONPYCACHEPREFIX=/tmp python -m unpriced.cli fit-childcare
 PYTHONPYCACHEPREFIX=/tmp python -m unpriced.cli simulate-childcare
+PYTHONPYCACHEPREFIX=/tmp python -m unpriced.cli simulate-childcare-dual-shift
 PYTHONPYCACHEPREFIX=/tmp python -m unpriced.cli report
 ```
 
@@ -506,6 +524,6 @@ This module is functional but not yet featured in the headline outputs. See `con
 
 Current public-facing scope: childcare and home maintenance (preview). Demonstration-grade, not publication-grade.
 
-The pooled childcare benchmark and marketization demo are the canonical headline products. The evidence-quality layer — CCDF support tracking, licensing harmonization, segmented quantities, and the release contract — is complete and fully rebuildable. Licensing IV outputs and segmented scenarios are not headline-grade and are documented as diagnostics-only and additive-only, respectively.
+The pooled childcare benchmark and short-run marketization demo are the canonical headline products. The pooled dual-shift marketization surface is now available as an additive medium-run sensitivity estimand: useful for showing when price could rise or fall, but not a replacement for the canonical short-run headline. The evidence-quality layer — CCDF support tracking, licensing harmonization, segmented quantities, and the release contract — is complete and fully rebuildable. Licensing IV outputs and segmented scenarios are not headline-grade and are documented as diagnostics-only and additive-only, respectively.
 
 Important boundary: NDCP observed prices end in 2022. All canonical scenarios stay within observed support. Any future post-2022 extension must be labeled as a nowcast.

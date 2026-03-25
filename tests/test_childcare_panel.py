@@ -47,10 +47,13 @@ def test_build_childcare_panels(project_paths):
         "state_qcew_employment_observed_share",
         "state_qcew_labor_observed_share",
         "eligible_broad_complete",
+        "eligible_observed_archival",
+        "eligible_observed_archival_low_impute",
         "eligible_observed_core",
         "eligible_observed_core_low_impute",
+        "observed_archival_exclusion_reason",
+        "observed_archival_low_impute_exclusion_reason",
         "observed_core_exclusion_reason",
-        "observed_core_low_impute_exclusion_reason",
     } <= set(state.columns)
     assert len(state) >= 3
     assert county["direct_care_price_index"].le(county["annual_price"]).all()

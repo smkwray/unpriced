@@ -17,6 +17,13 @@ OBSERVED_CORE_END_YEAR = 2022
 STATE_PRICE_STATUS_OBSERVED = "observed_ndcp_support"
 STATE_PRICE_STATUS_PRE_SUPPORT = "pre_ndcp_support_gap"
 STATE_PRICE_STATUS_POST_SUPPORT = "post_ndcp_nowcast"
+CANONICAL_ACTIVE_DEMAND_COLUMNS = [
+    "unpaid_childcare_hours",
+    "state_price_index",
+    "outside_option_wage",
+    "parent_employment_rate",
+    "single_parent_share",
+]
 
 
 def _load_ndcp_staffing_mix(paths: ProjectPaths, assumptions: dict[str, object]) -> pd.DataFrame:
@@ -213,6 +220,45 @@ def _assign_exclusion_reason(
     return reasons.fillna("eligible")
 
 
+def _assign_observed_core_exclusion_reason(
+    state: pd.DataFrame,
+    required_columns: list[str],
+) -> pd.Series:
+    reasons = pd.Series(index=state.index, dtype="object")
+    year = pd.to_numeric(state["year"], errors="coerce")
+    in_support = (
+        state["state_price_observation_status"].eq(STATE_PRICE_STATUS_OBSERVED)
+        if "state_price_observation_status" in state.columns
+        else year.between(OBSERVED_CORE_START_YEAR, OBSERVED_CORE_END_YEAR)
+    )
+    if "state_price_support_window" in state.columns:
+        in_support = state["state_price_support_window"].eq("in_support")
+    in_year_window = year.between(OBSERVED_CORE_START_YEAR, OBSERVED_CORE_END_YEAR)
+    reasons.loc[~in_year_window] = "outside_year_window"
+    sensitivity = (
+        state["is_sensitivity_year"].fillna(False).astype(bool)
+        if "is_sensitivity_year" in state.columns
+        else year.eq(2020)
+    )
+    reasons.loc[reasons.isna() & sensitivity] = "sensitivity_year"
+    reasons.loc[
+        reasons.isna()
+        & (
+            pd.to_numeric(state["state_price_index"], errors="coerce").isna()
+            | ~pd.to_numeric(state["state_price_index"], errors="coerce").gt(0)
+        )
+    ] = "missing_state_price"
+    missing_required = pd.DataFrame(
+        {
+            col: pd.to_numeric(state[col], errors="coerce").notna() if col != "outside_option_wage" else state[col].notna()
+            for col in required_columns
+        }
+    )
+    reasons.loc[reasons.isna() & ~missing_required.all(axis=1)] = "missing_demand_specification_fields"
+    reasons.loc[reasons.isna() & ~in_support] = "outside_price_support"
+    return reasons.fillna("eligible")
+
+
 def _annotate_state_sample_ladder(
     state: pd.DataFrame,
     county: pd.DataFrame,
@@ -244,17 +290,29 @@ def _annotate_state_sample_ladder(
     ].notna().all(axis=1) & pd.to_numeric(result["state_price_index"], errors="coerce").gt(0)
     result["eligible_broad_complete"] = broad_complete_mask
 
-    observed_core_reason = _assign_exclusion_reason(result, low_impute=False, low_impute_threshold=low_impute_threshold)
-    result["observed_core_exclusion_reason"] = observed_core_reason
-    result["eligible_observed_core"] = observed_core_reason.eq("eligible")
+    observed_archival_reason = _assign_exclusion_reason(result, low_impute=False, low_impute_threshold=low_impute_threshold)
+    result["observed_archival_exclusion_reason"] = observed_archival_reason
+    result["eligible_observed_archival"] = observed_archival_reason.eq("eligible")
 
     low_impute_reason = _assign_exclusion_reason(
         result,
         low_impute=True,
         low_impute_threshold=low_impute_threshold,
     )
-    result["observed_core_low_impute_exclusion_reason"] = low_impute_reason
-    result["eligible_observed_core_low_impute"] = low_impute_reason.eq("eligible")
+    result["observed_archival_low_impute_exclusion_reason"] = low_impute_reason
+    result["eligible_observed_archival_low_impute"] = low_impute_reason.eq("eligible")
+
+    active_core_reason = _assign_observed_core_exclusion_reason(result, required_columns=CANONICAL_ACTIVE_DEMAND_COLUMNS)
+    result["observed_core_exclusion_reason"] = active_core_reason
+    result["eligible_observed_core"] = active_core_reason.eq("eligible")
+    result["eligible_observed_core_low_impute"] = result["eligible_observed_core"].copy()
+    if "state_ndcp_imputed_share" in result.columns:
+        observed_core_low_impute = result["eligible_observed_core"] & (
+            pd.to_numeric(result["state_ndcp_imputed_share"], errors="coerce").le(low_impute_threshold)
+        )
+        result.loc[:, "eligible_observed_core_low_impute"] = (
+            observed_core_low_impute.fillna(False).astype(bool)
+        )
     return result
 
 
@@ -662,10 +720,16 @@ def diagnose_childcare_pipeline(
         "eligible_broad_complete",
         "eligible_observed_core",
         "eligible_observed_core_low_impute",
+        "eligible_observed_archival",
+        "eligible_observed_archival_low_impute",
     ):
         if column in state.columns:
             diag[column] = int(state[column].fillna(False).astype(bool).sum())
-    for reason_col in ("observed_core_exclusion_reason", "observed_core_low_impute_exclusion_reason"):
+    for reason_col in (
+        "observed_core_exclusion_reason",
+        "observed_archival_exclusion_reason",
+        "observed_archival_low_impute_exclusion_reason",
+    ):
         if reason_col in state.columns:
             counts = state[reason_col].fillna("missing").value_counts().to_dict()
             prefix = reason_col.replace("_exclusion_reason", "_exclusion")

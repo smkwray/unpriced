@@ -62,6 +62,23 @@ def childcare_model_assumptions(paths_or_root: ProjectPaths | Path) -> dict[str,
         "piecewise_supply_labor_support_threshold": float(
             config.get("demos", {}).get("piecewise_supply_labor_support_threshold", 0.99)
         ),
+        "dual_shift_headline_alpha": float(
+            config.get("demos", {}).get("dual_shift", {}).get("headline_alpha", 0.50)
+        ),
+        "dual_shift_kappa_q_grid": [
+            float(value)
+            for value in config.get("demos", {}).get("dual_shift", {}).get(
+                "kappa_q_grid",
+                [0.00, 0.25, 0.50, 0.75, 1.00, 1.25, 1.50],
+            )
+        ],
+        "dual_shift_kappa_c_grid": [
+            float(value)
+            for value in config.get("demos", {}).get("dual_shift", {}).get(
+                "kappa_c_grid",
+                [0.00, 0.05, 0.10, 0.15, 0.20],
+            )
+        ],
     }
 
 

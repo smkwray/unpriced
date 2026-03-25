@@ -26,6 +26,22 @@ childcare:
       high: 1.5139
   demos:
     piecewise_supply_labor_support_threshold: 0.99
+    dual_shift:
+      headline_alpha: 0.50
+      kappa_q_grid:
+        - 0.00
+        - 0.25
+        - 0.50
+        - 0.75
+        - 1.00
+        - 1.25
+        - 1.50
+      kappa_c_grid:
+        - 0.00
+        - 0.05
+        - 0.10
+        - 0.15
+        - 0.20
 home_maintenance:
   fallbacks:
     cbsa_unemployment_base: 0.05

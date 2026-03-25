@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -12,8 +13,18 @@ from unpriced.assumptions import childcare_model_assumptions
 from unpriced import cli
 from unpriced.childcare import ccdf as childcare_ccdf
 from unpriced.errors import UnpaidWorkError
+from unpriced.ingest.provenance import write_provenance_sidecar
 from unpriced.ingest.ndcp import ingest as ingest_ndcp
 from unpriced.storage import read_json, read_parquet, write_json, write_parquet
+
+
+def _write_mode_provenance(project_paths, dataset_path: Path, sample_mode: bool) -> None:
+    write_provenance_sidecar(
+        dataset_path,
+        source_files=[],
+        parameters={"sample_mode": sample_mode},
+        repo_root=project_paths.root,
+    )
 
 
 def _write_licensing_iv_config(config_dir: Path) -> None:
@@ -131,6 +142,8 @@ def test_real_pull_dry_run_is_ok_from_cli():
         check=False,
         capture_output=True,
         text=True,
+        cwd=str(Path(__file__).resolve().parents[1]),
+        env={**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[1] / "src")},
     )
     assert result.returncode == 0
     assert "planned qcew" in result.stdout or "planned qcew" in result.stderr
@@ -149,6 +162,8 @@ def test_real_pull_ccdf_dry_run_is_ok_from_cli():
         check=False,
         capture_output=True,
         text=True,
+        cwd=str(Path(__file__).resolve().parents[1]),
+        env={**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[1] / "src")},
     )
     assert result.returncode == 0
 
@@ -2121,21 +2136,36 @@ def _write_childcare_simulation_inputs(project_paths) -> None:
                     "n_obs": 228,
                     "n_states": 22,
                     "n_years": 15,
+                    "price_coefficient": -0.001,
+                    "elasticity_at_mean": -0.14,
                     "economically_admissible": True,
+                    "reduced_form_price_coefficient": -0.001,
+                    "reduced_form_sign_consistent": True,
+                    "first_stage_f": 8.0,
                     "headline_eligible": False,
                 },
                 "observed_core": {
                     "n_obs": 139,
                     "n_states": 21,
                     "n_years": 8,
+                    "price_coefficient": -0.001,
+                    "elasticity_at_mean": -0.11,
                     "economically_admissible": True,
+                    "reduced_form_price_coefficient": -0.001,
+                    "reduced_form_sign_consistent": True,
+                    "first_stage_f": 12.0,
                     "headline_eligible": True,
                 },
                 "observed_core_low_impute": {
                     "n_obs": 55,
                     "n_states": 13,
                     "n_years": 8,
+                    "price_coefficient": -0.001,
+                    "elasticity_at_mean": -0.10,
                     "economically_admissible": True,
+                    "reduced_form_price_coefficient": -0.001,
+                    "reduced_form_sign_consistent": True,
+                    "first_stage_f": 9.0,
                     "headline_eligible": False,
                 },
             }
@@ -2154,6 +2184,9 @@ def _write_childcare_simulation_inputs(project_paths) -> None:
                 "price_coefficient": -0.001,
                 "elasticity_at_mean": elasticity,
                 "first_stage_r2": 0.8,
+                "first_stage_f": 12.0 if elasticity <= 0 else 8.0,
+                "reduced_form_price_coefficient": -0.001 if elasticity <= 0 else 0.001,
+                "reduced_form_sign_consistent": elasticity <= 0,
                 "n_obs": 10,
                 "n_states": 2,
                 "n_years": 2,
@@ -2170,6 +2203,9 @@ def _write_childcare_simulation_inputs(project_paths) -> None:
             "price_coefficient": -0.001,
             "elasticity_at_mean": -0.14,
             "first_stage_r2": 0.79,
+            "first_stage_f": 8.0,
+            "reduced_form_price_coefficient": -0.001,
+            "reduced_form_sign_consistent": True,
             "n_obs": 12,
             "n_states": 2,
             "n_years": 3,
@@ -2186,6 +2222,9 @@ def _write_childcare_simulation_inputs(project_paths) -> None:
             "price_coefficient": -0.001,
             "elasticity_at_mean": -0.11,
             "first_stage_r2": 0.78,
+            "first_stage_f": 12.0,
+            "reduced_form_price_coefficient": -0.001,
+            "reduced_form_sign_consistent": True,
             "n_obs": 10,
             "n_states": 2,
             "n_years": 2,
@@ -2202,6 +2241,9 @@ def _write_childcare_simulation_inputs(project_paths) -> None:
             "price_coefficient": -0.001,
             "elasticity_at_mean": -0.10,
             "first_stage_r2": 0.77,
+            "first_stage_f": 9.0,
+            "reduced_form_price_coefficient": -0.001,
+            "reduced_form_sign_consistent": True,
             "n_obs": 8,
             "n_states": 2,
             "n_years": 2,
@@ -2218,6 +2260,9 @@ def _write_childcare_simulation_inputs(project_paths) -> None:
             "price_coefficient": -0.001,
             "elasticity_at_mean": -0.09,
             "first_stage_r2": 0.75,
+            "first_stage_f": 12.0,
+            "reduced_form_price_coefficient": -0.001,
+            "reduced_form_sign_consistent": True,
             "n_obs": 10,
             "n_states": 2,
             "n_years": 2,
@@ -3157,6 +3202,32 @@ def test_recompute_decomposition_preserves_gross_prices(project_paths):
     assert result["alphas"]["0.50"]["direct_care_price_p50"] <= 11500.0
 
 
+def test_simulate_childcare_dual_shift_writes_additive_outputs_without_mutating_canonical(project_paths):
+    _write_childcare_simulation_inputs(project_paths)
+
+    cli.simulate_childcare(project_paths)
+    canonical_before = read_parquet(project_paths.processed / "childcare_marketization_scenarios.parquet")
+    diagnostics_before = read_json(project_paths.outputs_reports / "childcare_scenario_diagnostics.json")
+
+    cli.simulate_childcare_dual_shift(project_paths)
+
+    canonical_after = read_parquet(project_paths.processed / "childcare_marketization_scenarios.parquet")
+    diagnostics_after = read_json(project_paths.outputs_reports / "childcare_scenario_diagnostics.json")
+    dual_shift = read_parquet(project_paths.processed / "childcare_dual_shift_marketization_scenarios.parquet")
+    dual_shift_summary = read_json(project_paths.outputs_reports / "childcare_dual_shift_summary.json")
+    dual_shift_table = pd.read_csv(project_paths.outputs_tables / "childcare_dual_shift_headline_alpha.csv")
+
+    pd.testing.assert_frame_equal(canonical_before, canonical_after)
+    assert diagnostics_before == diagnostics_after
+    assert set(dual_shift["solver_family"].unique()) == {"short_run_fixed_supply", "medium_run_dual_shift"}
+    assert dual_shift["headline_alpha_flag"].any()
+    assert dual_shift["p_alpha_delta_vs_baseline"].notna().all()
+    assert dual_shift["p_alpha_pct_change_vs_baseline"].notna().all()
+    assert dual_shift_summary["headline_alpha"] == 0.5
+    assert len(dual_shift_table) == 35
+    assert (project_paths.outputs_figures / "childcare_dual_shift_frontier.svg").exists()
+
+
 def test_simulate_childcare_fails_without_defensible_observed_core(project_paths):
     _write_childcare_simulation_inputs(project_paths)
     write_json(
@@ -3322,3 +3393,64 @@ def test_report_writes_figure_assets(project_paths):
     assert satellite["preferred_series"] == "direct_care_nationalized_value"
     assert satellite["latest_year"]["price_support_population_share"] < 1.0
     assert "marginal replacement price x unpaid child-equivalent quantity" in satellite_md
+
+
+def test_mode_only_commands_accept_real_and_sample_flags():
+    parser = cli.build_parser()
+
+    for command in ("fit-childcare", "simulate-childcare", "simulate-childcare-dual-shift", "fit-home", "report"):
+        sample_args = parser.parse_args([command, "--sample"])
+        real_args = parser.parse_args([command, "--real"])
+
+        assert sample_args.command == command
+        assert sample_args.sample is True
+        assert sample_args.real is False
+        assert real_args.command == command
+        assert real_args.real is True
+        assert real_args.sample is False
+
+
+def test_fit_childcare_real_rejects_sample_built_processed_panels(project_paths):
+    county_path = project_paths.processed / "childcare_county_year_price_panel.parquet"
+    state_path = project_paths.processed / "childcare_state_year_panel.parquet"
+    write_parquet(pd.DataFrame([{"state_fips": "01"}]), county_path)
+    write_parquet(pd.DataFrame([{"state_fips": "01"}]), state_path)
+    _write_mode_provenance(project_paths, county_path, sample_mode=True)
+    _write_mode_provenance(project_paths, state_path, sample_mode=True)
+
+    with pytest.raises(UnpaidWorkError, match="processed childcare county-year panel was built with sample data"):
+        cli.fit_childcare(project_paths, sample=False)
+
+
+def test_simulate_childcare_real_rejects_sample_built_demand_summary(project_paths):
+    _write_childcare_simulation_inputs(project_paths)
+
+    state_path = project_paths.processed / "childcare_state_year_panel.parquet"
+    county_path = project_paths.processed / "childcare_county_year_price_panel.parquet"
+    comparison_path = project_paths.outputs_reports / "childcare_demand_sample_comparison.json"
+    broad_path = project_paths.outputs_reports / "childcare_demand_iv_broad_complete_household_parsimonious.json"
+    observed_path = project_paths.outputs_reports / "childcare_demand_iv_observed_core_household_parsimonious.json"
+    low_impute_path = project_paths.outputs_reports / "childcare_demand_iv_observed_core_low_impute_household_parsimonious.json"
+    instrument_only_path = project_paths.outputs_reports / "childcare_demand_iv_observed_core_instrument_only.json"
+
+    for path in (state_path, county_path, comparison_path, broad_path, low_impute_path, instrument_only_path):
+        _write_mode_provenance(project_paths, path, sample_mode=False)
+    _write_mode_provenance(project_paths, observed_path, sample_mode=True)
+
+    with pytest.raises(UnpaidWorkError, match="childcare demand summary for observed_core was built with sample data"):
+        cli.simulate_childcare(project_paths, sample=False)
+
+
+def test_report_real_rejects_sample_built_scenarios(project_paths):
+    scenarios_path = project_paths.processed / "childcare_marketization_scenarios.parquet"
+    state_path = project_paths.processed / "childcare_state_year_panel.parquet"
+    county_path = project_paths.processed / "childcare_county_year_price_panel.parquet"
+    write_parquet(pd.DataFrame([{"state_fips": "01", "year": 2022, "alpha": 0.5, "p_alpha": 100.0}]), scenarios_path)
+    write_parquet(pd.DataFrame([{"state_fips": "01"}]), state_path)
+    write_parquet(pd.DataFrame([{"state_fips": "01"}]), county_path)
+    _write_mode_provenance(project_paths, scenarios_path, sample_mode=True)
+    _write_mode_provenance(project_paths, state_path, sample_mode=False)
+    _write_mode_provenance(project_paths, county_path, sample_mode=False)
+
+    with pytest.raises(UnpaidWorkError, match="childcare marketization scenarios was built with sample data"):
+        cli.report(project_paths, sample=False)

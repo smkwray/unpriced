@@ -952,6 +952,157 @@ def _write_local_iv_marketization_demo(
     return _write_svg(path, width, height, elements)
 
 
+def write_childcare_dual_shift_figure(
+    path: Path,
+    summary: dict[str, object],
+    headline_table: pd.DataFrame,
+) -> Path | None:
+    if headline_table.empty:
+        return None
+    working = headline_table.copy()
+    working["kappa_q"] = pd.to_numeric(working["kappa_q"], errors="coerce")
+    working["kappa_c"] = pd.to_numeric(working["kappa_c"], errors="coerce")
+    working["median_p_alpha_pct_change"] = pd.to_numeric(working["median_p_alpha_pct_change"], errors="coerce")
+    working = working.dropna(subset=["kappa_q", "kappa_c", "median_p_alpha_pct_change"]).copy()
+    if working.empty:
+        return None
+    kappa_q_values = sorted(working["kappa_q"].unique().tolist())
+    kappa_c_values = sorted(working["kappa_c"].unique().tolist())
+    frontier = pd.DataFrame(summary.get("frontier_summary", []))
+    if not frontier.empty:
+        frontier["kappa_c"] = pd.to_numeric(frontier["kappa_c"], errors="coerce")
+        frontier["kappa_q_zero_price_frontier_p50"] = pd.to_numeric(
+            frontier["kappa_q_zero_price_frontier_p50"], errors="coerce"
+        )
+        frontier = frontier.dropna(subset=["kappa_c", "kappa_q_zero_price_frontier_p50"]).copy()
+
+    width, height = 980, 700
+    left, top = 160, 160
+    cell_w, cell_h = 110, 72
+    grid_w = cell_w * len(kappa_c_values)
+    grid_h = cell_h * len(kappa_q_values)
+    right = left + grid_w
+    bottom = top + grid_h
+
+    def cell_fill(value: float) -> str:
+        if value > 0.001:
+            return "#f6c8b5"
+        if value < -0.001:
+            return "#bce4de"
+        return "#f4e7be"
+
+    elements = [
+        _rect(40, 40, 900, 620, fill=PANEL, stroke=GRID, radius=18),
+        _text(70, 85, "Dual-Shift Price Frontier", size=26, weight="700"),
+        _text(
+            70,
+            110,
+            "Headline-alpha pooled childcare surface: price rise vs fall under entry/capacity and cost-pressure shifts",
+            size=15,
+            fill=MUTED,
+        ),
+        _text((left + right) / 2, bottom + 46, "kappa_c (cost pressure)", size=14, anchor="middle", fill=MUTED),
+        _text(left - 78, (top + bottom) / 2, "kappa_q (entry / capacity)", size=14, anchor="middle", fill=MUTED),
+    ]
+    for x_idx, kappa_c in enumerate(kappa_c_values):
+        x = left + x_idx * cell_w
+        elements.extend(
+            [
+                _text(x + cell_w / 2, top - 14, f"{kappa_c:.2f}", size=12, fill=MUTED, anchor="middle"),
+                _line(x, top, x, bottom, stroke=GRID, width=1),
+            ]
+        )
+    elements.append(_line(right, top, right, bottom, stroke=GRID, width=1))
+    for y_idx, kappa_q in enumerate(kappa_q_values):
+        y = top + y_idx * cell_h
+        elements.extend(
+            [
+                _text(left - 12, y + cell_h / 2 + 4, f"{kappa_q:.2f}", size=12, fill=MUTED, anchor="end"),
+                _line(left, y, right, y, stroke=GRID, width=1),
+            ]
+        )
+    elements.append(_line(left, bottom, right, bottom, stroke=GRID, width=1))
+
+    for row in working.itertuples(index=False):
+        x_idx = kappa_c_values.index(float(row.kappa_c))
+        y_idx = kappa_q_values.index(float(row.kappa_q))
+        x = left + x_idx * cell_w
+        y = top + y_idx * cell_h
+        elements.append(
+            _rect(x + 3, y + 3, cell_w - 6, cell_h - 6, fill=cell_fill(float(row.median_p_alpha_pct_change)), stroke=GRID, radius=10)
+        )
+        elements.append(
+            _text(x + cell_w / 2, y + 28, f"{float(row.median_p_alpha_pct_change) * 100:+.1f}%", size=15, weight="700", anchor="middle")
+        )
+        elements.append(
+            _text(x + cell_w / 2, y + 50, f"{float(row.median_p_alpha):,.0f}", size=12, fill=MUTED, anchor="middle")
+        )
+
+    if not frontier.empty:
+        x_min = min(kappa_c_values)
+        x_max = max(kappa_c_values)
+        y_min = min(kappa_q_values)
+        y_max = max(kappa_q_values)
+
+        def scale_x(value: float) -> float:
+            if x_max == x_min:
+                return left + cell_w / 2
+            return left + ((value - x_min) / (x_max - x_min)) * (grid_w - cell_w) + cell_w / 2
+
+        def scale_y(value: float) -> float:
+            if y_max == y_min:
+                return bottom - cell_h / 2
+            return bottom - ((value - y_min) / (y_max - y_min)) * (grid_h - cell_h) - cell_h / 2
+
+        frontier_points = [
+            (scale_x(float(row["kappa_c"])), scale_y(float(row["kappa_q_zero_price_frontier_p50"])))
+            for _, row in frontier.sort_values("kappa_c", kind="stable").iterrows()
+        ]
+        if frontier_points:
+            elements.append(_polyline(frontier_points, stroke=BLUE, width=4))
+            label_x, label_y = frontier_points[min(len(frontier_points) - 1, max(0, len(frontier_points) // 2))]
+            elements.extend(
+                _label_pill(
+                    label_x + 12,
+                    label_y - 10,
+                    "Zero-price-change frontier (p50)",
+                    fill=BLUE,
+                    bg=PANEL,
+                    border=BLUE,
+                )
+            )
+
+    legend_y = bottom + 78
+    legend_items = [
+        (CANONICAL, "#bce4de", "price falls"),
+        (ACCENT, "#f4e7be", "near zero"),
+        (RED, "#f6c8b5", "price rises"),
+    ]
+    for idx, (_stroke, fill, label) in enumerate(legend_items):
+        lx = left + idx * 190
+        elements.append(_rect(lx, legend_y, 24, 18, fill=fill, stroke=GRID, radius=5))
+        elements.append(_text(lx + 34, legend_y + 14, label, size=12, fill=MUTED))
+    elements.extend(
+        [
+            _text(
+                left,
+                legend_y + 48,
+                f"Headline alpha = {float(summary.get('headline_alpha', 0.5)):.2f}; cell labels show median pct change vs baseline and median price.",
+                size=12,
+                fill=MUTED,
+            ),
+            _text(
+                left,
+                legend_y + 68,
+                "Short-run benchmark remains canonical; this figure visualizes the additive medium-run dual-shift sensitivity only.",
+                size=12,
+                fill=MUTED,
+            ),
+        ]
+    )
+    return _write_svg(path, width, height, elements)
+
+
 def _write_pipeline_provenance(path: Path, diagnostics: dict[str, object]) -> Path | None:
     n_state = int(diagnostics.get("state_year_rows", 0))
     n_county = int(diagnostics.get("county_year_rows", 0))
@@ -1749,6 +1900,23 @@ def write_childcare_figure_manifest(paths: ProjectPaths, demand_summary_path: Pa
                     "title": "Piecewise supply demo",
                     "path": piecewise_path,
                     "sources": [piecewise_demo_path.name, piecewise_demo_parquet.name],
+                }
+            )
+
+    dual_shift_summary_path = paths.outputs_reports / "childcare_dual_shift_summary.json"
+    dual_shift_table_path = paths.outputs_tables / "childcare_dual_shift_headline_alpha.csv"
+    if dual_shift_summary_path.exists() and dual_shift_table_path.exists():
+        dual_shift_path = write_childcare_dual_shift_figure(
+            paths.outputs_figures / "childcare_dual_shift_frontier.svg",
+            read_json(dual_shift_summary_path),
+            pd.read_csv(dual_shift_table_path),
+        )
+        if dual_shift_path is not None:
+            figures.append(
+                {
+                    "title": "Dual-shift price frontier",
+                    "path": dual_shift_path,
+                    "sources": [dual_shift_summary_path.name, dual_shift_table_path.name],
                 }
             )
 

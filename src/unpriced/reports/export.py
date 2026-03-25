@@ -34,6 +34,7 @@ def build_markdown_report(
     demand_labor_support_sweep_path: Path | None = None,
     demand_specification_sweep_path: Path | None = None,
     piecewise_supply_demo_path: Path | None = None,
+    dual_shift_summary_path: Path | None = None,
     supply_iv_path: Path | None = None,
     satellite_account_path: Path | None = None,
 ) -> Path:
@@ -71,6 +72,11 @@ def build_markdown_report(
         if piecewise_supply_demo_path is not None and piecewise_supply_demo_path.exists()
         else None
     )
+    dual_shift_summary = (
+        read_json(dual_shift_summary_path)
+        if dual_shift_summary_path is not None and dual_shift_summary_path.exists()
+        else None
+    )
     supply_iv = (
         read_json(supply_iv_path)
         if supply_iv_path is not None and supply_iv_path.exists()
@@ -83,12 +89,14 @@ def build_markdown_report(
     )
     preview = _markdown_table(scenarios.head(6))
     selected_sample = scenario_diagnostics.get("demand_sample_name", demand_iv.get("mode", "broad_complete"))
+    current_mode = scenario_diagnostics.get("current_mode", demand_iv.get("current_mode", "unknown"))
     lines = [
         "# unpriced initial report",
         "",
         "## Childcare MVP",
         "- This MVP demonstrates the method on the strongest currently supported public-data sample.",
         "- Broader samples are retained as sensitivity/comparison results and are not the headline estimate.",
+        f"- current mode: {current_mode}",
         f"- price-surface holdout year: {price_surface['holdout_year']}",
         f"- price-surface RMSE (test): {price_surface['rmse_test']:.2f}",
         f"- headline childcare sample: {selected_sample}",
@@ -116,6 +124,9 @@ def build_markdown_report(
         f"- median alpha=0.50 implied hourly wage: {scenario_diagnostics.get('alpha_50_implied_wage_p50', 0):.2f}",
         f"- incomplete state-year rows skipped at simulation time: {scenario_diagnostics['skipped_state_rows']}",
         f"- bootstrap resampling unit: {scenario_diagnostics['bootstrap_resampling_unit']}",
+        f"- bootstrap draws requested/accepted/rejected: {scenario_diagnostics.get('bootstrap_draws_requested', 0)} / {scenario_diagnostics.get('bootstrap_draws_accepted', 0)} / {scenario_diagnostics.get('bootstrap_draws_rejected', 0)}",
+        f"- bootstrap acceptance rate: {scenario_diagnostics.get('bootstrap_acceptance_rate', 0.0):.1%}",
+        f"- bootstrap failed: {scenario_diagnostics.get('bootstrap_failed', False)}",
         f"- headline sample selection reason: {scenario_diagnostics.get('demand_sample_selection_reason', 'n/a')}",
         "- scenario uncertainty: 10th to 90th percentile bootstrap intervals over demand and supply elasticities",
         "- NDCP observed childcare prices end in 2022; any later scenario rows are labeled as nowcasts rather than observed support.",
@@ -175,6 +186,9 @@ def build_markdown_report(
         f"- solver demand elasticity magnitude: {scenario_diagnostics.get('solver_demand_elasticity_magnitude', 0):.4f}",
         f"- supply elasticity: {scenario_diagnostics.get('supply_elasticity', 0):.4f}",
         f"- supply estimation method: {scenario_diagnostics.get('supply_estimation_method', 'unknown')}",
+        f"- supply positive-only weighted median slope: {scenario_diagnostics.get('supply_within_state_year_weighted_median_positive_slope', float('nan'))}",
+        f"- supply all-slopes weighted median slope: {scenario_diagnostics.get('supply_within_state_year_weighted_median_all_slope', float('nan'))}",
+        f"- supply positivity-selection gap: {scenario_diagnostics.get('supply_within_state_year_weighted_median_gap', float('nan'))}",
         f"- demand fit quarantined: {scenario_diagnostics.get('demand_fit_quarantined', False)}",
         "",
         ]
@@ -369,6 +383,69 @@ def build_markdown_report(
                 "",
             ]
         )
+    if dual_shift_summary is not None:
+        dual_shift_rows = pd.DataFrame(dual_shift_summary.get("headline_alpha_table", []))
+        if not dual_shift_rows.empty:
+            dual_shift_rows = dual_shift_rows.loc[
+                :,
+                [
+                    column
+                    for column in (
+                        "kappa_q",
+                        "kappa_c",
+                        "median_p_alpha",
+                        "median_p_alpha_pct_change",
+                        "share_price_increase",
+                        "share_price_decrease",
+                    )
+                    if column in dual_shift_rows.columns
+                ],
+            ]
+        frontier_rows = pd.DataFrame(dual_shift_summary.get("frontier_summary", []))
+        if not frontier_rows.empty:
+            frontier_rows = frontier_rows.loc[
+                :,
+                [
+                    column
+                    for column in (
+                        "kappa_c",
+                        "kappa_q_zero_price_frontier_p10",
+                        "kappa_q_zero_price_frontier_p50",
+                        "kappa_q_zero_price_frontier_p90",
+                    )
+                    if column in frontier_rows.columns
+                ],
+            ]
+        lines.extend(
+            [
+                "## Dual-shift marketization sensitivity",
+                "- This additive parallel estimand keeps the canonical short-run benchmark unchanged.",
+                "- Short-run fixed-supply benchmark: positive alpha raises price by construction because alpha shifts demand only.",
+                "- Medium-run dual-shift sensitivity: price can rise or fall because marketization can expand supply through `kappa_q` and raise costs through `kappa_c`.",
+                f"- headline alpha: {float(dual_shift_summary.get('headline_alpha', 0.5)):.2f}",
+                f"- short-run fixed-supply median headline price: {float(dual_shift_summary.get('short_run_fixed_supply_headline_alpha_price_p50', 0.0)):.2f}",
+                f"- short-run fixed-supply median headline pct change: {float(dual_shift_summary.get('short_run_fixed_supply_headline_alpha_pct_change_p50', 0.0)):.4f}",
+                f"- bootstrap draws requested/accepted/rejected: {dual_shift_summary.get('bootstrap_draws_requested', 0)} / {dual_shift_summary.get('bootstrap_draws_accepted', 0)} / {dual_shift_summary.get('bootstrap_draws_rejected', 0)}",
+                f"- bootstrap acceptance rate: {float(dual_shift_summary.get('bootstrap_acceptance_rate', 0.0)):.1%}",
+            ]
+        )
+        if not dual_shift_rows.empty:
+            lines.extend(
+                [
+                    "",
+                    "### Headline-alpha surface",
+                    _markdown_table(dual_shift_rows.round(4)),
+                ]
+            )
+        if not frontier_rows.empty:
+            lines.extend(
+                [
+                    "",
+                    "### Zero-price-change frontier",
+                    _markdown_table(frontier_rows.round(4)),
+                ]
+            )
+        lines.append("")
     if supply_iv is not None:
         lines.extend(
             [
@@ -740,7 +817,7 @@ def build_childcare_headline_summary(
     output_markdown_path: Path,
     price_decomposition_sensitivity_path: Path | None = None,
 ) -> tuple[Path, Path]:
-    read_json(demand_iv_path)
+    demand_iv = read_json(demand_iv_path)
     scenario_diagnostics = read_json(scenario_diagnostics_path)
     decomposition = read_json(price_decomposition_path)
     sensitivity = (
@@ -762,7 +839,9 @@ def build_childcare_headline_summary(
         if case.get("baseline_implied_wage_p50") is not None
     ]
     summary = {
+        "current_mode": scenario_diagnostics.get("current_mode", demand_iv.get("current_mode", "unknown")),
         "headline_sample": scenario_diagnostics.get("demand_sample_name"),
+        "demand_instrument": scenario_diagnostics.get("demand_instrument", demand_iv.get("instrument")),
         "demand_specification_profile": scenario_diagnostics.get("demand_specification_profile"),
         "support_years": canonical.get("years", []),
         "scenario_rows": scenario_diagnostics.get("scenario_rows"),
@@ -781,8 +860,22 @@ def build_childcare_headline_summary(
         "demand_first_stage_r2": scenario_diagnostics.get("demand_first_stage_r2"),
         "demand_loo_state_fips_r2": scenario_diagnostics.get("demand_loo_state_fips_r2"),
         "demand_loo_year_r2": scenario_diagnostics.get("demand_loo_year_r2"),
+        "bootstrap_draws_requested": scenario_diagnostics.get("bootstrap_draws_requested"),
+        "bootstrap_draws_accepted": scenario_diagnostics.get("bootstrap_draws_accepted"),
+        "bootstrap_draws_rejected": scenario_diagnostics.get("bootstrap_draws_rejected"),
+        "bootstrap_acceptance_rate": scenario_diagnostics.get("bootstrap_acceptance_rate"),
+        "bootstrap_failed": scenario_diagnostics.get("bootstrap_failed"),
         "supply_elasticity": scenario_diagnostics.get("supply_elasticity"),
         "supply_estimation_method": scenario_diagnostics.get("supply_estimation_method"),
+        "supply_positive_only_weighted_median_slope": scenario_diagnostics.get(
+            "supply_within_state_year_weighted_median_positive_slope"
+        ),
+        "supply_all_slopes_weighted_median_slope": scenario_diagnostics.get(
+            "supply_within_state_year_weighted_median_all_slope"
+        ),
+        "supply_positivity_selection_gap": scenario_diagnostics.get(
+            "supply_within_state_year_weighted_median_gap"
+        ),
         "direct_care_price_sensitivity_min": min(direct_care_values) if direct_care_values else None,
         "direct_care_price_sensitivity_max": max(direct_care_values) if direct_care_values else None,
         "implied_wage_sensitivity_min": min(wage_values) if wage_values else None,
@@ -800,7 +893,9 @@ def build_childcare_headline_summary(
     lines = [
         "# Childcare Headline Readout",
         "",
+        f"- Current mode: `{summary['current_mode']}`",
         f"- Headline sample: `{summary['headline_sample']}`",
+        f"- Demand instrument: `{summary['demand_instrument']}`",
         f"- Canonical first-stage specification: `{summary['demand_specification_profile']}`",
         f"- Supported years: `{summary['support_years'][0]}-{summary['support_years'][-1]}`" if summary["support_years"] else "- Supported years: n/a",
         f"- Canonical scenario rows: `{summary['scenario_rows']}` across `{summary['scenario_states']}` states",
@@ -817,7 +912,13 @@ def build_childcare_headline_summary(
         f"- First-stage `R^2`: `{summary['demand_first_stage_r2']:.4f}`" if summary["demand_first_stage_r2"] is not None else "- First-stage `R^2`: n/a",
         f"- Leave-one-state-out `R^2`: `{summary['demand_loo_state_fips_r2']}`",
         f"- Leave-one-year-out `R^2`: `{summary['demand_loo_year_r2']}`",
+        f"- Bootstrap draws requested/accepted/rejected: `{summary['bootstrap_draws_requested']}` / `{summary['bootstrap_draws_accepted']}` / `{summary['bootstrap_draws_rejected']}`",
+        f"- Bootstrap acceptance rate: `{summary['bootstrap_acceptance_rate']:.1%}`" if summary["bootstrap_acceptance_rate"] is not None else "- Bootstrap acceptance rate: n/a",
+        f"- Bootstrap failed: `{summary['bootstrap_failed']}`",
         f"- Supply elasticity: `{summary['supply_elasticity']:.4f}` via `{summary['supply_estimation_method']}`" if summary["supply_elasticity"] is not None else "- Supply elasticity: n/a",
+        f"- Supply positive-only weighted median slope: `{summary['supply_positive_only_weighted_median_slope']:.4f}`" if summary["supply_positive_only_weighted_median_slope"] is not None else "- Supply positive-only weighted median slope: n/a",
+        f"- Supply all-slopes weighted median slope: `{summary['supply_all_slopes_weighted_median_slope']:.4f}`" if summary["supply_all_slopes_weighted_median_slope"] is not None else "- Supply all-slopes weighted median slope: n/a",
+        f"- Supply positivity-selection gap: `{summary['supply_positivity_selection_gap']:.4f}`" if summary["supply_positivity_selection_gap"] is not None else "- Supply positivity-selection gap: n/a",
     ]
     if direct_care_values and wage_values:
         lines.extend(

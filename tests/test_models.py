@@ -83,11 +83,13 @@ def test_bootstrap_childcare_intervals(project_paths):
         ]
     )
 
-    boot = bootstrap_childcare_intervals(state, county, scenarios, demand_mode="broad_complete", n_boot=20, seed=7)
+    boot, meta = bootstrap_childcare_intervals(state, county, scenarios, demand_mode="broad_complete", n_boot=20, seed=7)
 
     assert {"p_shadow_marginal_lower", "p_shadow_marginal_upper", "p_alpha_lower", "p_alpha_upper"} <= set(boot.columns)
     assert (boot["p_shadow_marginal_upper"] >= boot["p_shadow_marginal_lower"]).all()
     assert (boot["p_alpha_upper"] >= boot["p_alpha_lower"]).all()
+    assert meta["bootstrap_draws_requested"] == 20
+    assert 0 <= meta["bootstrap_draws_accepted"] <= 20
 
 
 def test_prepare_childcare_scenario_inputs_drops_invalid_rows():
@@ -216,6 +218,12 @@ def test_demand_iv_baseline_includes_core_diagnostics(project_paths):
     assert summary["n_years"] > 0
     assert summary["instrument"] == "outside_option_wage"
     assert summary["specification_profile"] == "full_controls"
+    assert "first_stage_f" in summary
+    assert "first_stage_partial_r2" in summary
+    assert "reduced_form_price_coefficient" in summary
+    assert "reduced_form_sign_consistent" in summary
+    assert "instrument_source_shares" in summary
+    assert "instrument_imputation_share" in summary
     assert "first_stage_r2" in summary
     assert "elasticity_at_mean" in summary
     assert "year_min" in summary
@@ -245,6 +253,64 @@ def test_demand_iv_loo_runs_with_sufficient_data(project_paths):
     if summary["n_obs"] >= 10:
         assert "loo_state_fips_r2" in summary
         assert "loo_year_r2" in summary
+
+
+def test_headline_sample_selection_requires_sign_and_iv_strength():
+    frame = pd.DataFrame(
+        [
+            {
+                "state_fips": f"{state:02d}",
+                "year": 2014 + (idx % 7),
+                "unpaid_childcare_hours": 2.0 + idx / 1000.0,
+                "state_price_index": 5000.0 + idx,
+                "outside_option_wage": 5000.0 + idx,
+                "parent_employment_rate": 0.7,
+                "single_parent_share": 0.2,
+                "median_income": 60000.0,
+                "unemployment_rate": 0.05,
+                "eligible_observed_core": True,
+                "eligible_observed_core_low_impute": True,
+                "is_sensitivity_year": False,
+            }
+            for idx, state in enumerate(([1] * 8 + [2] * 8 + [3] * 8 + [4] * 8 + [5] * 8 + [6] * 8 + [7] * 8 + [8] * 8 + [9] * 8 + [10] * 8 + [11] * 8 + [12] * 8 + [13] * 8 + [14] * 8 + [15] * 8))
+        ]
+    )
+    summary, _ = estimate_childcare_demand_summary(frame, mode="observed_core")
+
+    assert summary["economically_admissible"] is False
+    assert summary["reduced_form_sign_consistent"] is False
+    assert summary["headline_eligible"] is False
+    selected, reason = select_headline_sample({"observed_core": summary, "observed_core_low_impute": summary})
+    assert selected is None
+    assert reason == "no_admissible_observed_core_sample_passes_minimum_support"
+
+
+def test_headline_sample_selection_rejects_weak_first_stage():
+    frame = pd.DataFrame(
+        [
+            {
+                "state_fips": f"{state:02d}",
+                "year": 2014 + (idx % 7),
+                "unpaid_childcare_hours": 2.0 - idx / 1000.0,
+                "state_price_index": 5000.0 + idx,
+                "outside_option_wage": 20.0,
+                "parent_employment_rate": 0.5 + (idx % 7) * 0.01,
+                "single_parent_share": 0.2 + (idx % 5) * 0.002,
+                "median_income": 60000.0 + (idx % 10) * 10.0,
+                "unemployment_rate": 0.05 + (idx % 4) * 0.001,
+                "eligible_observed_core": True,
+                "eligible_observed_core_low_impute": True,
+                "is_sensitivity_year": False,
+            }
+            for idx, state in enumerate(([1] * 8 + [2] * 8 + [3] * 8 + [4] * 8 + [5] * 8 + [6] * 8 + [7] * 8 + [8] * 8 + [9] * 8 + [10] * 8 + [11] * 8 + [12] * 8 + [13] * 8 + [14] * 8 + [15] * 8))
+        ]
+    )
+    summary, _ = estimate_childcare_demand_summary(frame, mode="observed_core")
+
+    assert float(summary["first_stage_f"]) < 10.0
+    assert summary["headline_eligible"] is False
+    selected, reason = select_headline_sample({"observed_core": summary, "observed_core_low_impute": summary})
+    assert selected is None
 
 
 def test_demand_iv_aliases_map_to_sample_ladder_modes():
@@ -370,7 +436,7 @@ def test_build_childcare_imputation_sweep_reports_best_headline_candidate():
             {
                 "state_fips": f"{state:02d}",
                 "year": 2014 + (idx % 7),
-                "unpaid_childcare_hours": 1.5 + idx / 1000.0,
+                "unpaid_childcare_hours": 2.0 - idx / 1000.0,
                 "state_price_index": 5000.0 + idx,
                 "outside_option_wage": 20.0 + idx / 1000.0,
                 "parent_employment_rate": 0.7,
@@ -390,8 +456,8 @@ def test_build_childcare_imputation_sweep_reports_best_headline_candidate():
     assert sweep["current_headline_sample"] == "observed_core"
     assert sweep["specification_profile"] == CANONICAL_COMPARISON_SPECIFICATION_PROFILE
     assert len(sweep["thresholds"]) == 2
-    assert sweep["best_headline_eligible_threshold"]["threshold"] == 0.45
-    assert sweep["best_headline_eligible_threshold"]["n_obs"] >= 100
+    assert sweep["best_headline_eligible_threshold"] is None
+    assert all(not threshold["headline_eligible"] for threshold in sweep["thresholds"])
 
 
 def test_build_childcare_labor_support_sweep_reports_best_headline_candidate():
@@ -400,7 +466,7 @@ def test_build_childcare_labor_support_sweep_reports_best_headline_candidate():
             {
                 "state_fips": f"{state:02d}",
                 "year": 2014 + (idx % 7),
-                "unpaid_childcare_hours": 1.5 + idx / 1000.0,
+                "unpaid_childcare_hours": 2.0 - idx / 1000.0,
                 "state_price_index": 5000.0 + idx,
                 "outside_option_wage": 20.0 + idx / 1000.0,
                 "parent_employment_rate": 0.7,

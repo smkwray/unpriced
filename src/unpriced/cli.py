@@ -4,9 +4,10 @@ import argparse
 from pathlib import Path
 import sys
 
+import numpy as np
 import pandas as pd
 
-from unpriced.assumptions import childcare_model_assumptions, write_assumption_audit
+from unpriced.assumptions import childcare_model_assumptions, solver_assumptions, write_assumption_audit
 from unpriced.config import (
     ensure_project_dirs,
     load_extension_config,
@@ -39,7 +40,7 @@ from unpriced.ingest import (
     qcew,
     sipp,
 )
-from unpriced.ingest.provenance import write_provenance_sidecar
+from unpriced.ingest.provenance import read_provenance_sidecar, write_provenance_sidecar
 from unpriced.ingest.acs import ACS_FIRST_AVAILABLE_YEAR
 from unpriced.ingest.qcew import QCEW_FIRST_AVAILABLE_YEAR
 from unpriced.logging import get_logger
@@ -59,12 +60,17 @@ from unpriced.models.price_surface import fit_price_surface
 from unpriced.models.replacement_cost import apply_replacement_cost
 from unpriced.models.scenario_solver import (
     MARGINAL_ALPHA,
+    SolverMetadata,
     bootstrap_childcare_intervals,
+    bootstrap_childcare_dual_shift_headline_table,
+    dual_shift_zero_price_frontier,
     prepare_childcare_scenario_inputs,
     resolve_solver_demand_elasticity,
     solve_alpha_grid,
+    solve_alpha_grid_dual_shift,
     solve_alpha_grid_piecewise_supply,
     solve_price,
+    solve_price_dual_shift,
     summarize_childcare_scenario_diagnostics,
 )
 from unpriced.models.supply_curve import (
@@ -79,7 +85,10 @@ from unpriced.reports.export import (
     build_childcare_satellite_account,
     build_markdown_report,
 )
-from unpriced.reports.figures import write_childcare_figure_manifest
+from unpriced.reports.figures import (
+    write_childcare_dual_shift_figure,
+    write_childcare_figure_manifest,
+)
 from unpriced.reports.tables import summarize_scenarios
 from unpriced.storage import read_json, read_parquet, write_json, write_parquet
 
@@ -129,11 +138,72 @@ def _state_panel_has_sample_ladder(state: pd.DataFrame) -> bool:
     return required.issubset(state.columns)
 
 
-def _refresh_childcare_panels_from_interim(paths) -> tuple[pd.DataFrame, pd.DataFrame]:
+def _artifact_mode(path: Path) -> str | None:
+    try:
+        metadata = read_provenance_sidecar(path)
+    except Exception:
+        return None
+    params = metadata.get("parameters", {})
+    if not isinstance(params, dict):
+        return None
+    sample_mode = params.get("sample_mode", params.get("sample"))
+    if isinstance(sample_mode, bool):
+        return "sample" if sample_mode else "real"
+    return None
+
+
+def _ensure_real_mode_artifact(path: Path, prereq_command: str, artifact_name: str) -> None:
+    if not path.exists():
+        raise UnpaidWorkError(
+            f"{artifact_name} is missing for --real mode. Build with `unpriced {prereq_command}` before rerunning."
+        )
+    mode = _artifact_mode(path)
+    if mode == "sample":
+        raise UnpaidWorkError(
+            f"{artifact_name} was built with sample data. Rebuild it with `unpriced {prereq_command}` before running in --real mode."
+        )
+    if mode is None:
+        raise UnpaidWorkError(
+            f"{artifact_name} does not include mode provenance. Rebuild with `unpriced {prereq_command}` before running in --real mode."
+        )
+
+
+def _ensure_real_mode_artifacts(paths: list[tuple[Path, str]], prereq_command: str) -> None:
+    for path, artifact_name in paths:
+        _ensure_real_mode_artifact(path, prereq_command, artifact_name)
+
+
+def _write_mode_artifact(
+    path: Path,
+    source_files: list[Path],
+    sample: bool,
+    repo_root: Path,
+    extra_parameters: dict[str, object] | None = None,
+) -> None:
+    provenance_kwargs = {
+        "source_files": [artifact for artifact in source_files if artifact.exists()],
+        "parameters": {
+            "sample_mode": sample,
+            **(extra_parameters or {}),
+        },
+        "repo_root": repo_root,
+    }
+    write_provenance_sidecar(path, **provenance_kwargs)
+
+
+def _refresh_childcare_panels_from_interim(paths, sample: bool) -> tuple[pd.DataFrame, pd.DataFrame]:
     county, state = build_childcare_panels(paths)
     state = apply_replacement_cost(state, "unpaid_childcare_hours", "benchmark_childcare_wage")
-    write_parquet(state, paths.processed / "childcare_state_year_panel.parquet")
+    county_path = paths.processed / "childcare_county_year_price_panel.parquet"
+    state_path = paths.processed / "childcare_state_year_panel.parquet"
+    write_parquet(state, state_path)
     diagnose_childcare_pipeline(county, state, paths)
+    source_files = [
+        paths.interim / name / f"{name}.parquet"
+        for name in ("atus", "ndcp", "qcew", "acs", "cdc_wonder", "head_start", "nces_ccd", "oews", "cbp", "nes", "laus")
+    ]
+    _write_mode_artifact(county_path, source_files, sample=sample, repo_root=paths.root, extra_parameters={"command": "build-childcare"})
+    _write_mode_artifact(state_path, source_files, sample=sample, repo_root=paths.root, extra_parameters={"command": "build-childcare"})
     return county, state
 
 
@@ -162,6 +232,8 @@ def build_childcare(
     dry_run: bool = False,
     year: int | None = None,
 ) -> None:
+    county_path = paths.processed / "childcare_county_year_price_panel.parquet"
+    state_path = paths.processed / "childcare_state_year_panel.parquet"
     missing = [
         paths.interim / name / f"{name}.parquet"
         for name in ("atus", "ndcp", "qcew", "acs", "cdc_wonder", "head_start", "nces_ccd", "oews", "cbp", "nes", "laus")
@@ -188,8 +260,13 @@ def build_childcare(
                 LOGGER.info("LAUS year-range check: %s", laus_result.detail or "ok")
     county, state = build_childcare_panels(paths)
     state = apply_replacement_cost(state, "unpaid_childcare_hours", "benchmark_childcare_wage")
-    write_parquet(state, paths.processed / "childcare_state_year_panel.parquet")
+    write_parquet(state, state_path)
     diag = diagnose_childcare_pipeline(county, state, paths)
+    _write_mode_artifact(county_path, missing, sample=sample, repo_root=paths.root, extra_parameters={"command": "build-childcare"})
+    _write_mode_artifact(state_path, missing, sample=sample, repo_root=paths.root, extra_parameters={"command": "build-childcare"})
+    pipeline_path = paths.outputs_reports / "childcare_pipeline_diagnostics.json"
+    if pipeline_path.exists():
+        _write_mode_artifact(pipeline_path, [county_path, state_path], sample=sample, repo_root=paths.root, extra_parameters={"command": "build-childcare"})
     LOGGER.info(
         "built childcare panels: county=%s state=%s (observed_controls=%s/%s, births_observed=%s/%s)",
         len(county),
@@ -819,7 +896,7 @@ def build_childcare_segmented_scenarios(
         return
 
     if not state_path.exists() or not county_path.exists() or not comparison_path.exists():
-        fit_childcare(paths)
+        fit_childcare(paths, sample=sample)
     if not baseline_path.exists() or not elasticity_path.exists() or not controls_path.exists():
         build_childcare_solver_inputs(
             paths,
@@ -843,7 +920,7 @@ def build_childcare_segmented_scenarios(
     state = read_parquet(state_path)
     county = read_parquet(county_path)
     if not _state_panel_has_sample_ladder(state):
-        fit_childcare(paths)
+        fit_childcare(paths, sample=sample)
         state = read_parquet(state_path)
         county = read_parquet(county_path)
     comparison = read_json(comparison_path)
@@ -856,7 +933,7 @@ def build_childcare_segmented_scenarios(
     canonical_profile = _canonical_specification_profile_for_sample(selected_sample)
     demand_summary_path = _demand_summary_path(paths, selected_sample, specification_profile=canonical_profile)
     if not demand_summary_path.exists():
-        fit_childcare(paths)
+        fit_childcare(paths, sample=sample)
     if not demand_summary_path.exists():
         raise UnpaidWorkError(f"missing demand summary for selected sample: {demand_summary_path}")
 
@@ -2491,15 +2568,30 @@ def build_childcare_release_backend(
     )
 
 
-def fit_childcare(paths) -> None:
+def fit_childcare(paths, sample: bool = True) -> None:
     county_path = paths.processed / "childcare_county_year_price_panel.parquet"
     state_path = paths.processed / "childcare_state_year_panel.parquet"
-    if not county_path.exists() or not state_path.exists():
-        build_childcare(paths, sample=True)
+    if sample:
+        if not county_path.exists() or not state_path.exists():
+            build_childcare(paths, sample=True)
+    else:
+        _ensure_real_mode_artifacts(
+            [
+                (county_path, "processed childcare county-year panel"),
+                (state_path, "processed childcare state-year panel"),
+            ],
+            "build-childcare --real",
+        )
     county = read_parquet(county_path)
     state = read_parquet(state_path)
     if not _state_panel_has_sample_ladder(state):
-        county, state = _refresh_childcare_panels_from_interim(paths)
+        if sample:
+            county, state = _refresh_childcare_panels_from_interim(paths, sample=True)
+        else:
+            raise UnpaidWorkError(
+                "processed childcare state panel is missing current sample-ladder metadata. "
+                "Rebuild with `unpriced build-childcare --real` before rerunning."
+            )
     diagnose_childcare_pipeline(county, state, paths)
     fit_price_surface(
         county,
@@ -2591,6 +2683,33 @@ def fit_childcare(paths) -> None:
         write_json(broad_canonical, paths.outputs_reports / "childcare_demand_iv_canonical.json")
     else:
         write_json(observed, paths.outputs_reports / "childcare_demand_iv_canonical.json")
+    output_artifacts = [
+        paths.outputs_reports / "childcare_price_surface.json",
+        paths.outputs_reports / "childcare_demand_iv_broad_complete.json",
+        paths.outputs_reports / "childcare_demand_iv_broad_complete_household_parsimonious.json",
+        paths.outputs_reports / "childcare_demand_iv_observed_core.json",
+        paths.outputs_reports / "childcare_demand_iv_observed_core_low_impute.json",
+        paths.outputs_reports / "childcare_demand_iv_observed_core_low_impute_household_parsimonious.json",
+        paths.outputs_reports / "childcare_demand_iv_observed_core_household_parsimonious.json",
+        paths.outputs_reports / "childcare_demand_iv_observed_core_instrument_only.json",
+        paths.outputs_reports / "childcare_demand_iv_observed_core_labor_parsimonious.json",
+        paths.outputs_reports / "childcare_demand_sample_comparison.json",
+        paths.outputs_reports / "childcare_demand_imputation_sweep.json",
+        paths.outputs_reports / "childcare_demand_labor_support_sweep.json",
+        paths.outputs_reports / "childcare_demand_specification_sweep.json",
+        paths.outputs_reports / "childcare_demand_iv.json",
+        paths.outputs_reports / "childcare_demand_iv_strict.json",
+        paths.outputs_reports / "childcare_demand_iv_canonical.json",
+    ]
+    for artifact in output_artifacts:
+        if artifact.exists():
+            _write_mode_artifact(
+                artifact,
+                [county_path, state_path],
+                sample=sample,
+                repo_root=paths.root,
+                extra_parameters={"command": "fit-childcare"},
+            )
     LOGGER.info(
         "fit childcare models: broad(n=%s) observed_core(n=%s) low_impute(n=%s) selected=%s",
         broad.get("n_obs"),
@@ -2607,6 +2726,7 @@ def _simulate_childcare_sample(
     alphas: list[float],
     demand_summary: dict[str, object],
     sample_name: str,
+    sample: bool,
     selection_reason: str = "comparison_only",
     specification_profile: str | None = None,
 ) -> tuple[pd.DataFrame, dict[str, float | int | bool | str]]:
@@ -2625,6 +2745,7 @@ def _simulate_childcare_sample(
                 demand_sample_name=sample_name,
                 demand_sample_selection_reason=selection_reason,
             )
+            diagnostics["current_mode"] = "sample" if sample else "real"
             diagnostics["demand_fit_quarantined"] = True
             diagnostics["demand_fit_quarantine_reason"] = quarantine_reason
             return empty, diagnostics
@@ -2650,22 +2771,40 @@ def _simulate_childcare_sample(
             .fillna(float(childcare_assumptions["default_children_per_worker"]))
             .iloc[0]
         )
-        shadow = solve_price(
+        try:
+            shadow_result = solve_price(
             baseline,
             market_q,
             unpaid_q,
             solver_demand_elasticity,
             supply_elasticity,
             MARGINAL_ALPHA,
-        )
-        solved = solve_alpha_grid(
+            return_metadata=True,
+            )
+            solved = solve_alpha_grid(
             baseline,
             market_q,
             unpaid_q,
             solver_demand_elasticity,
             supply_elasticity,
             alphas,
-        )
+            return_metadata=True,
+            )
+        except RuntimeError as exc:
+            if selection_reason in {"comparison_only", "specification_sensitivity"}:
+                empty = pd.DataFrame()
+                diagnostics = summarize_childcare_scenario_diagnostics(
+                    empty,
+                    skipped_state_rows=skipped,
+                    demand_summary=demand_summary,
+                    demand_sample_name=sample_name,
+                    demand_sample_selection_reason=selection_reason,
+                )
+                diagnostics["current_mode"] = "sample" if sample else "real"
+                diagnostics["demand_fit_quarantined"] = True
+                diagnostics["demand_fit_quarantine_reason"] = str(exc)
+                return empty, diagnostics
+            raise UnpaidWorkError(str(exc)) from exc
         for result in solved:
             rows.append(
                 {
@@ -2676,7 +2815,7 @@ def _simulate_childcare_sample(
                     "state_price_observation_status": row.get("state_price_observation_status", "unknown"),
                     "state_price_nowcast": bool(row.get("state_price_nowcast", False)),
                     "p_baseline": baseline,
-                    "p_shadow_marginal": shadow,
+                    "p_shadow_marginal": shadow_result.price,
                     "alpha": result.alpha,
                     "p_alpha": result.price,
                     "benchmark_replacement_cost": row["benchmark_replacement_cost"],
@@ -2691,13 +2830,18 @@ def _simulate_childcare_sample(
                     "demand_elasticity": demand_elasticity_signed,
                     "demand_elasticity_signed": demand_elasticity_signed,
                     "solver_demand_elasticity_magnitude": solver_demand_elasticity,
+                    "solver_status": result.solver_status,
+                    "solver_iterations": result.solver_iterations,
+                    "solver_expansion_steps": result.solver_expansion_steps,
+                    "solver_bracket_low": result.solver_low,
+                    "solver_bracket_high": result.solver_high,
                     "supply_elasticity": supply_elasticity,
                     "supply_estimation_method": supply_summary.get("estimation_method"),
                     "market_quantity_proxy": market_q,
                     "unpaid_quantity_proxy": unpaid_q,
                 }
             )
-    scenarios = bootstrap_childcare_intervals(
+    scenarios, bootstrap_meta = bootstrap_childcare_intervals(
         state_valid,
         county,
         pd.DataFrame(rows),
@@ -2736,7 +2880,9 @@ def _simulate_childcare_sample(
         demand_summary=demand_summary,
         demand_sample_name=sample_name,
         demand_sample_selection_reason=selection_reason,
+        bootstrap_meta=bootstrap_meta,
     )
+    diagnostics["current_mode"] = "sample" if sample else "real"
     diagnostics["demand_fit_quarantined"] = False
     diagnostics["demand_fit_quarantine_reason"] = ""
     diagnostics["supply_elasticity"] = supply_elasticity
@@ -2754,6 +2900,15 @@ def _simulate_childcare_sample(
     )
     diagnostics["supply_within_state_year_positive_group_share"] = float(
         supply_summary.get("within_state_year_positive_group_share", 0.0)
+    )
+    diagnostics["supply_within_state_year_weighted_median_positive_slope"] = float(
+        supply_summary.get("within_state_year_weighted_median_positive_slope", float("nan"))
+    )
+    diagnostics["supply_within_state_year_weighted_median_all_slope"] = float(
+        supply_summary.get("within_state_year_weighted_median_all_slope", float("nan"))
+    )
+    diagnostics["supply_within_state_year_weighted_median_gap"] = float(
+        supply_summary.get("supply_elasticity_weighted_median_gap", float("nan"))
     )
     return scenarios, diagnostics
 
@@ -3073,18 +3228,419 @@ def _run_piecewise_supply_demo(
     return demo, diagnostics
 
 
-def simulate_childcare(paths) -> None:
+def _summarize_dual_shift_headline_table(
+    medium_headline: pd.DataFrame,
+    bootstrap_table: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    table = (
+        medium_headline.groupby(["kappa_q", "kappa_c"], as_index=False)
+        .agg(
+            row_count=("state_fips", "size"),
+            median_baseline_price=("p_baseline", "median"),
+            median_p_alpha=("p_alpha", "median"),
+            median_p_alpha_pct_change=("p_alpha_pct_change_vs_baseline", "median"),
+            share_price_increase=("p_alpha_delta_vs_baseline", lambda values: float(pd.Series(values).gt(0).mean())),
+            share_price_decrease=("p_alpha_delta_vs_baseline", lambda values: float(pd.Series(values).lt(0).mean())),
+        )
+        .sort_values(["kappa_q", "kappa_c"], kind="stable")
+        .reset_index(drop=True)
+    )
+    if bootstrap_table is not None and not bootstrap_table.empty:
+        keep = [
+            "kappa_q",
+            "kappa_c",
+            "median_p_alpha_lower",
+            "median_p_alpha_upper",
+            "median_p_alpha_pct_change_lower",
+            "median_p_alpha_pct_change_upper",
+            "share_price_increase_lower",
+            "share_price_increase_upper",
+            "share_price_decrease_lower",
+            "share_price_decrease_upper",
+        ]
+        table = table.merge(
+            bootstrap_table.loc[:, keep].drop_duplicates(["kappa_q", "kappa_c"]),
+            on=["kappa_q", "kappa_c"],
+            how="left",
+        )
+    return table
+
+
+def _summarize_dual_shift_frontier(
+    state_valid: pd.DataFrame,
+    kappa_c_grid: list[float],
+    supply_elasticity: float,
+) -> pd.DataFrame:
+    if state_valid.empty:
+        return pd.DataFrame(
+            columns=[
+                "kappa_c",
+                "frontier_row_count",
+                "kappa_q_zero_price_frontier_p10",
+                "kappa_q_zero_price_frontier_p50",
+                "kappa_q_zero_price_frontier_p90",
+            ]
+        )
+    rows: list[dict[str, float]] = []
+    for record in state_valid.to_dict(orient="records"):
+        market_quantity = float(record["market_quantity_proxy"])
+        unpaid_quantity = float(record["unpaid_quantity_proxy"])
+        for kappa_c in kappa_c_grid:
+            rows.append(
+                {
+                    "state_fips": str(record["state_fips"]),
+                    "year": int(record["year"]),
+                    "kappa_c": float(kappa_c),
+                    "kappa_q_zero_price_frontier": dual_shift_zero_price_frontier(
+                        market_quantity=market_quantity,
+                        unpaid_quantity=unpaid_quantity,
+                        supply_elasticity=supply_elasticity,
+                        kappa_c=float(kappa_c),
+                    ),
+                }
+            )
+    frontier = pd.DataFrame(rows)
+    return (
+        frontier.groupby("kappa_c", as_index=False)
+        .agg(
+            frontier_row_count=("kappa_q_zero_price_frontier", "size"),
+            kappa_q_zero_price_frontier_p10=(
+                "kappa_q_zero_price_frontier",
+                lambda values: float(pd.Series(values).quantile(0.1)),
+            ),
+            kappa_q_zero_price_frontier_p50=(
+                "kappa_q_zero_price_frontier",
+                lambda values: float(pd.Series(values).quantile(0.5)),
+            ),
+            kappa_q_zero_price_frontier_p90=(
+                "kappa_q_zero_price_frontier",
+                lambda values: float(pd.Series(values).quantile(0.9)),
+            ),
+        )
+        .sort_values(["kappa_c"], kind="stable")
+        .reset_index(drop=True)
+    )
+
+
+def simulate_childcare_dual_shift(paths, sample: bool = True) -> None:
     state_path = paths.processed / "childcare_state_year_panel.parquet"
     county_path = paths.processed / "childcare_county_year_price_panel.parquet"
-    if not state_path.exists() or not county_path.exists():
-        fit_childcare(paths)
+    if sample:
+        if not state_path.exists() or not county_path.exists():
+            fit_childcare(paths, sample=True)
+    else:
+        _ensure_real_mode_artifacts(
+            [
+                (state_path, "processed childcare state-year panel"),
+                (county_path, "processed childcare county-year price panel"),
+            ],
+            "build-childcare --real",
+        )
     state = read_parquet(state_path)
     county = read_parquet(county_path)
     if not _state_panel_has_sample_ladder(state):
-        county, state = _refresh_childcare_panels_from_interim(paths)
+        if sample:
+            county, state = _refresh_childcare_panels_from_interim(paths, sample=True)
+        else:
+            raise UnpaidWorkError(
+                "processed childcare state panel is missing current sample-ladder metadata. "
+                "Rebuild with `unpriced build-childcare --real` before rerunning."
+            )
     comparison_path = paths.outputs_reports / "childcare_demand_sample_comparison.json"
-    if not comparison_path.exists():
-        fit_childcare(paths)
+    if sample:
+        if not comparison_path.exists():
+            fit_childcare(paths, sample=True)
+    else:
+        _ensure_real_mode_artifact(
+            comparison_path,
+            "fit-childcare --real",
+            "childcare demand sample comparison",
+        )
+    comparison = read_json(comparison_path)
+    samples = comparison.get("samples", {})
+    selected_sample, selection_reason = select_headline_sample(samples)
+    if selected_sample is None:
+        raise UnpaidWorkError(
+            "no defensible observed-core childcare sample passed the minimum support rule; only exploratory samples are available"
+        )
+    canonical_profile = _canonical_specification_profile_for_sample(selected_sample)
+    selected_path = _demand_summary_path(paths, selected_sample, specification_profile=canonical_profile)
+    if sample:
+        if not selected_path.exists():
+            fit_childcare(paths, sample=True)
+    else:
+        _ensure_real_mode_artifact(
+            selected_path,
+            "fit-childcare --real",
+            "selected childcare demand summary",
+        )
+    demand_summary = read_json(selected_path)
+    demand_elasticity_signed, solver_demand_elasticity = resolve_solver_demand_elasticity(demand_summary)
+    supply_summary = summarize_supply_elasticity(county)
+    supply_elasticity = float(supply_summary["supply_elasticity"])
+    project_config = load_yaml(paths.root / "configs" / "project.yaml")
+    alphas = [float(alpha) for alpha in project_config["alpha_grid"]]
+    childcare_assumptions = childcare_model_assumptions(paths)
+    solver_config = solver_assumptions(paths)
+    headline_alpha = float(childcare_assumptions["dual_shift_headline_alpha"])
+    kappa_q_grid = [float(value) for value in childcare_assumptions["dual_shift_kappa_q_grid"]]
+    kappa_c_grid = [float(value) for value in childcare_assumptions["dual_shift_kappa_c_grid"]]
+    eligible_column = f"eligible_{selected_sample}"
+    if eligible_column not in state.columns:
+        raise UnpaidWorkError(f"state panel missing eligibility column for sample: {eligible_column}")
+    state_selected = state.loc[state[eligible_column].fillna(False).astype(bool)].copy()
+    state_valid = prepare_childcare_scenario_inputs(state_selected)
+    if state_valid.empty:
+        raise UnpaidWorkError("no valid state-year rows available for the dual-shift childcare sample")
+
+    rows: list[dict[str, object]] = []
+    for record in state_valid.to_dict(orient="records"):
+        baseline = float(record["state_price_index"])
+        market_q = float(record["market_quantity_proxy"])
+        unpaid_q = float(record["unpaid_quantity_proxy"])
+        short_run_shadow = solve_price(
+            baseline_price=baseline,
+            market_quantity=market_q,
+            unpaid_quantity=unpaid_q,
+            demand_elasticity=solver_demand_elasticity,
+            supply_elasticity=supply_elasticity,
+            alpha=MARGINAL_ALPHA,
+            return_metadata=True,
+        )
+        if not isinstance(short_run_shadow, SolverMetadata):
+            raise RuntimeError("missing short-run solver metadata")
+        short_run_results = solve_alpha_grid(
+            baseline_price=baseline,
+            market_quantity=market_q,
+            unpaid_quantity=unpaid_q,
+            demand_elasticity=solver_demand_elasticity,
+            supply_elasticity=supply_elasticity,
+            alphas=alphas,
+            return_metadata=True,
+        )
+        for result in short_run_results:
+            rows.append(
+                {
+                    "solver_family": "short_run_fixed_supply",
+                    "state_fips": record["state_fips"],
+                    "year": record["year"],
+                    "demand_sample_name": selected_sample,
+                    "demand_specification_profile": demand_summary.get(
+                        "specification_profile",
+                        DEFAULT_SPECIFICATION_PROFILE,
+                    ),
+                    "p_baseline": baseline,
+                    "p_shadow_marginal": float(short_run_shadow.price),
+                    "alpha": float(result.alpha),
+                    "p_alpha": float(result.price),
+                    "demand_elasticity_signed": demand_elasticity_signed,
+                    "solver_demand_elasticity_magnitude": solver_demand_elasticity,
+                    "supply_elasticity": supply_elasticity,
+                    "supply_estimation_method": supply_summary.get("estimation_method"),
+                    "market_quantity_proxy": market_q,
+                    "unpaid_quantity_proxy": unpaid_q,
+                    "kappa_q": np.nan,
+                    "kappa_c": np.nan,
+                    "dual_shift_entry_multiplier": 1.0,
+                    "dual_shift_cost_multiplier": 1.0,
+                    "headline_alpha_flag": bool(np.isclose(float(result.alpha), headline_alpha)),
+                    "solver_status": result.solver_status,
+                    "solver_iterations": result.solver_iterations,
+                    "solver_expansion_steps": result.solver_expansion_steps,
+                    "solver_bracket_low": result.solver_low,
+                    "solver_bracket_high": result.solver_high,
+                }
+            )
+        for kappa_q in kappa_q_grid:
+            for kappa_c in kappa_c_grid:
+                shadow_result = solve_price_dual_shift(
+                    baseline_price=baseline,
+                    market_quantity=market_q,
+                    unpaid_quantity=unpaid_q,
+                    demand_elasticity=solver_demand_elasticity,
+                    supply_elasticity=supply_elasticity,
+                    alpha=MARGINAL_ALPHA,
+                    kappa_q=float(kappa_q),
+                    kappa_c=float(kappa_c),
+                    return_metadata=True,
+                )
+                if not isinstance(shadow_result, SolverMetadata):
+                    raise RuntimeError("missing dual-shift solver metadata")
+                dual_shift_results = solve_alpha_grid_dual_shift(
+                    baseline_price=baseline,
+                    market_quantity=market_q,
+                    unpaid_quantity=unpaid_q,
+                    demand_elasticity=solver_demand_elasticity,
+                    supply_elasticity=supply_elasticity,
+                    alphas=alphas,
+                    kappa_q=float(kappa_q),
+                    kappa_c=float(kappa_c),
+                    return_metadata=True,
+                )
+                frontier = dual_shift_zero_price_frontier(
+                    market_quantity=market_q,
+                    unpaid_quantity=unpaid_q,
+                    supply_elasticity=supply_elasticity,
+                    kappa_c=float(kappa_c),
+                )
+                for result in dual_shift_results:
+                    rows.append(
+                        {
+                            "solver_family": "medium_run_dual_shift",
+                            "state_fips": record["state_fips"],
+                            "year": record["year"],
+                            "demand_sample_name": selected_sample,
+                            "demand_specification_profile": demand_summary.get(
+                                "specification_profile",
+                                DEFAULT_SPECIFICATION_PROFILE,
+                            ),
+                            "p_baseline": baseline,
+                            "p_shadow_marginal": float(shadow_result.price),
+                            "alpha": float(result.alpha),
+                            "p_alpha": float(result.price),
+                            "demand_elasticity_signed": demand_elasticity_signed,
+                            "solver_demand_elasticity_magnitude": solver_demand_elasticity,
+                            "supply_elasticity": supply_elasticity,
+                            "supply_estimation_method": supply_summary.get("estimation_method"),
+                            "market_quantity_proxy": market_q,
+                            "unpaid_quantity_proxy": unpaid_q,
+                            "kappa_q": float(kappa_q),
+                            "kappa_c": float(kappa_c),
+                            "dual_shift_entry_multiplier": float(np.exp(float(kappa_q) * float(result.alpha))),
+                            "dual_shift_cost_multiplier": float(np.exp(float(kappa_c) * float(result.alpha))),
+                            "kappa_q_zero_price_frontier": frontier,
+                            "headline_alpha_flag": bool(np.isclose(float(result.alpha), headline_alpha)),
+                            "solver_status": result.solver_status,
+                            "solver_iterations": result.solver_iterations,
+                            "solver_expansion_steps": result.solver_expansion_steps,
+                            "solver_bracket_low": result.solver_low,
+                            "solver_bracket_high": result.solver_high,
+                        }
+                    )
+
+    scenarios = pd.DataFrame(rows).sort_values(
+        ["solver_family", "state_fips", "year", "kappa_q", "kappa_c", "alpha"],
+        kind="stable",
+    ).reset_index(drop=True)
+    scenarios["p_alpha_delta_vs_baseline"] = (
+        pd.to_numeric(scenarios["p_alpha"], errors="coerce")
+        - pd.to_numeric(scenarios["p_baseline"], errors="coerce")
+    )
+    scenarios["p_alpha_pct_change_vs_baseline"] = (
+        scenarios["p_alpha_delta_vs_baseline"]
+        / pd.to_numeric(scenarios["p_baseline"], errors="coerce").replace({0.0: pd.NA})
+    ).fillna(0.0)
+    raw_path = paths.processed / "childcare_dual_shift_marketization_scenarios.parquet"
+    write_parquet(scenarios, raw_path)
+
+    medium_headline = scenarios.loc[
+        scenarios["solver_family"].astype(str).eq("medium_run_dual_shift")
+        & scenarios["headline_alpha_flag"].fillna(False).astype(bool)
+    ].copy()
+    short_run_headline = scenarios.loc[
+        scenarios["solver_family"].astype(str).eq("short_run_fixed_supply")
+        & scenarios["headline_alpha_flag"].fillna(False).astype(bool)
+    ].copy()
+    bootstrap_table, bootstrap_meta = bootstrap_childcare_dual_shift_headline_table(
+        state_frame=state_valid,
+        county_frame=county,
+        scenarios=medium_headline,
+        demand_mode=selected_sample,
+        demand_specification_profile=canonical_profile,
+        n_boot=int(solver_config["bootstrap_n_boot"]),
+        seed=int(solver_config["bootstrap_seed"]),
+    )
+    headline_table = _summarize_dual_shift_headline_table(medium_headline, bootstrap_table)
+    frontier_summary = _summarize_dual_shift_frontier(state_valid, kappa_c_grid, supply_elasticity)
+    summary = {
+        "current_mode": "sample" if sample else "real",
+        "headline_sample": selected_sample,
+        "headline_selection_reason": str(selection_reason),
+        "demand_instrument": demand_summary.get("instrument"),
+        "demand_specification_profile": demand_summary.get("specification_profile", DEFAULT_SPECIFICATION_PROFILE),
+        "headline_alpha": headline_alpha,
+        "kappa_q_grid": kappa_q_grid,
+        "kappa_c_grid": kappa_c_grid,
+        "scenario_rows": int(len(scenarios)),
+        "medium_run_rows": int(len(scenarios.loc[scenarios["solver_family"].eq("medium_run_dual_shift")])),
+        "short_run_rows": int(len(scenarios.loc[scenarios["solver_family"].eq("short_run_fixed_supply")])),
+        "median_baseline_price_p50": float(pd.to_numeric(medium_headline["p_baseline"], errors="coerce").median()),
+        "short_run_fixed_supply_headline_alpha_price_p50": float(
+            pd.to_numeric(short_run_headline["p_alpha"], errors="coerce").median()
+        ),
+        "short_run_fixed_supply_headline_alpha_pct_change_p50": float(
+            pd.to_numeric(short_run_headline["p_alpha_pct_change_vs_baseline"], errors="coerce").median()
+        ),
+        "bootstrap_draws_requested": bootstrap_meta.get("bootstrap_draws_requested"),
+        "bootstrap_draws_accepted": bootstrap_meta.get("bootstrap_draws_accepted"),
+        "bootstrap_draws_rejected": bootstrap_meta.get("bootstrap_draws_rejected"),
+        "bootstrap_acceptance_rate": bootstrap_meta.get("bootstrap_acceptance_rate"),
+        "bootstrap_failed": bootstrap_meta.get("bootstrap_failed"),
+        "bootstrap_rejection_reasons": bootstrap_meta.get("bootstrap_rejection_reasons", {}),
+        "headline_alpha_table": headline_table.to_dict(orient="records"),
+        "frontier_summary": frontier_summary.to_dict(orient="records"),
+        "notes": [
+            "Short-run fixed-supply benchmark keeps alpha on demand only, so positive alpha raises price by construction.",
+            "Medium-run dual-shift results let marketization expand supply through kappa_q and raise costs through kappa_c, so the sign of the price effect becomes ambiguous.",
+            "This additive layer is a sensitivity-driven parallel estimand; the canonical pooled headline remains the short-run benchmark.",
+        ],
+    }
+    summary_path = paths.outputs_reports / "childcare_dual_shift_summary.json"
+    table_path = paths.outputs_tables / "childcare_dual_shift_headline_alpha.csv"
+    write_json(summary, summary_path)
+    headline_table.to_csv(table_path, index=False)
+    figure_path = write_childcare_dual_shift_figure(
+        paths.outputs_figures / "childcare_dual_shift_frontier.svg",
+        summary,
+        headline_table,
+    )
+    output_artifacts = [raw_path, summary_path, table_path, figure_path]
+    for artifact in output_artifacts:
+        if artifact.exists():
+            _write_mode_artifact(
+                artifact,
+                [state_path, county_path, selected_path],
+                sample=sample,
+                repo_root=paths.root,
+                extra_parameters={"command": "simulate-childcare-dual-shift"},
+            )
+    LOGGER.info("simulated dual-shift childcare marketization scenarios using %s", selected_sample)
+
+
+def simulate_childcare(paths, sample: bool = True) -> None:
+    state_path = paths.processed / "childcare_state_year_panel.parquet"
+    county_path = paths.processed / "childcare_county_year_price_panel.parquet"
+    if sample:
+        if not state_path.exists() or not county_path.exists():
+            fit_childcare(paths, sample=True)
+    else:
+        _ensure_real_mode_artifacts(
+            [
+                (state_path, "processed childcare state-year panel"),
+                (county_path, "processed childcare county-year price panel"),
+            ],
+            "build-childcare --real",
+        )
+    state = read_parquet(state_path)
+    county = read_parquet(county_path)
+    if not _state_panel_has_sample_ladder(state):
+        if sample:
+            county, state = _refresh_childcare_panels_from_interim(paths, sample=True)
+        else:
+            raise UnpaidWorkError(
+                "processed childcare state panel is missing current sample-ladder metadata. "
+                "Rebuild with `unpriced build-childcare --real` before rerunning."
+            )
+    comparison_path = paths.outputs_reports / "childcare_demand_sample_comparison.json"
+    if sample:
+        if not comparison_path.exists():
+            fit_childcare(paths, sample=True)
+    else:
+        _ensure_real_mode_artifact(
+            comparison_path,
+            "fit-childcare --real",
+            "childcare demand sample comparison",
+        )
     comparison = read_json(comparison_path)
     samples = comparison.get("samples", {})
     selected_sample, selection_reason = select_headline_sample(samples)
@@ -3115,6 +3671,12 @@ def simulate_childcare(paths) -> None:
         demand_path = _demand_summary_path(paths, sample_name, specification_profile=sample_profile)
         if not demand_path.exists():
             continue
+        if not sample:
+            _ensure_real_mode_artifact(
+                demand_path,
+                "fit-childcare --real",
+                f"childcare demand summary for {sample_name}",
+            )
         demand_summary = read_json(demand_path)
         scenarios, diagnostics = _simulate_childcare_sample(
             paths,
@@ -3123,6 +3685,7 @@ def simulate_childcare(paths) -> None:
             alphas,
             demand_summary,
             sample_name,
+            sample=sample,
             selection_reason=str(selection_reason) if sample_name == selected_sample else "comparison_only",
             specification_profile=sample_profile,
         )
@@ -3138,6 +3701,12 @@ def simulate_childcare(paths) -> None:
             demand_path = _demand_summary_path(paths, selected_sample, specification_profile=profile)
             if not demand_path.exists():
                 continue
+            if not sample:
+                _ensure_real_mode_artifact(
+                    demand_path,
+                    "fit-childcare --real",
+                    f"childcare demand summary for {selected_sample} ({profile})",
+                )
             demand_summary = read_json(demand_path)
             scenarios, diagnostics = _simulate_childcare_sample(
                 paths,
@@ -3146,6 +3715,7 @@ def simulate_childcare(paths) -> None:
                 alphas,
                 demand_summary,
                 selected_sample,
+                sample=sample,
                 selection_reason="canonical_specification"
                 if profile == canonical_profile
                 else "specification_sensitivity",
@@ -3161,6 +3731,12 @@ def simulate_childcare(paths) -> None:
             "skipping %s state-year rows with incomplete scenario inputs for %s",
             selected_diagnostics["skipped_state_rows"],
             selected_sample,
+        )
+    if not sample and float(selected_diagnostics.get("bootstrap_acceptance_rate", 0.0)) < 0.80:
+        raise UnpaidWorkError(
+            f"childcare bootstrap acceptance rate is below the headline threshold for {selected_sample}: "
+            f"{float(selected_diagnostics.get('bootstrap_acceptance_rate', 0.0)):.1%}. "
+            "Revisit the demand/solver diagnostics before publishing results."
         )
     write_parquet(selected_scenarios, paths.processed / "childcare_marketization_scenarios.parquet")
     write_json(selected_diagnostics, paths.outputs_reports / "childcare_scenario_diagnostics.json")
@@ -3216,6 +3792,29 @@ def simulate_childcare(paths) -> None:
             scenario_specification_comparison,
             paths.outputs_reports / "childcare_scenario_specification_comparison.json",
         )
+    output_artifacts = [
+        paths.processed / "childcare_marketization_scenarios.parquet",
+        paths.outputs_reports / "childcare_scenario_diagnostics.json",
+        paths.processed / "childcare_marketization_scenarios_all_samples.parquet",
+        paths.outputs_reports / "childcare_price_decomposition.json",
+        paths.outputs_reports / "childcare_price_decomposition_sensitivity.json",
+        paths.outputs_reports / "childcare_supply_elasticity.json",
+        paths.outputs_reports / "childcare_piecewise_supply_demo.json",
+        paths.outputs_reports / "childcare_scenario_sample_comparison.json",
+        paths.processed / "childcare_piecewise_supply_demo.parquet",
+        paths.processed / "childcare_marketization_scenarios_specifications.parquet",
+        paths.outputs_reports / "childcare_scenario_specification_comparison.json",
+    ]
+    selected_demand_path = _demand_summary_path(paths, selected_sample, specification_profile=canonical_profile)
+    for artifact in output_artifacts:
+        if artifact.exists():
+            _write_mode_artifact(
+                artifact,
+                [state_path, county_path, selected_demand_path],
+                sample=sample,
+                repo_root=paths.root,
+                extra_parameters={"command": "simulate-childcare"},
+            )
     LOGGER.info("simulated childcare marketization scenarios using %s", selected_sample)
 
 
@@ -3245,13 +3844,32 @@ def build_home(
     LOGGER.info("built home maintenance panel: %s rows", len(panel))
 
 
-def fit_home(paths) -> None:
+def fit_home(paths, sample: bool = True) -> None:
     panel_path = paths.processed / "home_maintenance_panel.parquet"
-    if not panel_path.exists():
-        build_home(paths, sample=True)
+    if sample:
+        if not panel_path.exists():
+            build_home(paths, sample=True)
+    else:
+        _ensure_real_mode_artifact(
+            panel_path,
+            "build-home --real",
+            "processed home maintenance panel",
+        )
     panel = read_parquet(panel_path)
     summary = fit_home_switching(panel, paths.outputs_reports / "home_switching.json")
     write_json(summary, paths.outputs_reports / "home_maintenance_summary.json")
+    for artifact in (
+        paths.outputs_reports / "home_switching.json",
+        paths.outputs_reports / "home_maintenance_summary.json",
+    ):
+        if artifact.exists():
+            _write_mode_artifact(
+                artifact,
+                [panel_path],
+                sample=sample,
+                repo_root=paths.root,
+                extra_parameters={"command": "fit-home"},
+            )
     LOGGER.info("fit home maintenance switching model")
 
 
@@ -3325,12 +3943,26 @@ def fit_supply_iv(
     LOGGER.info("fit supply IV demo: status=%s rows=%s", summary.get("status"), summary.get("n_obs", 0))
 
 
-def report(paths) -> None:
+def report(paths, sample: bool = True) -> None:
     scenarios_path = paths.processed / "childcare_marketization_scenarios.parquet"
     state_path = paths.processed / "childcare_state_year_panel.parquet"
     county_path = paths.processed / "childcare_county_year_price_panel.parquet"
-    if not scenarios_path.exists():
-        simulate_childcare(paths)
+    if sample:
+        if not scenarios_path.exists():
+            simulate_childcare(paths, sample=True)
+    else:
+        _ensure_real_mode_artifact(
+            scenarios_path,
+            "simulate-childcare --real",
+            "childcare marketization scenarios",
+        )
+        _ensure_real_mode_artifacts(
+            [
+                (state_path, "processed childcare state-year panel"),
+                (county_path, "processed childcare county-year price panel"),
+            ],
+            "build-childcare --real",
+        )
     scenarios = read_parquet(scenarios_path)
     state = read_parquet(state_path)
     county = read_parquet(county_path)
@@ -3348,11 +3980,18 @@ def report(paths) -> None:
     labor_support_sweep_path = paths.outputs_reports / "childcare_demand_labor_support_sweep.json"
     specification_sweep_path = paths.outputs_reports / "childcare_demand_specification_sweep.json"
     piecewise_supply_demo_path = paths.outputs_reports / "childcare_piecewise_supply_demo.json"
+    dual_shift_summary_path = paths.outputs_reports / "childcare_dual_shift_summary.json"
     supply_iv_path = paths.outputs_reports / "childcare_supply_iv.json"
     satellite_account_path = paths.outputs_reports / "childcare_satellite_account.json"
     selected_sample = "broad_complete"
     selected_path = paths.outputs_reports / "childcare_demand_iv.json"
     if comparison_path.exists():
+        if not sample:
+            _ensure_real_mode_artifact(
+                comparison_path,
+                "fit-childcare --real",
+                "childcare demand sample comparison",
+            )
         comparison = read_json(comparison_path)
         samples = comparison.get("samples", {})
         selected_sample, _ = select_headline_sample(samples)
@@ -3362,6 +4001,19 @@ def report(paths) -> None:
                 selected_sample,
                 specification_profile=_canonical_specification_profile_for_sample(selected_sample),
             )
+            if sample and not selected_path.exists():
+                fit_childcare(paths, sample=True)
+    elif not sample:
+        raise UnpaidWorkError(
+            "childcare demand sample comparison is missing for --real mode. "
+            "Build with `unpriced fit-childcare --real` before rerunning."
+        )
+    if not sample:
+        _ensure_real_mode_artifact(
+            selected_path,
+            "fit-childcare --real",
+            "selected childcare demand summary",
+        )
     build_childcare_satellite_account(
         county=county,
         state=state,
@@ -3389,6 +4041,7 @@ def report(paths) -> None:
         demand_labor_support_sweep_path=labor_support_sweep_path if labor_support_sweep_path.exists() else None,
         demand_specification_sweep_path=specification_sweep_path if specification_sweep_path.exists() else None,
         piecewise_supply_demo_path=piecewise_supply_demo_path if piecewise_supply_demo_path.exists() else None,
+        dual_shift_summary_path=dual_shift_summary_path if dual_shift_summary_path.exists() else None,
         supply_iv_path=supply_iv_path if supply_iv_path.exists() else None,
         satellite_account_path=satellite_account_path if satellite_account_path.exists() else None,
     )
@@ -3405,6 +4058,21 @@ def report(paths) -> None:
                 price_decomposition_sensitivity_path if price_decomposition_sensitivity_path.exists() else None
             ),
         )
+    for artifact in (
+        paths.outputs_reports / "childcare_mvp_report.md",
+        paths.outputs_reports / "childcare_headline_summary.json",
+        paths.outputs_reports / "childcare_headline_readout.md",
+        paths.outputs_reports / "childcare_satellite_account.json",
+        paths.outputs_reports / "childcare_satellite_account.md",
+    ):
+        if artifact.exists():
+            _write_mode_artifact(
+                artifact,
+                [scenarios_path, state_path, county_path, selected_path],
+                sample=sample,
+                repo_root=paths.root,
+                extra_parameters={"command": "report"},
+            )
     write_assumption_audit(paths)
     write_childcare_figure_manifest(paths, demand_summary_path=selected_path)
     LOGGER.info("wrote report")
@@ -3418,12 +4086,19 @@ def add_ingest_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--year", type=int)
 
 
+def add_mode_args(parser: argparse.ArgumentParser) -> None:
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--sample", action="store_true")
+    group.add_argument("--real", action="store_true")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="unpriced")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    for command in ("bootstrap", "fit-childcare", "simulate-childcare", "fit-home", "report"):
-        subparsers.add_parser(command)
+    subparsers.add_parser("bootstrap")
+    for command in ("fit-childcare", "simulate-childcare", "simulate-childcare-dual-shift", "fit-home", "report"):
+        add_mode_args(subparsers.add_parser(command))
 
     supply_iv_parser = subparsers.add_parser("fit-supply-iv")
     add_ingest_args(supply_iv_parser)
@@ -3634,9 +4309,11 @@ def main(argv: list[str] | None = None) -> None:
                 config_name_or_path=args.config,
             )
         elif args.command == "fit-childcare":
-            fit_childcare(paths)
+            fit_childcare(paths, sample=sample)
         elif args.command == "simulate-childcare":
-            simulate_childcare(paths)
+            simulate_childcare(paths, sample=sample)
+        elif args.command == "simulate-childcare-dual-shift":
+            simulate_childcare_dual_shift(paths, sample=sample)
         elif args.command == "build-home":
             build_home(
                 paths,
@@ -3646,7 +4323,7 @@ def main(argv: list[str] | None = None) -> None:
                 year=args.year,
             )
         elif args.command == "fit-home":
-            fit_home(paths)
+            fit_home(paths, sample=sample)
         elif args.command == "fit-supply-iv":
             fit_supply_iv(
                 paths,
@@ -3656,7 +4333,7 @@ def main(argv: list[str] | None = None) -> None:
                 year=args.year,
             )
         elif args.command == "report":
-            report(paths)
+            report(paths, sample=sample)
         else:
             parser.error(f"Unknown command: {args.command}")
     except UnpaidWorkError as exc:

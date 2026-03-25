@@ -56,6 +56,9 @@ def summarize_supply_elasticity(frame: pd.DataFrame) -> dict[str, float | int | 
             "within_state_year_positive_group_share": 0.0,
             "within_state_year_weighted_median_positive_slope": float("nan"),
             "within_state_year_weighted_median_all_slope": float("nan"),
+            "supply_elasticity_positive_weighted_median": float("nan"),
+            "supply_elasticity_all_weighted_median": float("nan"),
+            "supply_elasticity_weighted_median_gap": float("nan"),
         }
 
     dataset["log_density"] = np.log(dataset["provider_density"])
@@ -147,6 +150,9 @@ def summarize_supply_elasticity(frame: pd.DataFrame) -> dict[str, float | int | 
         "within_state_year_positive_group_share": float(len(positive_groups) / max(len(groups), 1)),
         "within_state_year_weighted_median_positive_slope": weighted_positive,
         "within_state_year_weighted_median_all_slope": weighted_all,
+        "supply_elasticity_positive_weighted_median": weighted_positive,
+        "supply_elasticity_all_weighted_median": weighted_all,
+        "supply_elasticity_weighted_median_gap": float(weighted_positive - weighted_all) if np.isfinite(weighted_all) and np.isfinite(weighted_positive) else float("nan"),
     }
 
 

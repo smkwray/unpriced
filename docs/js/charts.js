@@ -19,6 +19,10 @@
   /* ── Number formatting helpers ── */
   function fmtDollar(v) { return '$' + v.toLocaleString('en-US', { maximumFractionDigits: 0 }); }
   function fmtM(v) { return (v / 1e6).toFixed(2) + 'M'; }
+  function fmtPct(v) {
+    var pct = (v * 100);
+    return (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
+  }
 
   /* ── Build all charts ── */
   function buildCharts() {
@@ -32,6 +36,7 @@
     buildPipelineProvenance(C);
     buildSolverCurves(C);
     buildPiecewiseSupply(C);
+    buildDualShiftFrontier(C);
   }
 
   /* ── 1. Stylized Econ-101 Supply & Demand Diagram ── */
@@ -620,6 +625,7 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: false,
         plugins: {
           title: { display: true, text: 'Solver-Implied Supply & Demand Curves', font: { size: 15, weight: '700' }, color: C.heading, padding: { bottom: 12 } },
           legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16, font: { size: 12 } } },
@@ -755,6 +761,214 @@
           ctx.fillStyle = C.textMuted;
           ctx.textAlign = 'left';
           ctx.fillText('Kink at P\u2080 = $8,218', chart.chartArea.left + 6, yPx - 6);
+          ctx.restore();
+        }
+      }]
+    }));
+  }
+
+  /* ── 7. Dual-shift Marketization Frontier ── */
+  function buildDualShiftFrontier(C) {
+    var canvas = document.getElementById('dualShiftChart');
+    if (!canvas) return;
+    var headlineAlpha = 0.50;
+
+    var rawPoints = [
+      { kappaC: 0.00, kappaQ: 0.00, pct: 0.0549, price: 8726.58 },
+      { kappaC: 0.05, kappaQ: 0.00, pct: 0.0810, price: 8942.25 },
+      { kappaC: 0.10, kappaQ: 0.00, pct: 0.1077, price: 9163.25 },
+      { kappaC: 0.15, kappaQ: 0.00, pct: 0.1351, price: 9389.73 },
+      { kappaC: 0.20, kappaQ: 0.00, pct: 0.1631, price: 9621.80 },
+      { kappaC: 0.00, kappaQ: 0.25, pct: 0.0239, price: 8469.25 },
+      { kappaC: 0.05, kappaQ: 0.25, pct: 0.0491, price: 8678.56 },
+      { kappaC: 0.10, kappaQ: 0.25, pct: 0.0751, price: 8893.04 },
+      { kappaC: 0.15, kappaQ: 0.25, pct: 0.1016, price: 9112.83 },
+      { kappaC: 0.20, kappaQ: 0.25, pct: 0.1288, price: 9338.05 },
+      { kappaC: 0.00, kappaQ: 0.50, pct: -0.0063, price: 8219.52 },
+      { kappaC: 0.05, kappaQ: 0.50, pct: 0.0182, price: 8422.65 },
+      { kappaC: 0.10, kappaQ: 0.50, pct: 0.0434, price: 8630.80 },
+      { kappaC: 0.15, kappaQ: 0.50, pct: 0.0691, price: 8844.10 },
+      { kappaC: 0.20, kappaQ: 0.50, pct: 0.0955, price: 9062.68 },
+      { kappaC: 0.00, kappaQ: 0.75, pct: -0.0356, price: 7977.15 },
+      { kappaC: 0.05, kappaQ: 0.75, pct: -0.0118, price: 8174.29 },
+      { kappaC: 0.10, kappaQ: 0.75, pct: 0.0126, price: 8376.30 },
+      { kappaC: 0.15, kappaQ: 0.75, pct: 0.0376, price: 8583.31 },
+      { kappaC: 0.20, kappaQ: 0.75, pct: 0.0633, price: 8795.44 },
+      { kappaC: 0.00, kappaQ: 1.00, pct: -0.0640, price: 7741.93 },
+      { kappaC: 0.05, kappaQ: 1.00, pct: -0.0409, price: 7933.25 },
+      { kappaC: 0.10, kappaQ: 1.00, pct: -0.0172, price: 8129.31 },
+      { kappaC: 0.15, kappaQ: 1.00, pct: 0.0071, price: 8330.21 },
+      { kappaC: 0.20, kappaQ: 1.00, pct: 0.0319, price: 8536.08 },
+      { kappaC: 0.00, kappaQ: 1.25, pct: -0.0916, price: 7513.66 },
+      { kappaC: 0.05, kappaQ: 1.25, pct: -0.0692, price: 7699.33 },
+      { kappaC: 0.10, kappaQ: 1.25, pct: -0.0462, price: 7889.60 },
+      { kappaC: 0.15, kappaQ: 1.25, pct: -0.0226, price: 8084.57 },
+      { kappaC: 0.20, kappaQ: 1.25, pct: 0.0015, price: 8284.37 },
+      { kappaC: 0.00, kappaQ: 1.50, pct: -0.1184, price: 7292.12 },
+      { kappaC: 0.05, kappaQ: 1.50, pct: -0.0966, price: 7472.32 },
+      { kappaC: 0.10, kappaQ: 1.50, pct: -0.0743, price: 7656.97 },
+      { kappaC: 0.15, kappaQ: 1.50, pct: -0.0514, price: 7846.19 },
+      { kappaC: 0.20, kappaQ: 1.50, pct: -0.0280, price: 8040.09 }
+    ];
+
+    var rawFrontier = [
+      { kappaC: 0.00, kappaQStar: 0.5009 },
+      { kappaC: 0.05, kappaQStar: 0.7048 },
+      { kappaC: 0.10, kappaQStar: 0.9088 },
+      { kappaC: 0.15, kappaQStar: 1.1127 },
+      { kappaC: 0.20, kappaQStar: 1.3166 }
+    ];
+
+    function multiplierFromKappa(kappa) {
+      return Math.exp(headlineAlpha * kappa) - 1;
+    }
+
+    function fmtPercentAxis(value) {
+      return Math.round(value * 100) + '%';
+    }
+
+    var points = rawPoints.map(function (point) {
+      return {
+        x: multiplierFromKappa(point.kappaC),
+        y: multiplierFromKappa(point.kappaQ),
+        pct: point.pct,
+        price: point.price,
+        kappaC: point.kappaC,
+        kappaQ: point.kappaQ
+      };
+    });
+
+    var frontier = rawFrontier.map(function (point) {
+      return {
+        x: multiplierFromKappa(point.kappaC),
+        y: multiplierFromKappa(point.kappaQStar),
+        kappaC: point.kappaC,
+        kappaQStar: point.kappaQStar
+      };
+    });
+
+    function pointColor(pct) {
+      if (pct < 0) {
+        if (pct <= -0.05) return C.slateBlue;
+        if (pct <= -0.02) return '#60a5fa';
+        return '#93c5fd';
+      }
+      if (pct < 0.03) return '#86efac';
+      if (pct < 0.08) return C.amber;
+      return C.red;
+    }
+
+    charts.push(new Chart(canvas, {
+      type: 'scatter',
+      data: {
+        datasets: [
+          {
+            label: 'Simulated combinations',
+            data: points,
+            pointRadius: 12,
+            pointHoverRadius: 14,
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointBackgroundColor: points.map(function (point) { return pointColor(point.pct); }),
+            showLine: false,
+            order: 2
+          },
+          {
+            label: 'Median zero-price frontier',
+            data: frontier,
+            showLine: true,
+            borderColor: C.heading,
+            backgroundColor: C.heading,
+            borderWidth: 2,
+            borderDash: [6, 4],
+            pointRadius: 4,
+            pointHoverRadius: 5,
+            order: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Dual-shift headline frontier at alpha = 0.50',
+            font: { size: 15, weight: '700' },
+            color: C.heading,
+            padding: { bottom: 12 }
+          },
+          legend: {
+            position: 'bottom',
+            labels: { usePointStyle: true, padding: 16, font: { size: 12 } }
+          },
+          tooltip: {
+            callbacks: {
+              title: function (items) {
+                var item = items[0];
+                if (item.datasetIndex === 1) {
+                  return 'Median zero-price frontier';
+                }
+                return 'Cost +' + fmtPercentAxis(item.raw.x) + ', supply +' + fmtPercentAxis(item.raw.y);
+              },
+              label: function (ctx) {
+                if (ctx.datasetIndex === 1) {
+                  return [
+                    'Frontier supply expansion: +' + fmtPercentAxis(ctx.raw.y),
+                    'Raw kappa_q*: ' + ctx.raw.kappaQStar.toFixed(2),
+                    'Raw kappa_c: ' + ctx.raw.kappaC.toFixed(2)
+                  ];
+                }
+                return [
+                  'Median price change: ' + fmtPct(ctx.raw.pct),
+                  'Median price: ' + fmtDollar(Math.round(ctx.raw.price)),
+                  'Raw kappa_q: ' + ctx.raw.kappaQ.toFixed(2),
+                  'Raw kappa_c: ' + ctx.raw.kappaC.toFixed(2)
+                ];
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            type: 'linear',
+            min: -0.01,
+            max: 0.115,
+            title: { display: true, text: 'Headline-alpha cost pressure', color: C.textSec },
+            ticks: {
+              stepSize: 0.05,
+              color: C.textSec,
+              callback: function (v) { return fmtPercentAxis(Number(v)); }
+            },
+            grid: { color: C.grid }
+          },
+          y: {
+            min: -0.02,
+            max: 1.15,
+            title: { display: true, text: 'Headline-alpha supply expansion', color: C.textSec },
+            ticks: {
+              stepSize: 0.25,
+              color: C.textSec,
+              callback: function (v) { return fmtPercentAxis(Number(v)); }
+            },
+            grid: { color: C.grid }
+          }
+        }
+      },
+      plugins: [{
+        id: 'dualShiftLabels',
+        afterDatasetsDraw: function (chart) {
+          var ctx = chart.ctx;
+          var meta = chart.getDatasetMeta(0);
+          ctx.save();
+          ctx.font = '600 10px ' + Chart.defaults.font.family;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          meta.data.forEach(function (element, index) {
+            var point = points[index];
+            ctx.fillStyle = Math.abs(point.pct) >= 0.05 ? '#fff' : C.heading;
+            ctx.fillText(fmtPct(point.pct), element.x, element.y);
+          });
           ctx.restore();
         }
       }]
