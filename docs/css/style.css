@@ -175,11 +175,20 @@ code { font-family: var(--font-mono); font-size: 0.875em; background: var(--colo
 /* ── Content ── */
 .content { max-width: var(--max-width); margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
 
+/* ── Read Guide ── */
+.read-guide { margin: 0 0 2.25rem; }
+.read-guide h2 { margin-bottom: 0.85rem; font-size: 1.35rem; }
+.read-guide-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+.read-guide-item { border: 1px solid var(--color-border); background: var(--color-bg-alt); border-radius: var(--radius); padding: 0.8rem 0.95rem; }
+.read-guide-item h3 { font-size: 0.86rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-teal); margin-bottom: 0.35rem; }
+.read-guide-item p { margin: 0; font-size: 0.87rem; color: var(--color-text-secondary); line-height: 1.45; }
+
 /* ── Section ── */
 .section { margin-bottom: 3.5rem; }
 .section-header { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1.25rem; border-bottom: 2px solid var(--color-teal); padding-bottom: 0.5rem; }
 .section-header h2 { margin: 0; }
 .section-header .section-tag { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-teal); font-weight: 600; }
+.section-takeaway { font-size: 0.92rem; color: var(--color-text-secondary); margin: 0.25rem 0 1rem; }
 
 /* ── Cards ── */
 .card { background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 1.75rem; box-shadow: var(--shadow-sm); transition: box-shadow var(--transition), transform var(--transition); }
@@ -220,6 +229,16 @@ code { font-family: var(--font-mono); font-size: 0.875em; background: var(--colo
 .insight-box strong { color: var(--color-heading); }
 .warning-box { background: var(--color-warning-bg); border-left: 4px solid var(--color-warning-border); border-radius: 0 var(--radius) var(--radius) 0; padding: 1.25rem 1.5rem; margin: 1.5rem 0; }
 .warning-box p { margin-bottom: 0; color: var(--color-warning-text); font-size: 0.92rem; }
+.status-line-box { background: var(--color-bg-alt); border-left: 4px solid var(--color-teal); border-radius: 0 var(--radius) var(--radius) 0; padding: 0.85rem 1rem; margin: 1rem 0 0; }
+.status-line-box p { margin: 0; color: var(--color-text-secondary); font-size: 0.9rem; }
+.status-line-box strong { color: var(--color-heading); }
+.table-note { font-size: 0.82rem; color: var(--color-text-muted); margin: 0.25rem 0 0.25rem; }
+
+/* ── Method Support Blocks ── */
+.optional-method-intro { font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 1rem; }
+.dual-shift-callout { margin: 1rem 0 1.25rem; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-bg-alt); padding: 0.95rem 1rem 0.35rem; }
+.dual-shift-callout h4 { margin: 0 0 0.45rem; font-size: 0.92rem; color: var(--color-heading); }
+.dual-shift-mini-table { font-size: 0.84rem; }
 
 /* ── Collapsible ── */
 .collapsible { margin: 1rem 0; }
@@ -273,6 +292,7 @@ code { font-family: var(--font-mono); font-size: 0.875em; background: var(--colo
   .stats-row { grid-template-columns: 1fr; max-width: 100%; }
   .chart-container { padding: 1rem; }
   .content { padding: 1.5rem 1rem 3rem; }
+  .read-guide-grid { grid-template-columns: 1fr; gap: 0.6rem; }
   .data-table { font-size: 0.8rem; }
   .data-table th, .data-table td { padding: 0.5rem 0.5rem; }
   .ladder-grid { grid-template-columns: 1fr; }

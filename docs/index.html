@@ -47,6 +47,28 @@
 
   <main class="content">
 
+    <section class="read-guide" aria-label="How to read this demo">
+      <h2>How to Read This Demo</h2>
+      <div class="read-guide-grid">
+        <article class="read-guide-item">
+          <h3>Benchmark</h3>
+          <p>What is unpaid childcare worth at today&rsquo;s marginal replacement price?</p>
+        </article>
+        <article class="read-guide-item">
+          <h3>Short-run canonical</h3>
+          <p>What price clears if unpaid care enters the current paid market with fixed supply shape?</p>
+        </article>
+        <article class="read-guide-item">
+          <h3>Medium-run sensitivity</h3>
+          <p>What happens if marketization also expands paid-care capacity and raises provider costs?</p>
+        </article>
+        <article class="read-guide-item">
+          <h3>Diagnostics / audit</h3>
+          <p>How much support quality, fit stability, and decomposition quality should readers trust?</p>
+        </article>
+      </div>
+    </section>
+
     <!-- ══════════════════ SATELLITE ACCOUNT BENCHMARK ══════════════════ -->
     <section class="section" id="benchmark">
       <div class="section-header"><h2>National Satellite Account Benchmark</h2><span class="section-tag">2022</span></div>
@@ -99,14 +121,14 @@
     <!-- ══════════════════ MARKETIZATION PRICE ══════════════════ -->
     <section class="section" id="marketization">
       <div class="section-header"><h2>Counterfactual Marketization Price</h2><span class="section-tag">Headline</span></div>
-      <p>If some share (&alpha;) of currently unpaid childcare entered the paid market, what price would the sector clear at? &alpha; is the outsourcing share: &alpha;&nbsp;=&nbsp;0 is the status quo, &alpha;&nbsp;=&nbsp;0.50 means half of unpaid hours enter the market, and &alpha;&nbsp;=&nbsp;1.00 means full outsourcing. Canonical sample: <code>observed_core</code>, <code>household_parsimonious</code>, 21 states, 2014&ndash;2022, 556 scenario rows. The point here is to show the current proof-of-concept result and the caveats around it at the same time, not to pretend the result disappears whenever the internal credibility screen gets stricter.</p>
+      <p>If some share (&alpha;) of currently unpaid childcare entered the paid market, what price would the sector clear at? &alpha; is the outsourcing share: &alpha;&nbsp;=&nbsp;0 is the status quo, &alpha;&nbsp;=&nbsp;0.50 means half of unpaid hours enter the market, and &alpha;&nbsp;=&nbsp;1.00 means full outsourcing. Canonical scenario outputs use <code>observed_core</code> and <code>household_parsimonious</code>: 556 scenario rows across observed price-support years 2014&ndash;2022. The separate real-mode demand-fit sample for <code>observed_core</code> is used only for the audit status below.</p>
       <div class="table-wrap">
         <table class="data-table">
           <thead><tr><th>Measure</th><th class="num">Value</th><th>Unit</th></tr></thead>
           <tbody>
             <tr><td>Gross market price</td><td class="num">$8,218</td><td>per child per year</td></tr>
             <tr><td>Direct-care-equivalent price</td><td class="num">$6,564</td><td>per child per year</td></tr>
-            <tr><td>Non-direct-care residual</td><td class="num">$1,836</td><td>per child per year</td></tr>
+            <tr><td>Displayed non-direct-care remainder</td><td class="num">$1,654</td><td>per child per year</td></tr>
             <tr><td>Implied direct-care wage</td><td class="num">$9.75</td><td>per hour</td></tr>
             <tr class="highlight"><td>Marketization price (&alpha; = 0.50)</td><td class="num">$8,737</td><td>per child per year</td></tr>
             <tr><td>Marketization price (&alpha; = 1.00)</td><td class="num">$9,125</td><td>per child per year</td></tr>
@@ -117,8 +139,9 @@
           </tbody>
         </table>
       </div>
-      <div class="insight-box">
-        <p><strong>Current caveat:</strong> the latest real-mode audit on March 25, 2026 still leaves this pooled headline in proof-of-concept territory. The selected <code>observed_core</code> run is economically admissible, but only <strong>78 of 100</strong> bootstrap draws were accepted. That is a warning label about stability, not a reason to remove the demo result.</p>
+      <p class="table-note">Displayed non-direct-care remainders are the arithmetic remainder from displayed gross and direct-care medians so decomposition displays read cleanly. The separate report artifacts still retain component medians.</p>
+      <div class="status-line-box">
+        <p><strong>Status:</strong> proof-of-concept headline. The selected <code>observed_core</code> run is economically admissible, and the latest real-mode audit on March 25, 2026 accepted <strong>78 / 100</strong> bootstrap draws.</p>
       </div>
     </section>
 
@@ -137,14 +160,14 @@
 
       <!-- Price Decomposition -->
       <h3>Price Decomposition by Alpha</h3>
-      <p>The gross market price splits into a <strong>direct-care</strong> labor component and a <strong>non-direct-care residual</strong> (facilities, administration, meals). The direct-care component grows with alpha as the equilibrium wage rises.</p>
+      <p>The gross market price is shown as a <strong>direct-care</strong> labor component plus a <strong>displayed non-direct-care remainder</strong> (facilities, administration, meals). The direct-care component grows with alpha as the equilibrium wage rises.</p>
       <div class="chart-container">
         <div class="chart-canvas-wrap" style="min-height:420px;"><canvas id="priceDecompChart"></canvas></div>
         <div class="chart-legend">
           <div class="chart-legend-item"><span class="chart-legend-swatch" style="background:var(--color-teal);"></span> Direct-care component</div>
-          <div class="chart-legend-item"><span class="chart-legend-swatch" style="background:var(--color-amber);"></span> Non-direct-care residual</div>
+          <div class="chart-legend-item"><span class="chart-legend-swatch" style="background:var(--color-amber);"></span> Displayed non-direct-care remainder</div>
         </div>
-        <p class="chart-note">Gross price labeled above each bar. The wage stability ($9.75&ndash;$10.86 across the full alpha range) makes it a useful anchor even when the price-level decomposition is uncertain.</p>
+        <p class="chart-note">Gross price is labeled above each bar. The amber segment is the displayed remainder from the rounded gross and direct-care medians so the bars close visually. The wage stability ($9.75&ndash;$10.86 across the full alpha range) still makes it a useful anchor.</p>
       </div>
 
       <!-- Scenario Intervals -->
@@ -154,6 +177,31 @@
         <div class="chart-canvas-wrap" style="min-height:380px;"><canvas id="alphaIntervalsChart"></canvas></div>
         <p class="chart-note">The <strong>marginal</strong> point is the shadow price at an infinitesimal outsourcing increment. Intervals widen as alpha grows because larger demand shifts amplify elasticity uncertainty. At &alpha;&nbsp;=&nbsp;1.00, the median price rises ~11% from the baseline.</p>
       </div>
+
+      <!-- Dual-shift Supply Sensitivity -->
+      <h3 id="dual-shift">Dual-Shift Marketization Frontier</h3>
+      <p>This is the main medium-run sensitivity layer. The canonical headline above is a short-run fixed-supply benchmark where marketization shifts demand only, so positive &alpha; raises price by construction. The dual-shift layer also allows paid-care capacity expansion and provider cost pressure, so the price effect can rise, stay flat, or fall.</p>
+      <div class="chart-container">
+        <p class="chart-subtitle">Generated pooled headline-alpha frontier at <strong>&alpha; = 0.50</strong>. The horizontal axis shows additional provider cost pressure at headline alpha, and the vertical axis shows additional paid-care capacity expansion at headline alpha. The overlaid line marks the median zero-price frontier.</p>
+        <div class="chart-canvas-wrap tall"><canvas id="dualShiftChart"></canvas></div>
+        <p class="chart-note">At <strong>&alpha; = 0.50</strong>, the grid spans about <strong>0% to 112%</strong> extra supply expansion and <strong>0% to 11%</strong> extra cost pressure. The short-run pooled headline remains canonical; this figure is an additive medium-run sensitivity layer.</p>
+      </div>
+      <div class="dual-shift-callout">
+        <h4>How much expansion keeps price roughly flat at &alpha; = 0.50?</h4>
+        <div class="table-wrap">
+          <table class="data-table dual-shift-mini-table">
+            <thead><tr><th>Provider cost pressure</th><th class="num">Needed paid-care capacity expansion</th></tr></thead>
+            <tbody>
+              <tr><td>About 0%</td><td class="num">About 28%</td></tr>
+              <tr><td>About 5%</td><td class="num">About 58%</td></tr>
+              <tr><td>About 11%</td><td class="num">About 93%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <h3>Optional Method Mechanics</h3>
+      <p class="optional-method-intro">The next two blocks are method sensitivities that help interpret assumptions. They are diagnostic layers and do not replace the short-run canonical pooled headline.</p>
 
       <!-- Solver-Implied Curves -->
       <h3>Solver-Implied Curves</h3>
@@ -170,20 +218,12 @@
         <div class="chart-canvas-wrap tall"><canvas id="piecewiseChart"></canvas></div>
         <p class="chart-note">Only 22 of 107 eligible state-years have directly estimated positive slopes on both sides of the baseline. Most rows (79.4%) borrow a pooled fallback on at least one side. This is a methodology demonstration, not a richly estimated piecewise supply system.</p>
       </div>
-
-      <!-- Dual-shift Supply Sensitivity -->
-      <h3 id="dual-shift">Dual-Shift Marketization Frontier</h3>
-      <p>The canonical headline above is a short-run fixed-supply benchmark: marketization shifts demand only, so positive &alpha; raises price by construction. A new additive medium-run dual-shift sensitivity lets marketization also move supply outward through entry and formalization (<code>kappa_q</code>) and inward through cost pressure (<code>kappa_c</code>). On the site, those raw kappas are translated into a more concrete childcare question: if marketization pulls more caregivers and providers into the paid sector, how much does paid-care capacity expand, and how much do provider costs rise at the same time?</p>
-      <div class="chart-container">
-        <p class="chart-subtitle">Generated pooled headline-alpha frontier at <strong>&alpha; = 0.50</strong>. The horizontal axis converts <code>kappa_c</code> into a headline-alpha cost-pressure increase. The vertical axis converts <code>kappa_q</code> into a headline-alpha supply-expansion increase. Cooler cells indicate parameter combinations where median price falls relative to baseline; warmer cells indicate increases. The overlaid line marks the median zero-price frontier.</p>
-        <div class="chart-canvas-wrap tall"><canvas id="dualShiftChart"></canvas></div>
-        <p class="chart-note">At <strong>&alpha; = 0.50</strong>, the current default grid spans about <strong>0% to 112%</strong> extra supply expansion and <strong>0% to 11%</strong> extra cost pressure. Median headline price changes range from about <strong>&minus;11.8%</strong> at the highest-supply / zero-cost corner to <strong>+16.3%</strong> at the zero-supply / highest-cost corner. Example: if moving half of unpaid childcare into the market expands paid-care capacity by about <strong>45%</strong> while raising provider costs by about <strong>5%</strong>, the model implies only about a <strong>+1.3%</strong> median price change. The short-run benchmark remains the canonical pooled headline; this figure is a parallel medium-run sensitivity surface.</p>
-      </div>
     </section>
 
     <!-- ══════════════════ SAMPLE AND DATA ══════════════════ -->
     <section class="section" id="data">
       <div class="section-header"><h2>Sample &amp; Data Support</h2></div>
+      <p class="section-takeaway">Observed support is reasonably strong through 2022; this section audits the headline by showing where identification stability and out-of-sample fit remain fragile.</p>
 
       <!-- Pipeline provenance -->
       <h3>Pipeline Provenance</h3>
@@ -273,6 +313,7 @@
     <!-- ══════════════════ EVIDENCE QUALITY ══════════════════ -->
     <section class="section" id="evidence">
       <div class="section-header"><h2>Evidence Quality &amp; Decomposition Layers</h2></div>
+      <p class="section-takeaway">This section is an audit layer: it tracks support quality and decomposition credibility so readers can interpret the canonical pooled headline, not replace it.</p>
       <p>Beyond the pooled headline estimates, the project maintains an <strong>evidence-quality layer</strong> that tracks how much underlying data rests on direct administrative evidence versus inferred, proxy, or fallback sources.</p>
 
       <h3>CCDF Support Quality</h3>
@@ -347,7 +388,7 @@
     <!-- ══════════════════ LIMITATIONS ══════════════════ -->
     <section class="section" id="limitations">
       <div class="section-header"><h2>Limitations</h2></div>
-      <p>This section is the most important part of the documentation.</p>
+      <p>Interpretation boundaries for the demo.</p>
       <div class="limitation-list">
         <div class="limitation-item">
           <strong>The satellite account is still partial-equilibrium.</strong>

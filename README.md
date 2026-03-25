@@ -12,6 +12,13 @@ The canonical childcare headline in this repo remains a short-run fixed-supply-s
 
 Both products are demonstration-grade: honest about their limitations, transparent about their assumptions, and fully reproducible from public data. The public-facing demo is intended to show the current outputs alongside their caveats, not to hide them until they clear a publication-grade evidence bar.
 
+## How to read this demo
+
+- **Benchmark** asks what unpaid childcare is worth at today’s marginal replacement price.
+- **Short-run canonical** asks what price clears if unpaid care enters the current paid market with fixed supply shape.
+- **Medium-run sensitivity** asks what happens if marketization also expands paid-care capacity and raises provider costs.
+- **Diagnostics / audit** ask how much support quality, fit stability, and decomposition quality readers should trust.
+
 ---
 
 ## National satellite account benchmark
@@ -96,13 +103,13 @@ This is the headline research product. If some share of currently unpaid childca
 
 There is no single answer. It depends on how much care gets outsourced, how supply and demand respond to price, and what the existing market looks like in each state and year. This project builds the machinery to answer that question under explicit, adjustable assumptions, then reports honestly how much the answer depends on those assumptions.
 
-Canonical sample: `observed_core`, `household_parsimonious`, **21 states**, **2014–2022**, **556 scenario rows** inside observed price support. Prices here are medians across 21 states and 9 years, so they are lower than the 2022-only national figures in the satellite account table above.
+Canonical scenario outputs use `observed_core` and `household_parsimonious`: **556 scenario rows** across observed price-support years **2014–2022**. The separate real-mode demand-fit sample for `observed_core` is used only for the audit status below.
 
 | Measure | Value | Unit |
 |---------|-------|------|
 | Gross market price | $8,218 | per child per year |
 | Direct-care-equivalent price | $6,564 | per child per year |
-| Non-direct-care residual | $1,836 | per child per year |
+| Displayed non-direct-care remainder | $1,654 | per child per year |
 | Implied direct-care wage | $9.75 | per hour |
 | Marketization price (alpha = 0.50) | $8,737 | per child per year |
 | Marketization price (alpha = 1.00) | $9,125 | per child per year |
@@ -111,9 +118,11 @@ Canonical sample: `observed_core`, `household_parsimonious`, **21 states**, **20
 | LOO state R² | -0.097 | held-out fit |
 | LOO year R² | -0.000 | held-out fit |
 
-This is a **demonstration-grade sectoral counterfactual**, not a full-economy GE model. The small alpha-price response is driven mainly by the fitted elasticities: demand is very steep and supply is fairly elastic, so outsourcing shifts move mostly through quantity rather than price.
+Displayed non-direct-care remainders are the arithmetic remainder from displayed gross and direct-care medians so public decomposition displays read cleanly. The separate report artifacts still retain component medians.
 
-The site and README intentionally keep this result visible even when stricter internal publication gates are not fully satisfied. In the latest real-mode audit on March 25, 2026, the selected `observed_core` scenario run remained economically admissible but cleared only `78 / 100` bootstrap draws. That is a reason to add caveats and sensitivity comparisons, not a reason to pretend the current demo result does not exist.
+**Status:** proof-of-concept headline. The selected `observed_core` run is economically admissible, and the latest real-mode audit on March 25, 2026 accepted `78 / 100` bootstrap draws.
+
+This is a **demonstration-grade sectoral counterfactual**, not a full-economy GE model. The small alpha-price response is driven mainly by the fitted elasticities: demand is very steep and supply is fairly elastic, so outsourcing shifts move mostly through quantity rather than price.
 
 <details>
 <summary><strong>What is alpha?</strong></summary>
@@ -132,6 +141,8 @@ Higher alpha pushes more demand into the market, raising the equilibrium price. 
 ---
 
 ## Evidence quality and decomposition layers
+
+These are audit layers: observed support is reasonably strong through 2022, but the main fragilities are identification stability, out-of-sample fit, and support quality. They help readers interpret the canonical pooled headline; they do not replace it.
 
 Beyond the pooled headline estimates, the project maintains an **evidence-quality layer** that tracks, for every component of the childcare pipeline, how much of the underlying data rests on direct administrative evidence versus inferred, proxy, or fallback sources. The project:
 
@@ -241,6 +252,8 @@ Both curves pass through the baseline point (Q₀, P₀) by construction. The de
 
 The canonical short-run solver finds each marketization price by bisection: for a given α, it solves `Qd(P) + α × U₀ = Qs(P)` where U₀ is the unpaid quantity proxy. That is a demand-only marketization shift, so price rises mechanically once `α > 0`.
 
+### Medium-run sensitivity: dual-shift marketization
+
 An additive pooled-only dual-shift sensitivity command, `simulate-childcare-dual-shift`, keeps the same demand block but lets marketization also move supply:
 
 ```
@@ -255,6 +268,10 @@ A more interpretable way to read the knobs is at the chosen headline alpha itsel
 ![Dual-Shift Price Frontier](outputs/figures/childcare_dual_shift_frontier.svg)
 
 In the current sample-mode default grid at headline `α = 0.50`, median price changes range from about `-11.8%` (`kappa_q = 1.50`, `kappa_c = 0.00`) to `+16.3%` (`kappa_q = 0.00`, `kappa_c = 0.20`). A childcare-specific reading is: if moving half of unpaid care into the market increases paid childcare capacity by about `45%` while raising provider costs by about `5%`, the model implies only about a `+1.3%` median price change. The median zero-price frontier is around `kappa_q* = 0.50` when `kappa_c = 0.00`, rising to about `0.91` when `kappa_c = 0.10`.
+
+At `α = 0.50`, keeping price roughly flat requires about `28%` extra paid-care capacity if provider cost pressure is about `0%`, about `58%` if cost pressure is about `5%`, and about `93%` if cost pressure is about `11%`.
+
+### Optional method sensitivity: piecewise supply
 
 ---
 
@@ -318,9 +335,11 @@ Each card shows three price layers at a given alpha. **Gross price** is the solv
 
 ![Childcare Price Decomposition](outputs/figures/childcare_price_decomposition_by_alpha.svg)
 
-Stacked bars show the gross price split into direct-care (teal) and non-direct-care (amber) at each alpha. The direct-care component grows with alpha because the equilibrium wage rises as more care enters the market. The non-direct-care residual (gross minus direct-care) also rises slightly. The wage-side labels below each bar report the direct-care component in dollars.
+Stacked bars show the displayed gross price split into direct-care (teal) and a displayed non-direct-care remainder (amber) at each alpha. The amber segment is the arithmetic remainder from the displayed gross and direct-care medians so the stacked bars close cleanly. The wage-side labels below each bar report the direct-care component in dollars.
 
 ## Data and sample
+
+Observed support is reasonably strong through 2022. This section audits the headline by showing where identification stability and out-of-sample fit remain fragile.
 
 All inputs are free public data. The pipeline joins six sources into county-year and state-year panels.
 
@@ -389,7 +408,7 @@ The wage stability makes it a useful anchor even when the price-level decomposit
 
 ## Limitations
 
-This section is the most important part of the documentation.
+Interpretation boundaries for the demo.
 
 **The satellite account is still partial-equilibrium.** Even the preferred direct-care benchmark is an accounting construct, not a GE valuation. It says what unpaid childcare would be worth at a current marginal replacement price, not what would happen if all unpaid childcare actually moved into the paid market. That is precisely the gap the marketization metric is designed to address, but the marketization estimate itself is demonstration-grade.
 

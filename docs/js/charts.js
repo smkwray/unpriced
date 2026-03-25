@@ -301,10 +301,12 @@
     if (!canvas) return;
 
     var labels = ['Baseline', '\u03B1=0.10', '\u03B1=0.25', '\u03B1=0.50', '\u03B1=1.00'];
-    var directCare = [6564, 6643, 6753, 6984, 7306];
-    var residual = [1654, 1687, 1737, 1753, 1819];
     var gross = [8218, 8330, 8490, 8737, 9125];
-    var wages = ['$9.75/hr', '$9.86/hr', '$10.03/hr', '$10.37/hr', '$10.86/hr'];
+    var directCare = [6564, 6643, 6753, 6984, 7306];
+    var residual = gross.map(function (value, index) {
+      return value - directCare[index];
+    });
+    var wages = ['$9.75/hr', '$9.88/hr', '$10.04/hr', '$10.39/hr', '$10.86/hr'];
 
     charts.push(new Chart(canvas, {
       type: 'bar',
@@ -319,7 +321,7 @@
             barPercentage: 0.55
           },
           {
-            label: 'Non-direct-care residual',
+            label: 'Displayed non-direct-care remainder',
             data: residual,
             backgroundColor: C.amber,
             borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
@@ -331,13 +333,35 @@
         responsive: true,
         layout: { padding: { top: 25 } },
         plugins: {
-          title: { display: true, text: 'Price Decomposition by Outsourcing Share', font: { size: 15, weight: '700' }, color: C.heading, padding: { bottom: 8 } },
+          title: { display: true, text: 'Displayed price split by outsourcing share', font: { size: 15, weight: '700' }, color: C.heading, padding: { bottom: 8 } },
+          subtitle: {
+            display: true,
+            text: 'Displayed gross and direct-care medians are rounded; the non-direct-care remainder is their arithmetic difference so the stacked bars close visually.',
+            color: C.textSec,
+            font: { size: 11.5, weight: '400' },
+            padding: { bottom: 8 }
+          },
           legend: { display: false },
           tooltip: {
             callbacks: {
+              title: function (items) {
+                var idx = items[0].dataIndex;
+                return labels[idx];
+              },
+              label: function (ctx) {
+                var idx = ctx.dataIndex;
+                if (ctx.datasetIndex === 0) {
+                  return 'Displayed direct-care: ' + fmtDollar(directCare[idx]);
+                }
+                return 'Displayed non-direct-care remainder: ' + fmtDollar(residual[idx]);
+              },
               afterBody: function (items) {
                 var idx = items[0].dataIndex;
-                return 'Gross: ' + fmtDollar(gross[idx]) + '\nImplied wage: ' + wages[idx];
+                return [
+                  'Displayed gross: ' + fmtDollar(gross[idx]),
+                  'Displayed residual = displayed gross minus displayed direct-care.',
+                  'Implied wage: ' + wages[idx]
+                ];
               }
             }
           }
@@ -774,49 +798,49 @@
     var headlineAlpha = 0.50;
 
     var rawPoints = [
-      { kappaC: 0.00, kappaQ: 0.00, pct: 0.0549, price: 8726.58 },
-      { kappaC: 0.05, kappaQ: 0.00, pct: 0.0810, price: 8942.25 },
-      { kappaC: 0.10, kappaQ: 0.00, pct: 0.1077, price: 9163.25 },
-      { kappaC: 0.15, kappaQ: 0.00, pct: 0.1351, price: 9389.73 },
-      { kappaC: 0.20, kappaQ: 0.00, pct: 0.1631, price: 9621.80 },
-      { kappaC: 0.00, kappaQ: 0.25, pct: 0.0239, price: 8469.25 },
-      { kappaC: 0.05, kappaQ: 0.25, pct: 0.0491, price: 8678.56 },
-      { kappaC: 0.10, kappaQ: 0.25, pct: 0.0751, price: 8893.04 },
-      { kappaC: 0.15, kappaQ: 0.25, pct: 0.1016, price: 9112.83 },
-      { kappaC: 0.20, kappaQ: 0.25, pct: 0.1288, price: 9338.05 },
-      { kappaC: 0.00, kappaQ: 0.50, pct: -0.0063, price: 8219.52 },
-      { kappaC: 0.05, kappaQ: 0.50, pct: 0.0182, price: 8422.65 },
-      { kappaC: 0.10, kappaQ: 0.50, pct: 0.0434, price: 8630.80 },
-      { kappaC: 0.15, kappaQ: 0.50, pct: 0.0691, price: 8844.10 },
-      { kappaC: 0.20, kappaQ: 0.50, pct: 0.0955, price: 9062.68 },
-      { kappaC: 0.00, kappaQ: 0.75, pct: -0.0356, price: 7977.15 },
-      { kappaC: 0.05, kappaQ: 0.75, pct: -0.0118, price: 8174.29 },
-      { kappaC: 0.10, kappaQ: 0.75, pct: 0.0126, price: 8376.30 },
-      { kappaC: 0.15, kappaQ: 0.75, pct: 0.0376, price: 8583.31 },
-      { kappaC: 0.20, kappaQ: 0.75, pct: 0.0633, price: 8795.44 },
-      { kappaC: 0.00, kappaQ: 1.00, pct: -0.0640, price: 7741.93 },
-      { kappaC: 0.05, kappaQ: 1.00, pct: -0.0409, price: 7933.25 },
-      { kappaC: 0.10, kappaQ: 1.00, pct: -0.0172, price: 8129.31 },
-      { kappaC: 0.15, kappaQ: 1.00, pct: 0.0071, price: 8330.21 },
-      { kappaC: 0.20, kappaQ: 1.00, pct: 0.0319, price: 8536.08 },
-      { kappaC: 0.00, kappaQ: 1.25, pct: -0.0916, price: 7513.66 },
-      { kappaC: 0.05, kappaQ: 1.25, pct: -0.0692, price: 7699.33 },
-      { kappaC: 0.10, kappaQ: 1.25, pct: -0.0462, price: 7889.60 },
-      { kappaC: 0.15, kappaQ: 1.25, pct: -0.0226, price: 8084.57 },
-      { kappaC: 0.20, kappaQ: 1.25, pct: 0.0015, price: 8284.37 },
-      { kappaC: 0.00, kappaQ: 1.50, pct: -0.1184, price: 7292.12 },
-      { kappaC: 0.05, kappaQ: 1.50, pct: -0.0966, price: 7472.32 },
-      { kappaC: 0.10, kappaQ: 1.50, pct: -0.0743, price: 7656.97 },
-      { kappaC: 0.15, kappaQ: 1.50, pct: -0.0514, price: 7846.19 },
-      { kappaC: 0.20, kappaQ: 1.50, pct: -0.0280, price: 8040.09 }
+      { kappaC: 0.00, kappaQ: 0.00, pct: 0.054941500406918704, price: 8726.578698035715 },
+      { kappaC: 0.05, kappaQ: 0.00, pct: 0.08099622257993914, price: 8942.249864276215 },
+      { kappaC: 0.10, kappaQ: 0.00, pct: 0.1076948430111881, price: 9163.254801422605 },
+      { kappaC: 0.15, kappaQ: 0.00, pct: 0.13505328531029068, price: 9389.72551482762 },
+      { kappaC: 0.20, kappaQ: 0.00, pct: 0.1630878671629812, price: 9621.79727936487 },
+      { kappaC: 0.00, kappaQ: 0.25, pct: 0.02385369198823952, price: 8469.250483636068 },
+      { kappaC: 0.05, kappaQ: 0.25, pct: 0.04914014561587713, price: 8678.557780774307 },
+      { kappaC: 0.10, kappaQ: 0.25, pct: 0.0750514985822997, price: 8893.041352855675 },
+      { kappaC: 0.15, kappaQ: 0.25, pct: 0.10160320432324998, price: 9112.82930444388 },
+      { kappaC: 0.20, kappaQ: 0.25, pct: 0.1288110987060361, price: 9338.052912931602 },
+      { kappaC: 0.00, kappaQ: 0.50, pct: -0.006317454742134933, price: 8219.515181110375 },
+      { kappaC: 0.05, kappaQ: 0.50, pct: 0.018223398513271954, price: 8422.646518139401 },
+      { kappaC: 0.10, kappaQ: 0.50, pct: 0.043370713154811655, price: 8630.801288091963 },
+      { kappaC: 0.15, kappaQ: 0.50, pct: 0.06913948633720368, price: 8844.103810101053 },
+      { kappaC: 0.20, kappaQ: 0.50, pct: 0.09554508634653812, price: 9062.681482298554 },
+      { kappaC: 0.00, kappaQ: 0.75, pct: -0.03559898586754299, price: 7977.14859543913 },
+      { kappaC: 0.05, kappaQ: 0.75, pct: -0.011781734103867694, price: 8174.286328834152 },
+      { kappaC: 0.10, kappaQ: 0.75, pct: 0.012624085484792219, price: 8376.299169448022 },
+      { kappaC: 0.15, kappaQ: 0.75, pct: 0.03763302725416548, price: 8583.307762927026 },
+      { kappaC: 0.20, kappaQ: 0.75, pct: 0.06326000572531515, price: 8795.435742863374 },
+      { kappaC: 0.00, kappaQ: 1.00, pct: -0.06401714893399774, price: 7741.93315619452 },
+      { kappaC: 0.05, kappaQ: 1.00, pct: -0.04090214929856241, price: 7933.2542541105195 },
+      { kappaC: 0.10, kappaQ: 1.00, pct: -0.017215947092932886, price: 8129.306516300609 },
+      { kappaC: 0.15, kappaQ: 1.00, pct: 0.0070555823229907924, price: 8330.207023555253 },
+      { kappaC: 0.20, kappaQ: 1.00, pct: 0.0319269131128765, price: 8536.075756252707 },
+      { kappaC: 0.00, kappaQ: 1.25, pct: -0.09159741654413969, price: 7513.657721644142 },
+      { kappaC: 0.05, kappaQ: 1.25, pct: -0.06916394999957386, price: 7699.333923253931 },
+      { kappaC: 0.10, kappaQ: 1.25, pct: -0.04617613344276039, price: 7889.601599350652 },
+      { kappaC: 0.15, kappaQ: 1.25, pct: -0.022620259252736568, price: 8084.574371284845 },
+      { kappaC: 0.20, kappaQ: 1.25, pct: 0.0015177193879351647, price: 8284.368674251695 },
+      { kappaC: 0.00, kappaQ: 1.50, pct: -0.1183645092535323, price: 7292.117388652263 },
+      { kappaC: 0.05, kappaQ: 1.50, pct: -0.09659246846515691, price: 7472.315358768932 },
+      { kappaC: 0.10, kappaQ: 1.50, pct: -0.07428243267359438, price: 7656.969240976212 },
+      { kappaC: 0.15, kappaQ: 1.50, pct: -0.051421098955947465, price: 7846.189299480853 },
+      { kappaC: 0.20, kappaQ: 1.50, pct: -0.027994835214578337, price: 8040.088529128645 }
     ];
 
     var rawFrontier = [
-      { kappaC: 0.00, kappaQStar: 0.5009 },
-      { kappaC: 0.05, kappaQStar: 0.7048 },
-      { kappaC: 0.10, kappaQStar: 0.9088 },
-      { kappaC: 0.15, kappaQStar: 1.1127 },
-      { kappaC: 0.20, kappaQStar: 1.3166 }
+      { kappaC: 0.00, kappaQStar: 0.500929115647994 },
+      { kappaC: 0.05, kappaQStar: 0.7048404721048158 },
+      { kappaC: 0.10, kappaQStar: 0.9087518285616376 },
+      { kappaC: 0.15, kappaQStar: 1.1126631850184594 },
+      { kappaC: 0.20, kappaQStar: 1.3165745414752812 }
     ];
 
     function multiplierFromKappa(kappa) {
@@ -893,10 +917,17 @@
         plugins: {
           title: {
             display: true,
-            text: 'Dual-shift headline frontier at alpha = 0.50',
+            text: 'Medium-run marketization at alpha = 0.50: when does price rise, stay flat, or fall?',
             font: { size: 15, weight: '700' },
             color: C.heading,
             padding: { bottom: 12 }
+          },
+          subtitle: {
+            display: true,
+            text: 'Each dot shows the median price change when more unpaid care is shifted into paid care and the market also changes on the provider side.',
+            color: C.textSec,
+            font: { size: 11.5, weight: '400' },
+            padding: { bottom: 8 }
           },
           legend: {
             position: 'bottom',
@@ -907,23 +938,20 @@
               title: function (items) {
                 var item = items[0];
                 if (item.datasetIndex === 1) {
-                  return 'Median zero-price frontier';
+                  return 'Price stays about flat';
                 }
-                return 'Cost +' + fmtPercentAxis(item.raw.x) + ', supply +' + fmtPercentAxis(item.raw.y);
+                return 'Cost pressure ' + fmtPercentAxis(item.raw.x) + ', paid-care capacity ' + fmtPercentAxis(item.raw.y);
               },
               label: function (ctx) {
                 if (ctx.datasetIndex === 1) {
                   return [
-                    'Frontier supply expansion: +' + fmtPercentAxis(ctx.raw.y),
-                    'Raw kappa_q*: ' + ctx.raw.kappaQStar.toFixed(2),
-                    'Raw kappa_c: ' + ctx.raw.kappaC.toFixed(2)
+                    'Extra paid-care capacity needed: +' + fmtPercentAxis(ctx.raw.y),
+                    'Provider cost increase: ' + fmtPercentAxis(ctx.raw.x)
                   ];
                 }
                 return [
                   'Median price change: ' + fmtPct(ctx.raw.pct),
-                  'Median price: ' + fmtDollar(Math.round(ctx.raw.price)),
-                  'Raw kappa_q: ' + ctx.raw.kappaQ.toFixed(2),
-                  'Raw kappa_c: ' + ctx.raw.kappaC.toFixed(2)
+                  'Median price: ' + fmtDollar(Math.round(ctx.raw.price))
                 ];
               }
             }
@@ -934,7 +962,7 @@
             type: 'linear',
             min: -0.01,
             max: 0.115,
-            title: { display: true, text: 'Headline-alpha cost pressure', color: C.textSec },
+            title: { display: true, text: 'Provider cost increase at alpha = 0.50', color: C.textSec },
             ticks: {
               stepSize: 0.05,
               color: C.textSec,
@@ -945,7 +973,7 @@
           y: {
             min: -0.02,
             max: 1.15,
-            title: { display: true, text: 'Headline-alpha supply expansion', color: C.textSec },
+            title: { display: true, text: 'Paid-care capacity expansion at alpha = 0.50', color: C.textSec },
             ticks: {
               stepSize: 0.25,
               color: C.textSec,
