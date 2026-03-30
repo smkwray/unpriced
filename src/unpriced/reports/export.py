@@ -498,14 +498,14 @@ def build_markdown_report(
     if satellite_account is not None:
         latest = satellite_account.get("latest_year", {})
         methodologies = satellite_account.get("benchmark_methodologies", {})
-        under5_method = methodologies.get("under5_child_equivalent_replacement_cost", {})
-        under5_latest = under5_method.get("latest_year", {})
+        bridge_method = methodologies.get("active_care_bridge_benchmark", {})
+        under5_latest = bridge_method.get("latest_year", {})
         lines.extend(
             [
                 "## National childcare benchmarks",
                 "- The report now carries two descriptive benchmarks side by side rather than one silently replacing the other.",
                 f"- annual-hours account identity: {satellite_account.get('valuation_identity', 'hourly replacement price x unpaid annual childcare hours')}",
-                f"- under-5 child-equivalent identity: {under5_method.get('valuation_identity', 'annual replacement price x under5 child-equivalent quantity')}",
+                f"- active-care bridge identity: {bridge_method.get('valuation_identity', 'annual replacement price x active-care bridge quantity')}",
                 f"- support years: {satellite_account.get('support_years', [])}",
                 (
                     f"- latest annual-hours account year ({latest.get('year')}): preferred benchmark {latest.get('preferred_value', 0):.2f}, "
@@ -515,12 +515,12 @@ def build_markdown_report(
                 if latest
                 else "- latest annual-hours account year: n/a",
                 (
-                    f"- latest under-5 child-equivalent year ({under5_latest.get('year')}): preferred benchmark {under5_latest.get('preferred_value', 0):.2f}, "
+                    f"- latest active-care bridge year ({under5_latest.get('year')}): preferred benchmark {under5_latest.get('preferred_value', 0):.2f}, "
                     f"gross-market upper benchmark {under5_latest.get('gross_market_value', 0):.2f}, "
                     f"quantity {under5_latest.get('quantity_slots', 0):.2f}"
                 )
                 if under5_latest
-                else "- latest under-5 child-equivalent year: n/a",
+                else "- latest active-care bridge year: n/a",
                 (
                     f"- latest-year price-support population share: {latest.get('price_support_population_share', 0):.1%}"
                     if latest
@@ -535,7 +535,7 @@ def build_markdown_report(
                 if latest
                 else "- latest-year active household / nonhousehold / supervisory hours: n/a",
                 "- The direct-care benchmark nets out a pooled residual bucket that can include facilities, administration, meals, transport, advertising, profits, and market power, but those pieces are not separately identified.",
-                "- The annual-hours account is broader because supervisory care is still additive and not yet overlap-adjusted.",
+                "- The annual-hours account is broader because it keeps active household, active nonhousehold, and supervisory care explicit; supervisory care is still additive and not yet overlap-adjusted.",
                 "- Travel is still excluded in this first repair wave, so the broader annual-hours account remains conservative relative to some household-production accounts even while it is much larger than the child-equivalent bridge.",
                 "",
             ]
@@ -845,20 +845,17 @@ def build_childcare_satellite_account(
     annual["price_support_population_share"] = annual["price_support_population"].div(
         annual["national_under5_population"].replace({0: pd.NA})
     )
-    annual["under5_child_equivalent_quantity"] = (
+    annual["active_care_bridge_quantity_slots"] = (
         annual["unpaid_active_childcare_hours_per_respondent_year"]
         * annual["national_under5_population"]
         / (52.0 * market_hours)
     )
-    annual["under5_average_unpaid_childcare_hours_per_child_year"] = annual[
-        "unpaid_active_childcare_hours_per_respondent_year"
-    ]
     annual["specialist_child_equivalent_price"] = annual["specialist_childcare_wage"] * 52.0 * market_hours
-    annual["under5_direct_care_value"] = annual["under5_child_equivalent_quantity"] * annual["direct_care_price"]
-    annual["under5_gross_market_value"] = annual["under5_child_equivalent_quantity"] * annual["gross_market_price"]
-    annual["under5_non_direct_value"] = annual["under5_child_equivalent_quantity"] * annual["non_direct_care_price"]
-    annual["under5_specialist_value"] = (
-        annual["under5_child_equivalent_quantity"] * annual["specialist_child_equivalent_price"]
+    annual["active_care_bridge_direct_care_value"] = annual["active_care_bridge_quantity_slots"] * annual["direct_care_price"]
+    annual["active_care_bridge_gross_market_value"] = annual["active_care_bridge_quantity_slots"] * annual["gross_market_price"]
+    annual["active_care_bridge_non_direct_value"] = annual["active_care_bridge_quantity_slots"] * annual["non_direct_care_price"]
+    annual["active_care_bridge_specialist_value"] = (
+        annual["active_care_bridge_quantity_slots"] * annual["specialist_child_equivalent_price"]
     )
     annual["national_total_childcare_hours_total"] = (
         annual["national_active_childcare_hours_total"] + annual["national_supervisory_childcare_hours_total"]
@@ -899,8 +896,6 @@ def build_childcare_satellite_account(
         "price_support_population",
         "national_under5_population",
         "price_support_population_share",
-        "under5_child_equivalent_quantity",
-        "under5_average_unpaid_childcare_hours_per_child_year",
         "unpaid_active_childcare_hours_per_respondent_year",
         "unpaid_supervisory_childcare_hours_per_respondent_year",
         "national_active_household_childcare_hours_total",
@@ -913,17 +908,34 @@ def build_childcare_satellite_account(
         "non_direct_care_hourly_price",
         "benchmark_childcare_wage",
         "specialist_childcare_wage",
-        "under5_gross_market_value",
-        "under5_direct_care_value",
-        "under5_non_direct_value",
-        "under5_specialist_value",
         "gross_market_total_value",
         "direct_care_total_value",
         "non_direct_total_value",
         "specialist_total_value",
     ]
+    bridge_table_columns = [
+        "year",
+        "atus_sensitivity_year",
+        "price_support_population",
+        "national_under5_population",
+        "price_support_population_share",
+        "unpaid_active_childcare_hours_per_respondent_year",
+        "active_care_bridge_quantity_slots",
+        "gross_market_price",
+        "direct_care_price",
+        "non_direct_care_price",
+        "specialist_child_equivalent_price",
+        "active_care_bridge_gross_market_value",
+        "active_care_bridge_direct_care_value",
+        "active_care_bridge_non_direct_value",
+        "active_care_bridge_specialist_value",
+    ]
+    annual_hours_table_columns = table_columns.copy()
+    combined_table_columns = bridge_table_columns + [
+        column for column in annual_hours_table_columns if column not in bridge_table_columns
+    ]
     output_table_path.parent.mkdir(parents=True, exist_ok=True)
-    annual.loc[:, table_columns].to_csv(output_table_path, index=False)
+    annual.loc[:, combined_table_columns].to_csv(output_table_path, index=False)
 
     latest = annual.iloc[-1].to_dict() if not annual.empty else {}
     headline_mask = annual["year"].between(headline_year_start, headline_year_end)
@@ -946,32 +958,30 @@ def build_childcare_satellite_account(
         headline_summary["supervisory_hours_mean"] = float(headline_frame["national_supervisory_childcare_hours_total"].mean())
     child_equivalent_headline_summary = _window_summary(
         headline_frame,
-        preferred_col="under5_direct_care_value",
-        gross_col="under5_gross_market_value",
-        quantity_col="under5_child_equivalent_quantity",
+        preferred_col="active_care_bridge_direct_care_value",
+        gross_col="active_care_bridge_gross_market_value",
+        quantity_col="active_care_bridge_quantity_slots",
         quantity_key="quantity_slots_mean",
         year_start=headline_year_start,
         year_end=headline_year_end,
         exclude_sensitivity=exclude_sensitivity,
     )
     if child_equivalent_headline_summary:
-        child_equivalent_headline_summary["average_unpaid_childcare_hours_per_child_year_mean"] = float(
-            headline_frame["under5_average_unpaid_childcare_hours_per_child_year"].mean()
+        child_equivalent_headline_summary["active_childcare_hours_per_respondent_year_mean"] = float(
+            headline_frame["unpaid_active_childcare_hours_per_respondent_year"].mean()
         )
     child_equivalent_latest = {}
     if latest:
         child_equivalent_latest = {
             "year": int(latest["year"]),
-            "preferred_value": float(latest["under5_direct_care_value"]),
-            "gross_market_value": float(latest["under5_gross_market_value"]),
-            "non_direct_value": float(latest["under5_non_direct_value"]),
-            "specialist_value": float(latest["under5_specialist_value"]),
-            "quantity_slots": float(latest["under5_child_equivalent_quantity"]),
+            "preferred_value": float(latest["active_care_bridge_direct_care_value"]),
+            "gross_market_value": float(latest["active_care_bridge_gross_market_value"]),
+            "non_direct_value": float(latest["active_care_bridge_non_direct_value"]),
+            "specialist_value": float(latest["active_care_bridge_specialist_value"]),
+            "quantity_slots": float(latest["active_care_bridge_quantity_slots"]),
             "direct_care_price": float(latest["direct_care_price"]),
             "gross_market_price": float(latest["gross_market_price"]),
-            "average_unpaid_childcare_hours_per_child_year": float(
-                latest["under5_average_unpaid_childcare_hours_per_child_year"]
-            ),
+            "active_childcare_hours_per_respondent_year": float(latest["unpaid_active_childcare_hours_per_respondent_year"]),
             "price_support_population_share": float(latest["price_support_population_share"]),
         }
     annual_hours_latest = {}
@@ -991,31 +1001,37 @@ def build_childcare_satellite_account(
             "gross_market_hourly_price": float(latest["gross_market_hourly_price"]),
             "price_support_population_share": float(latest["price_support_population_share"]),
         }
+    bridge_annual = annual.loc[:, bridge_table_columns].to_dict(orient="records")
+    annual_hours_annual = annual.loc[:, annual_hours_table_columns].to_dict(orient="records")
     summary = {
-        "series_name": "childcare_static_account",
+        "series_name": "childcare_benchmarks",
+        "default_methodology": "annual_hours_childcare_account",
+        "compatibility_note": "Top-level preferred_series, valuation_identity, quantity_identity, annual, headline_window, and latest_year remain annual-hours aliases for backward compatibility.",
         "preferred_series": "direct_care_total_value",
         "valuation_identity": "hourly replacement price x unpaid annual childcare hours",
         "quantity_identity": "total_childcare_hours = active_household_hours + active_nonhousehold_hours + supervisory_hours",
         "scope": "national_year",
         "support_years": annual["year"].astype(int).tolist(),
         "market_hours_per_child_per_week": market_hours,
-        "marketization_bridge_note": "The marketization solver remains a separate active-under-5 lower-bound bridge and is not this static-account quantity object.",
-        "annual": annual.to_dict(orient="records"),
+        "marketization_bridge_note": "The marketization solver remains a separate active-care bridge scaled to the under-5 population and is not the annual-hours account quantity object.",
+        "annual": annual_hours_annual,
         "headline_window": headline_summary,
-        "latest_year": latest,
+        "latest_year": annual.iloc[-1].loc[annual_hours_table_columns].to_dict() if not annual.empty else {},
         "benchmark_methodologies": {
-            "under5_child_equivalent_replacement_cost": {
-                "label": "Under-5 child-equivalent replacement-cost benchmark",
-                "preferred_series": "under5_direct_care_value",
-                "valuation_identity": "annual replacement price x under5 child-equivalent quantity",
-                "quantity_identity": "under5_child_equivalent_quantity = national_under5_population x average_unpaid_active_childcare_hours_per_child_year / (52 x market_hours_per_child_per_week)",
+            "active_care_bridge_benchmark": {
+                "label": "Active-care bridge benchmark (scaled to under-5 population)",
+                "preferred_series": "active_care_bridge_direct_care_value",
+                "valuation_identity": "annual replacement price x active-care bridge quantity",
+                "quantity_identity": "active_care_bridge_quantity_slots = national_under5_population x unpaid_active_childcare_hours_per_respondent_year / (52 x market_hours_per_child_per_week)",
                 "scope": "national_year",
+                "annual": bridge_annual,
                 "headline_window": child_equivalent_headline_summary,
                 "latest_year": child_equivalent_latest,
                 "notes": [
-                    "This is the narrower under-5 bridge benchmark closest to the solver quantity object.",
-                    "It values active childcare only; supervisory hours remain outside this benchmark.",
-                    "The preferred direct-care series removes the pooled non-direct-care residual, but does not separately identify advertising, transport, administration, profits, or market power.",
+                    "This is the narrower active-care bridge benchmark closest to the solver quantity object.",
+                    "It scales respondent-level active childcare time to the national under-5 population, but it is not an under-5-only ATUS time slice.",
+                    "It excludes supervisory care.",
+                    "The preferred direct-care series removes the pooled non-direct-care residual, but does not separately identify facilities, meals, advertising, transport, administration, profits, or market power.",
                 ],
             },
             "annual_hours_childcare_account": {
@@ -1024,6 +1040,7 @@ def build_childcare_satellite_account(
                 "valuation_identity": "hourly replacement price x unpaid annual childcare hours",
                 "quantity_identity": "total_childcare_hours = active_household_hours + active_nonhousehold_hours + supervisory_hours",
                 "scope": "national_year",
+                "annual": annual_hours_annual,
                 "headline_window": headline_summary,
                 "latest_year": annual_hours_latest,
                 "notes": [
@@ -1038,7 +1055,7 @@ def build_childcare_satellite_account(
             "The preferred benchmark values unpaid childcare hours, including supervisory care, at the direct-care-equivalent hourly price.",
             "The gross-market hourly benchmark is an upper valuation layer that retains non-direct-care residual components.",
             "The specialist valuation layer uses the OEWS preschool-teacher wage as a simple public-data specialist proxy, falling back to the childcare-worker wage when needed.",
-            "The marketization solver remains a separate active-under-5 bridge; its slot proxies are not the static-account quantity object.",
+            "The marketization solver remains a separate active-care bridge scaled to the under-5 population; its quantity proxies are not the annual-hours account quantity object.",
             "Travel remains excluded in this first repair wave, so the static account should still be read as conservative relative to broader child-care accounts.",
             "ATUS 2020 remains a sensitivity year and is flagged, not dropped, in this descriptive static-account output.",
         ],
@@ -1051,12 +1068,12 @@ def build_childcare_satellite_account(
         "",
         "This artifact publishes two descriptive childcare benchmarks side by side:",
         "",
-        "- **Under-5 child-equivalent replacement-cost benchmark**",
-        "  `value = annual replacement price x under5 child-equivalent quantity`",
+        "- **Active-care bridge benchmark (scaled to under-5 population)**",
+        "  `value = annual replacement price x active-care bridge quantity`",
         "- **Annual-hours childcare account**",
         "  `value = hourly replacement price x unpaid annual childcare hours`",
         "",
-        "Both preferred series use the **direct-care-equivalent** layer, which removes a pooled non-direct-care residual but does not separately identify markup, advertising, transport, or administrative overhead.",
+        "Both preferred series use the **direct-care-equivalent** layer, which removes a pooled non-direct-care residual but does not separately identify facilities, meals, markup, advertising, transport, administrative overhead, profits, or market power.",
         "",
         f"- Support years: `{summary['support_years'][0]}-{summary['support_years'][-1]}`" if summary["support_years"] else "- Support years: n/a",
         f"- Marketization bridge: `{summary['marketization_bridge_note']}`",
@@ -1064,10 +1081,10 @@ def build_childcare_satellite_account(
     if child_equivalent_headline_summary:
         lines.extend(
             [
-                f"- Under-5 child-equivalent headline window: `{child_equivalent_headline_summary['window_label']}`",
-                f"- Under-5 child-equivalent preferred mean: `{child_equivalent_headline_summary['preferred_value_mean']:.2f}`",
-                f"- Under-5 child-equivalent quantity mean: `{child_equivalent_headline_summary['quantity_slots_mean']:.2f}`",
-                f"- Under-5 average unpaid childcare hours per child-year mean: `{child_equivalent_headline_summary['average_unpaid_childcare_hours_per_child_year_mean']:.2f}`",
+                f"- Active-care bridge headline window: `{child_equivalent_headline_summary['window_label']}`",
+                f"- Active-care bridge preferred mean: `{child_equivalent_headline_summary['preferred_value_mean']:.2f}`",
+                f"- Active-care bridge quantity mean: `{child_equivalent_headline_summary['quantity_slots_mean']:.2f}`",
+                f"- Active childcare hours per respondent-year mean: `{child_equivalent_headline_summary['active_childcare_hours_per_respondent_year_mean']:.2f}`",
             ]
         )
     if headline_summary:
@@ -1082,11 +1099,11 @@ def build_childcare_satellite_account(
     if child_equivalent_latest:
         lines.extend(
             [
-                f"- Latest under-5 child-equivalent year: `{child_equivalent_latest['year']}`",
-                f"- Latest under-5 child-equivalent preferred benchmark: `{child_equivalent_latest['preferred_value']:.2f}`",
-                f"- Latest under-5 child-equivalent gross-market upper benchmark: `{child_equivalent_latest['gross_market_value']:.2f}`",
-                f"- Latest under-5 child-equivalent quantity: `{child_equivalent_latest['quantity_slots']:.2f}`",
-                f"- Latest under-5 average unpaid childcare hours per child-year: `{child_equivalent_latest['average_unpaid_childcare_hours_per_child_year']:.2f}`",
+                f"- Latest active-care bridge year: `{child_equivalent_latest['year']}`",
+                f"- Latest active-care bridge preferred benchmark: `{child_equivalent_latest['preferred_value']:.2f}`",
+                f"- Latest active-care bridge gross-market upper benchmark: `{child_equivalent_latest['gross_market_value']:.2f}`",
+                f"- Latest active-care bridge quantity: `{child_equivalent_latest['quantity_slots']:.2f}`",
+                f"- Latest active childcare hours per respondent-year: `{child_equivalent_latest['active_childcare_hours_per_respondent_year']:.2f}`",
             ]
         )
     if annual_hours_latest:
@@ -1108,12 +1125,12 @@ def build_childcare_satellite_account(
             "",
             "## Interpretation",
             "- Read both measures as accounting benchmarks, not as predictions of what would happen if all unpaid care were marketized.",
-            "- The under-5 child-equivalent benchmark is the narrower bridge object; the annual-hours account is much broader because it includes supervisory care.",
-            "- The preferred direct-care layer strips out a pooled non-direct residual, but it is not a full home-production purification and does not separately identify markup, advertising, transport, or administrative overhead.",
+            "- The active-care bridge benchmark is the narrower bridge object; the annual-hours account is much broader because it includes active household care, active nonhousehold care, and supervisory care.",
+            "- The preferred direct-care layer strips out a pooled non-direct residual, but it is not a full home-production purification and does not separately identify facilities, meals, markup, advertising, transport, administrative overhead, profits, or market power.",
             "- The specialist layer remains a transparent public-data proxy, not yet a full education-adjusted Suh-Folbre replication.",
             "",
             "## Annual series preview",
-            _markdown_table(annual.loc[:, table_columns].round(2)),
+            _markdown_table(annual.loc[:, combined_table_columns].round(2)),
         ]
     )
     output_markdown_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1193,7 +1210,7 @@ def build_childcare_headline_summary(
         "implied_wage_sensitivity_min": min(wage_values) if wage_values else None,
         "implied_wage_sensitivity_max": max(wage_values) if wage_values else None,
         "notes": [
-            "The primary static benchmark is now the pooled national childcare static account; solver quantities are a separate under-5 lower-bound bridge.",
+            "The primary static benchmark is now the pooled national childcare static account; solver quantities remain a separate active-care bridge scaled to the under-5 population.",
             "Gross market prices remain the canonical solver output.",
             "Direct-care-equivalent prices are a decomposition layer based on observed childcare wages plus staffing and fringe assumptions.",
             "The decomposition is capped at the gross market price; the clip-binding share shows how often the raw labor-equivalent price would otherwise exceed gross price.",

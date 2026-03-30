@@ -602,7 +602,7 @@ def build_childcare_panels(paths: ProjectPaths) -> tuple[pd.DataFrame, pd.DataFr
     state["market_quantity_proxy"] = state["under5_population"] * float(assumptions["market_hours_per_child_per_week"])
     state["unpaid_quantity_proxy"] = state["unpaid_active_childcare_hours"] * state["under5_population"] / 52.0
     state["market_quantity_proxy_basis"] = "under5_population_x_market_hours_per_child_per_week"
-    state["unpaid_quantity_proxy_basis"] = "active_under5_only_lower_bound_bridge"
+    state["unpaid_quantity_proxy_basis"] = "active_childcare_population_scaled_bridge"
     state["childcare_bridge_estimand"] = "marketization_bridge"
     state = _annotate_state_sample_ladder(state, county, float(assumptions["low_impute_threshold"]))
     write_parquet(state, paths.processed / "childcare_state_year_panel.parquet")

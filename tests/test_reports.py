@@ -307,7 +307,7 @@ def test_build_childcare_satellite_account_nationalizes_from_person_equivalent_w
     summary = read_json(output_json_path)
     latest = summary["latest_year"]
     methodologies = summary["benchmark_methodologies"]
-    under5 = methodologies["under5_child_equivalent_replacement_cost"]
+    bridge = methodologies["active_care_bridge_benchmark"]
     annual_hours = methodologies["annual_hours_childcare_account"]
 
     assert latest["national_active_childcare_hours_total"] == 200_000.0
@@ -320,10 +320,16 @@ def test_build_childcare_satellite_account_nationalizes_from_person_equivalent_w
     assert summary["headline_window"]["window_years"] == [2018, 2019]
     assert summary["headline_window"]["excludes_sensitivity_years"] is True
     assert summary["headline_window"]["preferred_value_mean"] == 1_462_500.0
-    assert under5["label"] == "Under-5 child-equivalent replacement-cost benchmark"
-    assert under5["latest_year"]["quantity_slots"] == 200_000.0 / (52.0 * 20.0)
-    assert under5["latest_year"]["preferred_value"] == pytest.approx(1_000_000.0)
-    assert under5["headline_window"]["preferred_value_mean"] == pytest.approx(1_000_000.0)
+    assert summary["default_methodology"] == "annual_hours_childcare_account"
+    assert "Top-level preferred_series" in summary["compatibility_note"]
+    assert bridge["label"] == "Active-care bridge benchmark (scaled to under-5 population)"
+    assert bridge["latest_year"]["quantity_slots"] == 200_000.0 / (52.0 * 20.0)
+    assert bridge["latest_year"]["preferred_value"] == pytest.approx(1_000_000.0)
+    assert bridge["headline_window"]["preferred_value_mean"] == pytest.approx(1_000_000.0)
+    assert bridge["annual"][-1]["active_care_bridge_quantity_slots"] == pytest.approx(200_000.0 / (52.0 * 20.0))
+    assert "active_childcare_hours_per_respondent_year" in bridge["latest_year"]
+    assert "average_unpaid_childcare_hours_per_child_year" not in bridge["latest_year"]
+    assert annual_hours["annual"][-1]["national_active_nonhousehold_childcare_hours_total"] == 50_000.0
     assert annual_hours["latest_year"]["supervisory_hours_total"] == 100_000.0
 
 

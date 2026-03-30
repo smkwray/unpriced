@@ -3415,10 +3415,15 @@ def test_report_writes_figure_assets(project_paths):
     assert "## National childcare benchmarks" in report
     assert "secondary local IV supply elasticity (provider density)" in report
     assert "Childcare Headline Readout" in readout
+    assert satellite["default_methodology"] == "annual_hours_childcare_account"
     assert satellite["preferred_series"] == "direct_care_total_value"
+    assert "Top-level preferred_series" in satellite["compatibility_note"]
     assert satellite["latest_year"]["price_support_population_share"] < 1.0
+    assert "active_care_bridge_benchmark" in satellite["benchmark_methodologies"]
+    assert "annual" in satellite["benchmark_methodologies"]["active_care_bridge_benchmark"]
+    assert "annual" in satellite["benchmark_methodologies"]["annual_hours_childcare_account"]
     assert "hourly replacement price x unpaid annual childcare hours" in satellite_md
-    assert "Under-5 child-equivalent replacement-cost benchmark" in satellite_md
+    assert "Active-care bridge benchmark (scaled to under-5 population)" in satellite_md
 
 
 def test_mode_only_commands_accept_real_and_sample_flags():

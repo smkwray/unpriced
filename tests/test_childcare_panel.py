@@ -68,7 +68,7 @@ def test_build_childcare_panels(project_paths):
     assert len(state) >= 3
     assert county["direct_care_price_index"].le(county["annual_price"]).all()
     assert state["state_direct_care_price_index"].le(state["state_price_index"]).fillna(True).all()
-    assert state["unpaid_quantity_proxy_basis"].eq("active_under5_only_lower_bound_bridge").all()
+    assert state["unpaid_quantity_proxy_basis"].eq("active_childcare_population_scaled_bridge").all()
     assert state["childcare_bridge_estimand"].eq("marketization_bridge").all()
 
 
