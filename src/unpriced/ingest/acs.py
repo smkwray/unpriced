@@ -27,6 +27,8 @@ REQUIRED_COLUMNS = {
     "state_fips",
     "year",
     "under5_population",
+    "under5_male_population",
+    "under5_female_population",
     "under6_population",
     "median_income",
     "rent_index",
@@ -51,6 +53,7 @@ def _fetch_acs(year: int) -> pd.DataFrame:
         "get": (
             "NAME,"
             "B01001_003E,"
+            "B01001_027E,"
             "B19113_001E,"
             "B25064_001E,"
             "B23008_002E,"
@@ -75,7 +78,8 @@ def _fetch_acs(year: int) -> pd.DataFrame:
     frame["year"] = year
     frame = frame.rename(
         columns={
-            "B01001_003E": "under5_population",
+            "B01001_003E": "under5_male_population",
+            "B01001_027E": "under5_female_population",
             "B19113_001E": "median_income",
             "B25064_001E": "rent_index",
             "B23008_002E": "under6_population",
@@ -83,7 +87,8 @@ def _fetch_acs(year: int) -> pd.DataFrame:
         }
     )
     numeric_columns = [
-        "under5_population",
+        "under5_male_population",
+        "under5_female_population",
         "median_income",
         "rent_index",
         "under6_population",
@@ -96,6 +101,10 @@ def _fetch_acs(year: int) -> pd.DataFrame:
     ]
     for column in numeric_columns:
         frame[column] = pd.to_numeric(frame[column], errors="coerce")
+
+    frame["under5_population"] = (
+        frame["under5_male_population"].fillna(0.0) + frame["under5_female_population"].fillna(0.0)
+    )
 
     in_labor_force = (
         frame["B23008_004E"].fillna(0.0)
@@ -113,6 +122,8 @@ def _fetch_acs(year: int) -> pd.DataFrame:
         "state_fips",
         "year",
         "under5_population",
+        "under5_male_population",
+        "under5_female_population",
         "under6_population",
         "median_income",
         "rent_index",
@@ -123,6 +134,8 @@ def _fetch_acs(year: int) -> pd.DataFrame:
     for column in [
         "year",
         "under5_population",
+        "under5_male_population",
+        "under5_female_population",
         "under6_population",
         "median_income",
         "rent_index",

@@ -4,6 +4,7 @@ import io
 import zipfile
 from pathlib import Path
 
+import duckdb
 import pandas as pd
 import requests
 
@@ -23,6 +24,7 @@ SPEC = SourceSpec(
 )
 
 CHILDCARE_OCC_CODE = "39-9011"
+PRESCHOOL_TEACHER_OCC_CODE = "25-2011"
 OUTSIDE_OPTION_OCC_CODE = "35-0000"
 STATE_ABBREV_TO_FIPS = {
     "AL": "01",
@@ -77,6 +79,13 @@ STATE_ABBREV_TO_FIPS = {
     "WI": "55",
     "WY": "56",
 }
+REQUIRED_NORMALIZED_COLUMNS = {
+    "state_fips",
+    "year",
+    "oews_childcare_worker_wage",
+    "oews_preschool_teacher_wage",
+    "oews_outside_option_wage",
+}
 
 
 def _zip_url(year: int) -> str:
@@ -121,13 +130,40 @@ def _normalize_oews_zip(path: Path, url: str, year: int) -> pd.DataFrame:
     childcare = data.loc[data["OCC_CODE"].astype(str).eq(CHILDCARE_OCC_CODE), ["state_fips", "hourly_mean"]]
     childcare = childcare.rename(columns={"hourly_mean": "oews_childcare_worker_wage"})
 
+    preschool = data.loc[
+        data["OCC_CODE"].astype(str).eq(PRESCHOOL_TEACHER_OCC_CODE),
+        ["state_fips", "hourly_mean"],
+    ]
+    preschool = preschool.rename(columns={"hourly_mean": "oews_preschool_teacher_wage"})
+
     outside = data.loc[data["OCC_CODE"].astype(str).eq(OUTSIDE_OPTION_OCC_CODE), ["state_fips", "hourly_mean"]]
     outside = outside.rename(columns={"hourly_mean": "oews_outside_option_wage"})
 
-    merged = childcare.merge(outside, on="state_fips", how="outer")
+    merged = childcare.merge(preschool, on="state_fips", how="outer")
+    merged = merged.merge(outside, on="state_fips", how="outer")
     merged["year"] = int(year)
     merged["source_url"] = url
     return merged.sort_values("state_fips").reset_index(drop=True)
+
+
+def _quoted(path: Path) -> str:
+    return str(path).replace("'", "''")
+
+
+def _has_required_schema(normalized_path: Path) -> bool:
+    if not normalized_path.exists():
+        return False
+    con = duckdb.connect()
+    try:
+        rows = con.execute(
+            f"DESCRIBE SELECT * FROM read_parquet('{_quoted(normalized_path)}')"
+        ).fetchall()
+    except Exception:
+        return False
+    finally:
+        con.close()
+    columns = {row[0] for row in rows}
+    return REQUIRED_NORMALIZED_COLUMNS.issubset(columns)
 
 
 def ingest(
@@ -146,7 +182,7 @@ def ingest(
     normalized_path = paths.interim / SPEC.name / f"{SPEC.name}.parquet"
     if dry_run:
         return IngestResult(SPEC.name, raw_path, normalized_path, False, dry_run=True, detail=url)
-    if raw_path.exists() and normalized_path.exists() and not refresh:
+    if raw_path.exists() and normalized_path.exists() and _has_required_schema(normalized_path) and not refresh:
         return IngestResult(SPEC.name, raw_path, normalized_path, False, skipped=True, detail="cached")
 
     raw_path.parent.mkdir(parents=True, exist_ok=True)

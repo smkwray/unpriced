@@ -22,6 +22,7 @@ def test_build_childcare_panels(project_paths):
     assert {
         "provider_density",
         "benchmark_childcare_wage",
+        "specialist_childcare_wage",
         "direct_care_price_index",
         "non_direct_care_price_index",
         "direct_care_labor_share",
@@ -36,7 +37,15 @@ def test_build_childcare_panels(project_paths):
         "state_direct_care_labor_share",
         "state_effective_children_per_worker",
         "state_implied_direct_care_hourly_wage",
+        "state_specialist_childcare_wage",
+        "unpaid_active_childcare_hours",
+        "unpaid_active_household_childcare_hours",
+        "unpaid_active_nonhousehold_childcare_hours",
+        "unpaid_supervisory_childcare_hours",
         "unpaid_quantity_proxy",
+        "market_quantity_proxy_basis",
+        "unpaid_quantity_proxy_basis",
+        "childcare_bridge_estimand",
         "state_controls_source",
         "state_unemployment_source",
         "state_price_support_window",
@@ -59,6 +68,8 @@ def test_build_childcare_panels(project_paths):
     assert len(state) >= 3
     assert county["direct_care_price_index"].le(county["annual_price"]).all()
     assert state["state_direct_care_price_index"].le(state["state_price_index"]).fillna(True).all()
+    assert state["unpaid_quantity_proxy_basis"].eq("active_under5_only_lower_bound_bridge").all()
+    assert state["childcare_bridge_estimand"].eq("marketization_bridge").all()
 
 
 def test_build_childcare_panels_backfills_county_covariates(project_paths):
@@ -196,6 +207,18 @@ def test_diagnose_childcare_pipeline_reports_acs_year_coverage(project_paths):
     # Sample data has matching years, so no missing years
     assert len(diag["acs_missing_county_years"]) == 0
     assert diag["county_controls_acs_direct"] == diag["county_year_rows"]
+
+
+def test_build_childcare_panels_keep_slot_proxies_out_of_static_hours_output(project_paths):
+    for ingestor in (ingest_atus, ingest_ndcp, ingest_qcew, ingest_acs, ingest_head_start, ingest_nces_ccd, ingest_oews):
+        ingestor(project_paths, sample=True)
+
+    build_childcare_panels(project_paths)
+    static_hours = read_parquet(project_paths.processed / "childcare_state_year_static_hours.parquet")
+
+    assert "market_quantity_proxy" not in static_hours.columns
+    assert "unpaid_quantity_proxy" not in static_hours.columns
+    assert {"unpaid_active_childcare_hours", "unpaid_supervisory_childcare_hours"} <= set(static_hours.columns)
 
 
 def test_build_childcare_panels_assigns_state_sources(project_paths):

@@ -51,6 +51,15 @@ def childcare_model_assumptions(paths_or_root: ProjectPaths | Path) -> dict[str,
         "market_hours_per_child_per_week": float(
             config.get("fallbacks", {}).get("market_hours_per_child_per_week", 18.24)
         ),
+        "static_account_headline_year_start": int(
+            config.get("static_account", {}).get("headline_year_start", 2017)
+        ),
+        "static_account_headline_year_end": int(
+            config.get("static_account", {}).get("headline_year_end", 2019)
+        ),
+        "static_account_exclude_sensitivity_years": bool(
+            config.get("static_account", {}).get("exclude_sensitivity_years", True)
+        ),
         "sensitivity_staffing_cases": {
             str(key): float(value)
             for key, value in config.get("sensitivity", {}).get("staffing_scale_cases", {}).items()

@@ -33,6 +33,12 @@ def test_state_year_panel_prefers_observed_acs_and_laus_controls(project_paths):
     assert california["median_income"] == 110000.0
     assert california["unemployment_rate"] == 0.076
     assert california["births"] == 420786.0
+    assert california["unpaid_active_childcare_hours"] > 0
+    assert california["unpaid_supervisory_childcare_hours"] > 0
+    assert california["unpaid_active_childcare_hours_total"] > 0
+    assert california["unpaid_supervisory_childcare_hours_total"] > 0
+    assert "market_quantity_proxy" not in panel.columns
+    assert "unpaid_quantity_proxy" not in panel.columns
 
 
 def test_state_year_panel_tracks_births_source_and_suppression_status(project_paths):

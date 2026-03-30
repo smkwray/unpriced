@@ -2,9 +2,9 @@
 
 Reproducible estimates of what unpaid household work would cost at market prices, built entirely from free public data. The flagship module is childcare.
 
-Satellite accounts usually value unpaid work by multiplying unpaid hours by today's market replacement price. That is transparent, it is standard, and this project produces exactly that benchmark. But replacement cost treats the observed price as though it could be applied unchanged to any volume of market substitution. It takes a marginal price and extrapolates it linearly into an inframarginal valuation. For childcare, where labor supply is constrained, capacity is regulated, and quality standards bind, that is a strong assumption and often an implausible one.
+This repo has three related but distinct childcare objects. First, an under-5 child-equivalent replacement-cost benchmark, which keeps the narrower active-under-5 bridge quantity close to the original benchmark published in this project. Second, a broader annual-hours childcare account, which keeps active care and supervisory care explicit and values them in annual hours and dollars. Third, the marketization model, which uses the same under-5 bridge quantity class as a solver input rather than as a standalone accounting benchmark. Those are not the same estimand and should not be read as interchangeable.
 
-So this project produces two things. First, a marginal replacement-cost satellite account, which is the standard accounting benchmark done carefully. Second, and more ambitiously, a counterfactual marketization price: the price at which the childcare sector would need to clear if some share of unpaid care were actually shifted into the paid market at scale. The marketization price is scale-sensitive, elasticity-informed, and closer to the object that policymakers actually need when they ask about formalization, subsidization, or expanding care provision.
+Replacement cost is still useful. But for childcare it is only one part of the story. A static account values unpaid care at observed replacement prices. A marketization model asks what price would clear if some share of unpaid care actually moved into the paid sector. The first is an accounting benchmark. The second is a scale-sensitive transition object.
 
 Replacement cost is useful for saying what unpaid care is worth if purchased one unit at a time at current prices. But policy does not operate one unit at a time. Real policy asks what happens when many households shift behavior together. At that point, prices, wages, and capacity matter. Replacement cost prices unpaid care as if markets were passive. Marketization price asks what happens when markets have to absorb it. One is a spot price. The other is a transition price.
 
@@ -14,35 +14,31 @@ Both products are demonstration-grade: honest about their limitations, transpare
 
 ## How to read this demo
 
-- **Benchmark** asks what unpaid childcare is worth at today’s marginal replacement price.
+- **Under-5 child-equivalent benchmark** asks what the narrower active-under-5 bridge quantity is worth at current replacement prices.
+- **Annual-hours childcare account** asks what a broader household-production quantity is worth at transparent hourly replacement-price layers.
 - **Short-run canonical** asks what price clears if unpaid care enters the current paid market with fixed supply shape.
 - **Medium-run sensitivity** asks what happens if marketization also expands paid-care capacity and raises provider costs.
 - **Diagnostics / audit** ask how much support quality, fit stability, and decomposition quality readers should trust.
 
 ---
 
-## National satellite account benchmark
+## National childcare benchmarks
 
-Latest benchmark year: **2022**. This is a partial-equilibrium accounting identity. It values unpaid childcare at the current marginal replacement price, with no equilibrium adjustment for what would happen if that care actually entered the market.
+Latest benchmark year: **2022** in the checked-in demo outputs. These are partial-equilibrium accounting benchmarks, not marketization forecasts.
 
 ```
-value = marginal replacement price × unpaid child-equivalent quantity
+under-5 child-equivalent benchmark value = annual replacement price × under5 child-equivalent quantity
+annual-hours account value = hourly replacement price × unpaid annual childcare hours
 ```
 
-The preferred benchmark uses the **direct-care-equivalent** replacement price, which isolates the labor component. The gross-market benchmark is retained as an upper bound, and the residual is shown explicitly rather than buried.
+The two benchmarks are intentionally different:
 
-| Measure | Value | Unit |
-|---------|-------|------|
-| Preferred benchmark: direct-care value | $41.38B | annual national value |
-| Gross-market upper benchmark | $50.35B | annual national value |
-| Excluded non-direct residual | $8.97B | annual national value |
-| Direct-care-equivalent price | $8,762 | per child-equivalent year |
-| Gross market price | $10,660 | per child-equivalent year |
-| Unpaid child-equivalent quantity | 4.72M | annual slots |
-| Average unpaid childcare hours | 457.9 | per child-year |
-| Price-support population share | 89.0% | of national under-5 population |
+- The **under-5 child-equivalent replacement-cost benchmark** keeps the narrower bridge quantity close to the original public benchmark.
+- The **annual-hours childcare account** is broader because it keeps active household care, active nonhousehold care, and supervisory care explicit.
 
-The annual satellite-account series is generated by `python -m unpriced.cli report`.
+Both preferred benchmarks use a **direct-care-equivalent** price layer rather than the raw gross market price. The gross market price is retained as an upper valuation layer, and a specialist-wage layer is reported alongside it. The direct-care adjustment removes a pooled non-direct residual, but it does **not** separately identify advertising, transport, administration, profits, or market power. The separate marketization solver keeps using the narrower active-under-5 lower-bound bridge quantity; that bridge is not the annual-hours account quantity object.
+
+The annual benchmark series are generated by `python -m unpriced.cli report`. The current output artifact is `outputs/reports/childcare_satellite_account.json`, which contains both benchmark methodologies despite the old filename.
 
 <details>
 <summary><strong>How the price decomposition works</strong></summary>
@@ -232,8 +228,8 @@ The observed market price (**P₀**) is where current paid supply meets current 
 **How each component is estimated:**
 
 - **Baseline price P₀** — the state-year median of county-level annual childcare prices from the National Database of Childcare Prices (NDCP), covering center-based and family-based care.
-- **Baseline quantity Q₀** — a state-year market-quantity proxy, currently constructed from under-5 population scaled by a configured weekly-hours assumption. This is not a direct estimate of paid-care enrollment or utilization.
-- **Unpaid quantity** — hours of unpaid childcare per state-year from the American Time Use Survey (ATUS), converted to full-time-equivalent childcare slots.
+- **Baseline quantity Q₀** — a state-year market-quantity proxy, currently constructed from under-5 population scaled by a configured weekly-hours assumption. This is a bridge input for the solver, not the static-account quantity object.
+- **Unpaid quantity** — the solver currently uses an active-under-5 lower-bound bridge quantity derived from ATUS active childcare hours. The pooled national static account separately reports active household, active nonhousehold, and supervisory childcare hours in annual levels.
 - **Demand elasticity (-0.021)** — estimated via two-stage least squares at the state-year level using `outside_option_wage` as the current canonical instrument, with parent employment rate and single-parent share as controls. A births-based IV sensitivity was tested on the same observed-core sample, but it produced a positive elasticity (`+0.150`), weak first-stage fit (`R² = 0.148`), and much worse leave-one-state-out performance, so it is quarantined rather than used in the headline pipeline. The canonical signed elasticity remains negative: higher prices reduce quantity demanded.
 - **Supply elasticity (4.078)** — the employment-weighted median of county-level log-log slopes of provider density on annual price within each state-year cell. This is a reduced-form price-quantity gradient, not a structural supply function. A multi-state licensing-shock IV demo is documented below but is not used in the canonical estimates.
 
@@ -410,7 +406,7 @@ The wage stability makes it a useful anchor even when the price-level decomposit
 
 Interpretation boundaries for the demo.
 
-**The satellite account is still partial-equilibrium.** Even the preferred direct-care benchmark is an accounting construct, not a GE valuation. It says what unpaid childcare would be worth at a current marginal replacement price, not what would happen if all unpaid childcare actually moved into the paid market. That is precisely the gap the marketization metric is designed to address, but the marketization estimate itself is demonstration-grade.
+**The accounting benchmarks are still partial-equilibrium.** Even the preferred direct-care benchmarks are accounting constructs, not GE valuations. They say what unpaid childcare would be worth at a current marginal replacement price, not what would happen if all unpaid childcare actually moved into the paid market. That is precisely the gap the marketization metric is designed to address, but the marketization estimate itself is demonstration-grade.
 
 **Causal identification is weak.** The current canonical demand elasticity uses an outside-option-wage IV rather than a strong quasi-experimental design, and the out-of-sample diagnostics remain weak. A births-based IV sensitivity was tested but is not used because it becomes economically inadmissible in the current observed-core sample. The negative leave-one-out diagnostics confirm the demand side does not generalize well out of sample. The canonical supply elasticity has no instrument — a multi-state licensing-shock demo exists but does not feed into the canonical estimates. This is the primary limitation.
 
@@ -418,7 +414,7 @@ Interpretation boundaries for the demo.
 
 **Constant-elasticity assumption.** The solver assumes log-linear supply and demand. Real markets have kinks, capacity constraints, and regime changes. The piecewise supply demo shows how this can be partially relaxed, but that extension is itself limited by data support.
 
-**Price decomposition is benchmark-driven.** The direct-care / non-direct-care split depends on source-backed staffing and compensation benchmarks plus a clipped decomposition rule; it is not literal cost accounting estimated from repo data. The preferred benchmark nets out the residual jointly, but does not separately identify markup, transport, administration, advertising, or profits.
+**Price decomposition is benchmark-driven.** The direct-care / non-direct-care split depends on source-backed staffing and compensation benchmarks plus a clipped decomposition rule; it is not literal cost accounting estimated from repo data. The preferred benchmarks net out the residual jointly, but do not separately identify markup, transport, administration, advertising, or profits. The broader annual-hours account also still treats supervisory care additively and is not yet overlap-adjusted.
 
 **Temporal coverage.** NDCP prices end in 2022. The project does not extrapolate.
 

@@ -118,6 +118,21 @@ def _core_ingestors():
     ]
 
 
+def _childcare_core_ingestors():
+    return [
+        atus.ingest,
+        ndcp.ingest,
+        qcew.ingest,
+        cbp.ingest,
+        nes.ingest,
+        acs.ingest_with_options,
+        cdc_wonder.ingest,
+        head_start.ingest,
+        nces_ccd.ingest,
+        oews.ingest,
+    ]
+
+
 def _state_panel_has_sample_ladder(state: pd.DataFrame) -> bool:
     required = {
         "state_controls_source",
@@ -150,6 +165,45 @@ def _artifact_mode(path: Path) -> str | None:
     if isinstance(sample_mode, bool):
         return "sample" if sample_mode else "real"
     return None
+
+
+def _registry_artifact_mode(paths, path: Path) -> str | None:
+    registry_path = getattr(paths, "registry", None)
+    if registry_path is None or not Path(registry_path).exists():
+        return None
+    try:
+        registry = read_parquet(Path(registry_path))
+    except Exception:
+        return None
+    if registry.empty or "normalized_path" not in registry.columns or "sample_mode" not in registry.columns:
+        return None
+
+    target = str(path.resolve())
+
+    def _matches_target(value: object) -> bool:
+        if not isinstance(value, str) or not value:
+            return False
+        try:
+            return str(Path(value).resolve()) == target
+        except Exception:
+            return False
+
+    matches = registry.loc[registry["normalized_path"].map(_matches_target)].copy()
+    if matches.empty:
+        return None
+    if "last_fetched" in matches.columns:
+        matches = matches.sort_values("last_fetched", kind="stable")
+    sample_mode = matches.iloc[-1]["sample_mode"]
+    if pd.isna(sample_mode):
+        return None
+    return "sample" if bool(sample_mode) else "real"
+
+
+def _current_artifact_mode(paths, path: Path) -> str | None:
+    mode = _artifact_mode(path)
+    if mode is not None:
+        return mode
+    return _registry_artifact_mode(paths, path)
 
 
 def _ensure_real_mode_artifact(path: Path, prereq_command: str, artifact_name: str) -> None:
@@ -191,11 +245,22 @@ def _write_mode_artifact(
     write_provenance_sidecar(path, **provenance_kwargs)
 
 
+def _parquet_has_columns(path: Path, required_columns: set[str]) -> bool:
+    if not path.exists():
+        return False
+    try:
+        columns = set(read_parquet(path).columns)
+    except Exception:
+        return False
+    return required_columns.issubset(columns)
+
+
 def _refresh_childcare_panels_from_interim(paths, sample: bool) -> tuple[pd.DataFrame, pd.DataFrame]:
     county, state = build_childcare_panels(paths)
     state = apply_replacement_cost(state, "unpaid_childcare_hours", "benchmark_childcare_wage")
     county_path = paths.processed / "childcare_county_year_price_panel.parquet"
     state_path = paths.processed / "childcare_state_year_panel.parquet"
+    static_hours_path = paths.processed / "childcare_state_year_static_hours.parquet"
     write_parquet(state, state_path)
     diagnose_childcare_pipeline(county, state, paths)
     source_files = [
@@ -204,6 +269,8 @@ def _refresh_childcare_panels_from_interim(paths, sample: bool) -> tuple[pd.Data
     ]
     _write_mode_artifact(county_path, source_files, sample=sample, repo_root=paths.root, extra_parameters={"command": "build-childcare"})
     _write_mode_artifact(state_path, source_files, sample=sample, repo_root=paths.root, extra_parameters={"command": "build-childcare"})
+    if static_hours_path.exists():
+        _write_mode_artifact(static_hours_path, source_files, sample=sample, repo_root=paths.root, extra_parameters={"command": "build-childcare"})
     return county, state
 
 
@@ -213,8 +280,15 @@ def bootstrap(paths) -> None:
     LOGGER.info("bootstrap complete")
 
 
-def pull_core(paths, sample: bool, refresh: bool = False, dry_run: bool = False, year: int | None = None) -> None:
-    for ingestor in _core_ingestors():
+def pull_core(
+    paths,
+    sample: bool,
+    refresh: bool = False,
+    dry_run: bool = False,
+    year: int | None = None,
+    ingestors=None,
+) -> None:
+    for ingestor in (ingestors or _core_ingestors()):
         result = ingestor(paths, sample=sample, refresh=refresh, dry_run=dry_run, year=year)
         LOGGER.info(
             "%s %s -> %s (%s)",
@@ -234,36 +308,87 @@ def build_childcare(
 ) -> None:
     county_path = paths.processed / "childcare_county_year_price_panel.parquet"
     state_path = paths.processed / "childcare_state_year_panel.parquet"
-    missing = [
+    static_hours_path = paths.processed / "childcare_state_year_static_hours.parquet"
+    core_sources = [
         paths.interim / name / f"{name}.parquet"
         for name in ("atus", "ndcp", "qcew", "acs", "cdc_wonder", "head_start", "nces_ccd", "oews", "cbp", "nes", "laus")
     ]
-    if any(not path.exists() for path in missing):
-        pull_core(paths, sample=sample, refresh=refresh, dry_run=dry_run, year=year)
+    sample_built_core = (
+        not sample and any(path.exists() and _current_artifact_mode(paths, path) == "sample" for path in core_sources)
+    )
+    stale_schema = not _parquet_has_columns(
+        paths.interim / "atus" / "atus.parquet",
+        {
+            "active_childcare_hours",
+            "active_household_childcare_hours",
+            "active_nonhousehold_childcare_hours",
+            "supervisory_childcare_hours",
+        },
+    ) or not _parquet_has_columns(
+        paths.interim / "acs" / "acs.parquet",
+        {"under5_population", "under5_male_population", "under5_female_population"},
+    ) or not _parquet_has_columns(
+        paths.interim / "oews" / "oews.parquet",
+        {"oews_childcare_worker_wage", "oews_preschool_teacher_wage", "oews_outside_option_wage"},
+    )
+    force_core_refresh = refresh or stale_schema or sample_built_core
+    if any(not path.exists() for path in core_sources) or stale_schema or sample_built_core:
+        if sample_built_core:
+            LOGGER.info("detected sample-built childcare core inputs during --real build; forcing real refresh")
+        pull_core(
+            paths,
+            sample=sample,
+            refresh=force_core_refresh,
+            dry_run=dry_run,
+            year=year,
+            ingestors=_childcare_core_ingestors(),
+        )
     if dry_run:
         LOGGER.info("planned childcare build")
         return
     # Ensure ACS, QCEW, and LAUS cover the NDCP year range.
     if not sample:
         ndcp_path = paths.interim / "ndcp" / "ndcp.parquet"
+        laus_path = paths.interim / "laus" / "laus.parquet"
         if ndcp_path.exists():
             ndcp_frame = read_parquet(ndcp_path)
             ndcp_years = sorted(ndcp_frame["year"].dropna().astype(int).unique())
             if ndcp_years:
                 ndcp_start = int(ndcp_years[0])
                 ndcp_end = int(ndcp_years[-1])
-                acs_result = acs.ingest_year_range(paths, max(ndcp_start, ACS_FIRST_AVAILABLE_YEAR), ndcp_end, refresh=refresh)
+                acs_result = acs.ingest_year_range(
+                    paths,
+                    max(ndcp_start, ACS_FIRST_AVAILABLE_YEAR),
+                    ndcp_end,
+                    refresh=force_core_refresh,
+                )
                 LOGGER.info("ACS year-range check: %s", acs_result.detail or "ok")
-                qcew_result = qcew.ingest_year_range(paths, max(ndcp_start, QCEW_FIRST_AVAILABLE_YEAR), ndcp_end, refresh=refresh)
+                qcew_result = qcew.ingest_year_range(
+                    paths,
+                    max(ndcp_start, QCEW_FIRST_AVAILABLE_YEAR),
+                    ndcp_end,
+                    refresh=force_core_refresh,
+                )
                 LOGGER.info("QCEW year-range check: %s", qcew_result.detail or "ok")
-                laus_result = laus.ingest_year_range(paths, ndcp_start, ndcp_end, refresh=refresh)
-                LOGGER.info("LAUS year-range check: %s", laus_result.detail or "ok")
+                try:
+                    laus_result = laus.ingest_year_range(paths, ndcp_start, ndcp_end, refresh=force_core_refresh)
+                    LOGGER.info("LAUS year-range check: %s", laus_result.detail or "ok")
+                except SourceAccessError as exc:
+                    laus_mode = _current_artifact_mode(paths, laus_path)
+                    if laus_mode == "sample" and laus_path.exists():
+                        laus_path.unlink()
+                    LOGGER.warning(
+                        "LAUS year-range check failed (%s); continuing without refreshed LAUS controls",
+                        exc,
+                    )
     county, state = build_childcare_panels(paths)
     state = apply_replacement_cost(state, "unpaid_childcare_hours", "benchmark_childcare_wage")
     write_parquet(state, state_path)
     diag = diagnose_childcare_pipeline(county, state, paths)
-    _write_mode_artifact(county_path, missing, sample=sample, repo_root=paths.root, extra_parameters={"command": "build-childcare"})
-    _write_mode_artifact(state_path, missing, sample=sample, repo_root=paths.root, extra_parameters={"command": "build-childcare"})
+    _write_mode_artifact(county_path, core_sources, sample=sample, repo_root=paths.root, extra_parameters={"command": "build-childcare"})
+    _write_mode_artifact(state_path, core_sources, sample=sample, repo_root=paths.root, extra_parameters={"command": "build-childcare"})
+    if static_hours_path.exists():
+        _write_mode_artifact(static_hours_path, core_sources, sample=sample, repo_root=paths.root, extra_parameters={"command": "build-childcare"})
     pipeline_path = paths.outputs_reports / "childcare_pipeline_diagnostics.json"
     if pipeline_path.exists():
         _write_mode_artifact(pipeline_path, [county_path, state_path], sample=sample, repo_root=paths.root, extra_parameters={"command": "build-childcare"})

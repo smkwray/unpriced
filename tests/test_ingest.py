@@ -191,6 +191,8 @@ def _build_atus_test_archive() -> bytes:
             "TUCASEID,TUACTDUR24,TRTO_LN,TRTIER1P,TRCODEP",
             "20200100010601,60,30,05,050101",
             "20200100010601,45,0,01,030101",
+            "20200100010601,15,0,01,040101",
+            "20200100010601,25,0,03,030401",
             "20190300014888,20,20,01,010101",
             "20190300014888,10,0,01,030101",
             "20210100014877,30,-1,05,050101",
@@ -301,6 +303,14 @@ def _build_oews_test_archive() -> bytes:
                 "H_MEAN": 14.2,
             },
             {
+                "AREA": 1,
+                "AREA_TITLE": "Alabama",
+                "AREA_TYPE": 2,
+                "PRIM_STATE": "AL",
+                "OCC_CODE": "25-2011",
+                "H_MEAN": 18.8,
+            },
+            {
                 "AREA": 6,
                 "AREA_TITLE": "California",
                 "AREA_TYPE": 2,
@@ -315,6 +325,14 @@ def _build_oews_test_archive() -> bytes:
                 "PRIM_STATE": "CA",
                 "OCC_CODE": "35-0000",
                 "H_MEAN": 21.1,
+            },
+            {
+                "AREA": 6,
+                "AREA_TITLE": "California",
+                "AREA_TYPE": 2,
+                "PRIM_STATE": "CA",
+                "OCC_CODE": "25-2011",
+                "H_MEAN": 25.7,
             },
         ]
     )
@@ -390,12 +408,12 @@ def test_atus_activity_parser_normalizes_for_childcare_pipeline(tmp_path):
     case_2020 = frame.loc[frame["respondent_id"] == "20200100010601"].iloc[0]
     assert case_2020["state_fips"] == "06"
     assert case_2020["year"] == 2020
-    assert abs(case_2020["childcare_hours"] - 5.25) < 1e-9
+    assert abs(case_2020["childcare_hours"] - 7.0) < 1e-9
     assert case_2020["subgroup"] == "all"
-    assert case_2020["weight"] == 25.0
+    assert abs(case_2020["weight"] - (25.0 / 313.0)) < 1e-9
 
 
-def test_atus_respondent_parser_uses_2020_pandemic_weight(tmp_path):
+def test_atus_respondent_parser_normalizes_person_day_weights_to_person_equivalents(tmp_path):
     archive_path = tmp_path / "atus_resp_test.zip"
     archive_path.write_bytes(_build_atus_respondent_test_archive())
 
@@ -403,8 +421,8 @@ def test_atus_respondent_parser_uses_2020_pandemic_weight(tmp_path):
 
     case_2020 = frame.loc[frame["respondent_id"] == "20200100010601"].iloc[0]
     case_2019 = frame.loc[frame["respondent_id"] == "20190300014888"].iloc[0]
-    assert case_2020["weight"] == 25.0
-    assert case_2019["weight"] == 8.0
+    assert abs(case_2020["weight"] - (25.0 / 313.0)) < 1e-9
+    assert abs(case_2019["weight"] - (8.0 / 365.0)) < 1e-9
 
 
 def test_ndcp_workbook_parser_normalizes_county_year_rows(tmp_path):
@@ -514,6 +532,10 @@ def test_atus_real_ingest_writes_normalized_parquet(project_paths, monkeypatch):
         "state_fips",
         "year",
         "subgroup",
+        "active_childcare_hours",
+        "active_household_childcare_hours",
+        "active_nonhousehold_childcare_hours",
+        "supervisory_childcare_hours",
         "childcare_hours",
         "weight",
         "parent_employment_rate",
@@ -524,6 +546,30 @@ def test_atus_real_ingest_writes_normalized_parquet(project_paths, monkeypatch):
     } <= set(frame.columns)
     assert "entry_name" not in frame.columns
     assert frame["weight"].ne(1.0).any()
+
+
+def test_atus_real_ingest_uses_childcare_codebook_and_preserves_supervisory_time(project_paths, monkeypatch):
+    archive_bytes = _build_atus_test_archive()
+    respondent_archive_bytes = _build_atus_respondent_test_archive()
+    monkeypatch.setattr(
+        atus_ingest,
+        "_download_atus_zip",
+        lambda url: respondent_archive_bytes if "atusresp" in url else archive_bytes,
+    )
+
+    result = ingest_atus(project_paths, sample=False, refresh=True)
+    frame = read_parquet(result.normalized_path)
+
+    california_2020 = frame.loc[frame["respondent_id"].astype(str).eq("20200100010601")].iloc[0]
+
+    assert california_2020["active_household_childcare_hours"] == 45.0 / 60.0 * 7.0
+    assert california_2020["active_nonhousehold_childcare_hours"] == 15.0 / 60.0 * 7.0
+    assert california_2020["active_childcare_hours"] == 60.0 / 60.0 * 7.0
+    assert california_2020["supervisory_childcare_hours"] == 30.0 / 60.0 * 7.0
+    assert california_2020["childcare_hours"] == california_2020["active_childcare_hours"]
+
+    assert frame["active_childcare_hours"].le(24.0 * 7.0).all()
+    assert frame["supervisory_childcare_hours"].le(24.0 * 7.0).all()
 
 
 def test_ahs_archive_parser_normalizes_jobs(tmp_path):
@@ -740,6 +786,7 @@ def test_oews_zip_parser_builds_state_wages(tmp_path):
     assert len(frame) == 2
     california = frame.loc[frame["state_fips"] == "06"].iloc[0]
     assert california["oews_childcare_worker_wage"] == 18.7
+    assert california["oews_preschool_teacher_wage"] == 25.7
     assert california["oews_outside_option_wage"] == 21.1
 
 
@@ -751,7 +798,13 @@ def test_oews_real_ingest_writes_normalized_parquet(project_paths, monkeypatch):
     frame = read_parquet(result.normalized_path)
 
     assert not frame.empty
-    assert {"state_fips", "year", "oews_childcare_worker_wage", "oews_outside_option_wage"} <= set(frame.columns)
+    assert {
+        "state_fips",
+        "year",
+        "oews_childcare_worker_wage",
+        "oews_preschool_teacher_wage",
+        "oews_outside_option_wage",
+    } <= set(frame.columns)
 
 
 def test_acs_sample_ingest_preserves_multiple_years(project_paths):
@@ -759,6 +812,17 @@ def test_acs_sample_ingest_preserves_multiple_years(project_paths):
     result = ingest_acs(project_paths, sample=True)
     frame = read_parquet(result.normalized_path)
     assert len(frame["year"].unique()) == 3
+
+
+def test_acs_sample_under5_population_matches_male_plus_female_components(project_paths):
+    result = ingest_acs(project_paths, sample=True)
+    frame = read_parquet(result.normalized_path)
+
+    assert (
+        pd.to_numeric(frame["under5_population"], errors="coerce")
+        == pd.to_numeric(frame["under5_male_population"], errors="coerce")
+        + pd.to_numeric(frame["under5_female_population"], errors="coerce")
+    ).all()
 
 
 def test_acs_merge_existing_years_preserves_old_years(project_paths):

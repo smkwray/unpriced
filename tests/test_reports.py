@@ -3,8 +3,13 @@ from __future__ import annotations
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
-from unpriced.reports.export import build_childcare_headline_summary, build_markdown_report
+from unpriced.reports.export import (
+    build_childcare_headline_summary,
+    build_childcare_satellite_account,
+    build_markdown_report,
+)
 from unpriced.storage import read_json, write_json
 
 
@@ -199,6 +204,127 @@ def test_build_markdown_report_surfaces_mode_bootstrap_and_supply_sensitivity(tm
     assert "- supply positive-only weighted median slope: 0.6" in markdown
     assert "- supply all-slopes weighted median slope: 0.3" in markdown
     assert "- supply positivity-selection gap: 0.3" in markdown
+
+
+def test_build_childcare_satellite_account_nationalizes_from_person_equivalent_weights(tmp_path: Path) -> None:
+    county = pd.DataFrame(
+        [
+            {
+                "year": 2018,
+                "under5_population": 1_000.0,
+                "annual_price": 10_400.0,
+                "direct_care_price_index": 5_200.0,
+                "non_direct_care_price_index": 5_200.0,
+                "benchmark_childcare_wage": 10.0,
+                "specialist_childcare_wage": 12.0,
+            },
+            {
+                "year": 2019,
+                "under5_population": 1_000.0,
+                "annual_price": 10_400.0,
+                "direct_care_price_index": 5_200.0,
+                "non_direct_care_price_index": 5_200.0,
+                "benchmark_childcare_wage": 10.0,
+                "specialist_childcare_wage": 12.0,
+            },
+            {
+                "year": 2020,
+                "under5_population": 1_000.0,
+                "annual_price": 10_400.0,
+                "direct_care_price_index": 5_200.0,
+                "non_direct_care_price_index": 5_200.0,
+                "benchmark_childcare_wage": 10.0,
+                "specialist_childcare_wage": 12.0,
+            },
+            {
+                "year": 2022,
+                "under5_population": 1_000.0,
+                "annual_price": 10_400.0,
+                "direct_care_price_index": 5_200.0,
+                "non_direct_care_price_index": 5_200.0,
+                "benchmark_childcare_wage": 10.0,
+                "specialist_childcare_wage": 12.0,
+            }
+        ]
+    )
+    state = pd.DataFrame(
+        [
+            {
+                "year": 2018,
+                "unpaid_active_childcare_hours": 210.0,
+                "unpaid_active_household_childcare_hours": 160.0,
+                "unpaid_active_nonhousehold_childcare_hours": 50.0,
+                "unpaid_supervisory_childcare_hours": 90.0,
+                "atus_weight_sum": 1_000.0,
+                "is_sensitivity_year": False,
+            },
+            {
+                "year": 2019,
+                "unpaid_active_childcare_hours": 190.0,
+                "unpaid_active_household_childcare_hours": 145.0,
+                "unpaid_active_nonhousehold_childcare_hours": 45.0,
+                "unpaid_supervisory_childcare_hours": 95.0,
+                "atus_weight_sum": 1_000.0,
+                "is_sensitivity_year": False,
+            },
+            {
+                "year": 2020,
+                "unpaid_active_childcare_hours": 400.0,
+                "unpaid_active_household_childcare_hours": 320.0,
+                "unpaid_active_nonhousehold_childcare_hours": 80.0,
+                "unpaid_supervisory_childcare_hours": 200.0,
+                "atus_weight_sum": 1_000.0,
+                "is_sensitivity_year": True,
+            },
+            {
+                "year": 2022,
+                "unpaid_active_childcare_hours": 200.0,
+                "unpaid_active_household_childcare_hours": 150.0,
+                "unpaid_active_nonhousehold_childcare_hours": 50.0,
+                "unpaid_supervisory_childcare_hours": 100.0,
+                "atus_weight_sum": 1_000.0,
+                "is_sensitivity_year": False,
+            }
+        ]
+    )
+    acs = pd.DataFrame(
+        [{"year": year, "under5_population": 1_000.0} for year in (2018, 2019, 2020, 2022)]
+    )
+    output_json_path = tmp_path / "satellite.json"
+    output_markdown_path = tmp_path / "satellite.md"
+    output_table_path = tmp_path / "satellite.csv"
+
+    build_childcare_satellite_account(
+        county=county,
+        state=state,
+        acs=acs,
+        childcare_assumptions={"market_hours_per_child_per_week": 20.0},
+        output_json_path=output_json_path,
+        output_markdown_path=output_markdown_path,
+        output_table_path=output_table_path,
+    )
+
+    summary = read_json(output_json_path)
+    latest = summary["latest_year"]
+    methodologies = summary["benchmark_methodologies"]
+    under5 = methodologies["under5_child_equivalent_replacement_cost"]
+    annual_hours = methodologies["annual_hours_childcare_account"]
+
+    assert latest["national_active_childcare_hours_total"] == 200_000.0
+    assert latest["national_active_household_childcare_hours_total"] == 150_000.0
+    assert latest["national_active_nonhousehold_childcare_hours_total"] == 50_000.0
+    assert latest["national_supervisory_childcare_hours_total"] == 100_000.0
+    assert latest["national_total_childcare_hours_total"] == 300_000.0
+    assert latest["price_support_population_share"] == 1.0
+    assert latest["national_total_childcare_hours_total"] < 24.0 * 366.0 * 1_000.0
+    assert summary["headline_window"]["window_years"] == [2018, 2019]
+    assert summary["headline_window"]["excludes_sensitivity_years"] is True
+    assert summary["headline_window"]["preferred_value_mean"] == 1_462_500.0
+    assert under5["label"] == "Under-5 child-equivalent replacement-cost benchmark"
+    assert under5["latest_year"]["quantity_slots"] == 200_000.0 / (52.0 * 20.0)
+    assert under5["latest_year"]["preferred_value"] == pytest.approx(1_000_000.0)
+    assert under5["headline_window"]["preferred_value_mean"] == pytest.approx(1_000_000.0)
+    assert annual_hours["latest_year"]["supervisory_hours_total"] == 100_000.0
 
 
 def test_build_markdown_report_adds_dual_shift_section_only_when_artifact_exists(tmp_path: Path) -> None:

@@ -27,6 +27,31 @@ def _write_mode_provenance(project_paths, dataset_path: Path, sample_mode: bool)
     )
 
 
+def _write_registry_mode(project_paths, dataset_path: Path, sample_mode: bool, last_fetched: str) -> None:
+    registry_path = project_paths.registry
+    registry_path.parent.mkdir(parents=True, exist_ok=True)
+    if registry_path.exists():
+        registry = read_parquet(registry_path)
+    else:
+        registry = pd.DataFrame()
+    row = pd.DataFrame(
+        [
+            {
+                "source_name": dataset_path.stem,
+                "license": "test",
+                "retrieval_method": "test",
+                "checksum": "test",
+                "last_fetched": last_fetched,
+                "citation": "test",
+                "raw_path": str(project_paths.raw / "test" / f"{dataset_path.stem}.dat"),
+                "normalized_path": str(dataset_path.resolve()),
+                "sample_mode": sample_mode,
+            }
+        ]
+    )
+    write_parquet(pd.concat([registry, row], ignore_index=True), registry_path)
+
+
 def _write_licensing_iv_config(config_dir: Path) -> None:
     config_dir.mkdir(parents=True, exist_ok=True)
     (config_dir / "licensing_iv.yaml").write_text(
@@ -3387,12 +3412,13 @@ def test_report_writes_figure_assets(project_paths):
     assert "Supply IV pilot" in manifest
     assert "Local IV-informed marketization demo" in manifest
     assert "## Piecewise supply demo" in report
-    assert "## National benchmark satellite account" in report
+    assert "## National childcare benchmarks" in report
     assert "secondary local IV supply elasticity (provider density)" in report
     assert "Childcare Headline Readout" in readout
-    assert satellite["preferred_series"] == "direct_care_nationalized_value"
+    assert satellite["preferred_series"] == "direct_care_total_value"
     assert satellite["latest_year"]["price_support_population_share"] < 1.0
-    assert "marginal replacement price x unpaid child-equivalent quantity" in satellite_md
+    assert "hourly replacement price x unpaid annual childcare hours" in satellite_md
+    assert "Under-5 child-equivalent replacement-cost benchmark" in satellite_md
 
 
 def test_mode_only_commands_accept_real_and_sample_flags():
@@ -3420,6 +3446,210 @@ def test_fit_childcare_real_rejects_sample_built_processed_panels(project_paths)
 
     with pytest.raises(UnpaidWorkError, match="processed childcare county-year panel was built with sample data"):
         cli.fit_childcare(project_paths, sample=False)
+
+
+def test_build_childcare_real_refreshes_sample_built_interim_core_sources(project_paths, monkeypatch):
+    core_sources = {
+        "atus": pd.DataFrame(
+            [
+                {
+                    "active_childcare_hours": 1.0,
+                    "active_household_childcare_hours": 1.0,
+                    "active_nonhousehold_childcare_hours": 0.0,
+                    "supervisory_childcare_hours": 0.5,
+                }
+            ]
+        ),
+        "acs": pd.DataFrame(
+            [
+                {
+                    "year": 2021,
+                    "state_fips": "06",
+                    "county_fips": "06037",
+                    "under5_population": 10,
+                    "under5_male_population": 5,
+                    "under5_female_population": 5,
+                }
+            ]
+        ),
+        "oews": pd.DataFrame(
+            [
+                {
+                    "oews_childcare_worker_wage": 1.0,
+                    "oews_preschool_teacher_wage": 2.0,
+                    "oews_outside_option_wage": 3.0,
+                }
+            ]
+        ),
+        "ndcp": pd.DataFrame([{"year": 2021}]),
+        "qcew": pd.DataFrame([{"year": 2021}]),
+        "cdc_wonder": pd.DataFrame([{"year": 2021}]),
+        "head_start": pd.DataFrame([{"year": 2021}]),
+        "nces_ccd": pd.DataFrame([{"year": 2021}]),
+        "cbp": pd.DataFrame([{"year": 2021}]),
+        "nes": pd.DataFrame([{"year": 2021}]),
+        "laus": pd.DataFrame([{"year": 2021}]),
+    }
+    for name, frame in core_sources.items():
+        path = project_paths.interim / name / f"{name}.parquet"
+        write_parquet(frame, path)
+    _write_registry_mode(
+        project_paths,
+        project_paths.interim / "atus" / "atus.parquet",
+        sample_mode=True,
+        last_fetched="2026-03-30T17:53:23+00:00",
+    )
+
+    observed: dict[str, object] = {}
+
+    def _fake_pull_core(paths, sample, refresh=False, dry_run=False, year=None, ingestors=None):
+        observed["sample"] = sample
+        observed["refresh"] = refresh
+        observed["year"] = year
+        observed["ingestors"] = ingestors
+
+    monkeypatch.setattr(cli, "pull_core", _fake_pull_core)
+    monkeypatch.setattr(
+        cli,
+        "build_childcare_panels",
+        lambda paths: (
+            pd.DataFrame([{"county_fips": "06037", "state_fips": "06", "year": 2021}]),
+            pd.DataFrame([{"state_fips": "06", "year": 2021}]),
+        ),
+    )
+    monkeypatch.setattr(cli, "apply_replacement_cost", lambda frame, *_args, **_kwargs: frame)
+    monkeypatch.setattr(
+        cli,
+        "diagnose_childcare_pipeline",
+        lambda county, state, paths: {
+            "state_controls_acs_observed": 1,
+            "state_year_rows": 1,
+            "births_cdc_wonder_observed": 1,
+        },
+    )
+    monkeypatch.setattr(
+        cli.acs,
+        "ingest_year_range",
+        lambda *args, **kwargs: types.SimpleNamespace(detail="ok"),
+    )
+    monkeypatch.setattr(
+        cli.qcew,
+        "ingest_year_range",
+        lambda *args, **kwargs: types.SimpleNamespace(detail="ok"),
+    )
+    monkeypatch.setattr(
+        cli.laus,
+        "ingest_year_range",
+        lambda *args, **kwargs: types.SimpleNamespace(detail="ok"),
+    )
+
+    cli.build_childcare(project_paths, sample=False)
+
+    assert observed["sample"] is False
+    assert observed["refresh"] is True
+    assert observed["year"] is None
+    assert observed["ingestors"] is not None
+
+
+def test_build_childcare_real_drops_sample_laus_when_refresh_fails(project_paths, monkeypatch):
+    core_sources = {
+        "atus": pd.DataFrame(
+            [
+                {
+                    "active_childcare_hours": 1.0,
+                    "active_household_childcare_hours": 1.0,
+                    "active_nonhousehold_childcare_hours": 0.0,
+                    "supervisory_childcare_hours": 0.5,
+                }
+            ]
+        ),
+        "acs": pd.DataFrame(
+            [
+                {
+                    "year": 2021,
+                    "state_fips": "06",
+                    "county_fips": "06037",
+                    "under5_population": 10,
+                    "under5_male_population": 5,
+                    "under5_female_population": 5,
+                }
+            ]
+        ),
+        "oews": pd.DataFrame(
+            [
+                {
+                    "oews_childcare_worker_wage": 1.0,
+                    "oews_preschool_teacher_wage": 2.0,
+                    "oews_outside_option_wage": 3.0,
+                }
+            ]
+        ),
+        "ndcp": pd.DataFrame([{"year": 2021}]),
+        "qcew": pd.DataFrame([{"year": 2021}]),
+        "cdc_wonder": pd.DataFrame([{"year": 2021}]),
+        "head_start": pd.DataFrame([{"year": 2021}]),
+        "nces_ccd": pd.DataFrame([{"year": 2021}]),
+        "cbp": pd.DataFrame([{"year": 2021}]),
+        "nes": pd.DataFrame([{"year": 2021}]),
+        "laus": pd.DataFrame([{"year": 2021, "geography": "state", "state_fips": "06"}]),
+    }
+    for name, frame in core_sources.items():
+        path = project_paths.interim / name / f"{name}.parquet"
+        write_parquet(frame, path)
+    _write_registry_mode(
+        project_paths,
+        project_paths.interim / "atus" / "atus.parquet",
+        sample_mode=True,
+        last_fetched="2026-03-30T17:53:23+00:00",
+    )
+    _write_registry_mode(
+        project_paths,
+        project_paths.interim / "laus" / "laus.parquet",
+        sample_mode=True,
+        last_fetched="2026-03-30T17:53:23+00:00",
+    )
+
+    monkeypatch.setattr(cli, "pull_core", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        cli,
+        "build_childcare_panels",
+        lambda paths: (
+            pd.DataFrame([{"county_fips": "06037", "state_fips": "06", "year": 2021}]),
+            pd.DataFrame([{"state_fips": "06", "year": 2021}]),
+        ),
+    )
+    monkeypatch.setattr(cli, "apply_replacement_cost", lambda frame, *_args, **_kwargs: frame)
+    monkeypatch.setattr(
+        cli,
+        "diagnose_childcare_pipeline",
+        lambda county, state, paths: {
+            "state_controls_acs_observed": 1,
+            "state_year_rows": 1,
+            "births_cdc_wonder_observed": 1,
+        },
+    )
+    monkeypatch.setattr(
+        cli.acs,
+        "ingest_year_range",
+        lambda *args, **kwargs: types.SimpleNamespace(detail="ok"),
+    )
+    monkeypatch.setattr(
+        cli.qcew,
+        "ingest_year_range",
+        lambda *args, **kwargs: types.SimpleNamespace(detail="ok"),
+    )
+
+    def _raise_laus(*args, **kwargs):
+        raise cli.SourceAccessError("blocked")
+
+    monkeypatch.setattr(cli.laus, "ingest_year_range", _raise_laus)
+
+    laus_path = project_paths.interim / "laus" / "laus.parquet"
+    assert laus_path.exists()
+
+    cli.build_childcare(project_paths, sample=False)
+
+    assert not laus_path.exists()
 
 
 def test_simulate_childcare_real_rejects_sample_built_demand_summary(project_paths):

@@ -8,38 +8,38 @@
 <line x1="110.0" y1="450.0" x2="900.0" y2="450.0" stroke="#e2e8f0" stroke-width="1" />
 <text x="98.0" y="454.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">0</text>
 <line x1="110.0" y1="375.0" x2="900.0" y2="375.0" stroke="#e2e8f0" stroke-width="1" />
-<text x="98.0" y="379.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">2,281</text>
+<text x="98.0" y="379.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">2,155</text>
 <line x1="110.0" y1="300.0" x2="900.0" y2="300.0" stroke="#e2e8f0" stroke-width="1" />
-<text x="98.0" y="304.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">4,563</text>
+<text x="98.0" y="304.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">4,309</text>
 <line x1="110.0" y1="225.0" x2="900.0" y2="225.0" stroke="#e2e8f0" stroke-width="1" />
-<text x="98.0" y="229.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">6,844</text>
+<text x="98.0" y="229.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">6,464</text>
 <line x1="110.0" y1="150.0" x2="900.0" y2="150.0" stroke="#e2e8f0" stroke-width="1" />
-<text x="98.0" y="154.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">9,125</text>
-<rect x="139.0" y="173.8" width="100.0" height="60.4" fill="#d97706" stroke="#0d9488" stroke-width="1" rx="10" ry="10" />
-<rect x="139.0" y="234.2" width="100.0" height="215.8" fill="#0d9488" stroke="#0d9488" stroke-width="1" rx="10" ry="10" />
+<text x="98.0" y="154.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">8,618</text>
+<rect x="139.0" y="158.1" width="100.0" height="63.8" fill="#d97706" stroke="#0d9488" stroke-width="1" rx="10" ry="10" />
+<rect x="139.0" y="222.0" width="100.0" height="228.0" fill="#0d9488" stroke="#0d9488" stroke-width="1" rx="10" ry="10" />
 <text x="189.0" y="478.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">baseline</text>
-<text x="189.0" y="165.8" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">8,218</text>
-<text x="189.0" y="496.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#0d9488" text-anchor="middle">wage-side 6,564</text>
-<rect x="297.0" y="170.6" width="100.0" height="61.0" fill="#d97706" stroke="#e2e8f0" stroke-width="1" rx="10" ry="10" />
-<rect x="297.0" y="231.6" width="100.0" height="218.4" fill="#0d9488" stroke="#e2e8f0" stroke-width="1" rx="10" ry="10" />
+<text x="189.0" y="150.1" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">8,224</text>
+<text x="189.0" y="496.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#0d9488" text-anchor="middle">wage-side 6,551</text>
+<rect x="297.0" y="156.4" width="100.0" height="64.1" fill="#d97706" stroke="#e2e8f0" stroke-width="1" rx="10" ry="10" />
+<rect x="297.0" y="220.5" width="100.0" height="229.5" fill="#0d9488" stroke="#e2e8f0" stroke-width="1" rx="10" ry="10" />
 <text x="347.0" y="478.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">alpha=0.10</text>
-<text x="347.0" y="162.6" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">8,330</text>
-<text x="347.0" y="496.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#0d9488" text-anchor="middle">wage-side 6,643</text>
-<rect x="455.0" y="166.0" width="100.0" height="62.0" fill="#d97706" stroke="#e2e8f0" stroke-width="1" rx="10" ry="10" />
-<rect x="455.0" y="228.0" width="100.0" height="222.0" fill="#0d9488" stroke="#e2e8f0" stroke-width="1" rx="10" ry="10" />
+<text x="347.0" y="148.4" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">8,266</text>
+<text x="347.0" y="496.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#0d9488" text-anchor="middle">wage-side 6,594</text>
+<rect x="455.0" y="154.7" width="100.0" height="64.4" fill="#d97706" stroke="#e2e8f0" stroke-width="1" rx="10" ry="10" />
+<rect x="455.0" y="219.2" width="100.0" height="230.8" fill="#0d9488" stroke="#e2e8f0" stroke-width="1" rx="10" ry="10" />
 <text x="505.0" y="478.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">alpha=0.25</text>
-<text x="505.0" y="158.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">8,490</text>
-<text x="505.0" y="496.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#0d9488" text-anchor="middle">wage-side 6,753</text>
-<rect x="613.0" y="156.9" width="100.0" height="63.5" fill="#d97706" stroke="#0d9488" stroke-width="1" rx="10" ry="10" />
-<rect x="613.0" y="220.4" width="100.0" height="229.6" fill="#0d9488" stroke="#0d9488" stroke-width="1" rx="10" ry="10" />
+<text x="505.0" y="146.7" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">8,328</text>
+<text x="505.0" y="496.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#0d9488" text-anchor="middle">wage-side 6,631</text>
+<rect x="613.0" y="152.1" width="100.0" height="65.0" fill="#d97706" stroke="#0d9488" stroke-width="1" rx="10" ry="10" />
+<rect x="613.0" y="217.1" width="100.0" height="232.9" fill="#0d9488" stroke="#0d9488" stroke-width="1" rx="10" ry="10" />
 <text x="663.0" y="478.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">alpha=0.50</text>
-<text x="663.0" y="148.9" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">8,737</text>
-<text x="663.0" y="496.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#0d9488" text-anchor="middle">wage-side 6,984</text>
-<rect x="771.0" y="143.5" width="100.0" height="66.3" fill="#d97706" stroke="#e2e8f0" stroke-width="1" rx="10" ry="10" />
-<rect x="771.0" y="209.8" width="100.0" height="240.2" fill="#0d9488" stroke="#e2e8f0" stroke-width="1" rx="10" ry="10" />
+<text x="663.0" y="144.1" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">8,428</text>
+<text x="663.0" y="496.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#0d9488" text-anchor="middle">wage-side 6,691</text>
+<rect x="771.0" y="146.1" width="100.0" height="66.1" fill="#d97706" stroke="#e2e8f0" stroke-width="1" rx="10" ry="10" />
+<rect x="771.0" y="212.2" width="100.0" height="237.8" fill="#0d9488" stroke="#e2e8f0" stroke-width="1" rx="10" ry="10" />
 <text x="821.0" y="478.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">alpha=1.00</text>
-<text x="821.0" y="135.5" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">9,125</text>
-<text x="821.0" y="496.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#0d9488" text-anchor="middle">wage-side 7,306</text>
+<text x="821.0" y="138.1" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="middle">8,618</text>
+<text x="821.0" y="496.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#0d9488" text-anchor="middle">wage-side 6,831</text>
 <rect x="120.0" y="510.0" width="18.0" height="18.0" fill="#0d9488" />
 <text x="146.0" y="524.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1e293b" text-anchor="start">Direct-care-equivalent component</text>
 <rect x="360.0" y="510.0" width="18.0" height="18.0" fill="#d97706" />

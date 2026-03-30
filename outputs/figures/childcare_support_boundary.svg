@@ -4,8 +4,8 @@
 <text x="70.0" y="85.0" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#1e293b" text-anchor="start">Observed Price Support Window</text>
 <text x="70.0" y="110.0" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#64748b" text-anchor="start">All canonical scenarios stay within NDCP observed price support</text>
 <rect x="110.0" y="152.0" width="790.0" height="36.0" fill="#0d9488" rx="10" ry="10" />
-<rect x="448.6" y="130.0" width="451.4" height="18.0" fill="#3b82f6" rx="8" ry="8" />
-<text x="674.3" y="143.0" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">Headline sample 2014-2022</text>
+<rect x="110.0" y="130.0" width="790.0" height="18.0" fill="#3b82f6" rx="8" ry="8" />
+<text x="505.0" y="143.0" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">Headline sample 2008-2022</text>
 <text x="505.0" y="175.0" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff" text-anchor="middle">Observed NDCP support</text>
 <text x="70.0" y="240.0" font-family="Arial, sans-serif" font-size="14" font-weight="400" fill="#0d9488" text-anchor="start">Canonical scenario rows: 556</text>
 <line x1="110.0" y1="198.0" x2="110.0" y2="208.0" stroke="#1e293b" stroke-width="1" />

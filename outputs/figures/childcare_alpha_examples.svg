@@ -6,41 +6,41 @@
 <rect x="58.0" y="140.0" width="150.0" height="205.0" fill="#ffffff" stroke="#0d9488" stroke-width="1" rx="16" ry="16" />
 <text x="133.0" y="170.0" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#1e293b" text-anchor="middle">baseline</text>
 <text x="74.0" y="206.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">Gross price</text>
-<text x="74.0" y="228.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#1e293b" text-anchor="start">8,218</text>
+<text x="74.0" y="228.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#1e293b" text-anchor="start">8,224</text>
 <text x="74.0" y="262.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">Direct-care</text>
-<text x="74.0" y="284.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#0d9488" text-anchor="start">6,564</text>
+<text x="74.0" y="284.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#0d9488" text-anchor="start">6,551</text>
 <text x="74.0" y="318.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">Implied wage</text>
-<text x="74.0" y="340.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#3b82f6" text-anchor="start">9.75/hr</text>
+<text x="74.0" y="340.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#3b82f6" text-anchor="start">9.73/hr</text>
 <rect x="226.0" y="140.0" width="150.0" height="205.0" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" rx="16" ry="16" />
 <text x="301.0" y="170.0" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#1e293b" text-anchor="middle">alpha=0.10</text>
 <text x="242.0" y="206.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">Gross price</text>
-<text x="242.0" y="228.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#1e293b" text-anchor="start">8,330</text>
+<text x="242.0" y="228.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#1e293b" text-anchor="start">8,266</text>
 <text x="242.0" y="262.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">Direct-care</text>
-<text x="242.0" y="284.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#0d9488" text-anchor="start">6,643</text>
+<text x="242.0" y="284.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#0d9488" text-anchor="start">6,594</text>
 <text x="242.0" y="318.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">Implied wage</text>
-<text x="242.0" y="340.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#3b82f6" text-anchor="start">9.88/hr</text>
+<text x="242.0" y="340.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#3b82f6" text-anchor="start">9.81/hr</text>
 <rect x="394.0" y="140.0" width="150.0" height="205.0" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" rx="16" ry="16" />
 <text x="469.0" y="170.0" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#1e293b" text-anchor="middle">alpha=0.25</text>
 <text x="410.0" y="206.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">Gross price</text>
-<text x="410.0" y="228.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#1e293b" text-anchor="start">8,490</text>
+<text x="410.0" y="228.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#1e293b" text-anchor="start">8,328</text>
 <text x="410.0" y="262.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">Direct-care</text>
-<text x="410.0" y="284.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#0d9488" text-anchor="start">6,753</text>
+<text x="410.0" y="284.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#0d9488" text-anchor="start">6,631</text>
 <text x="410.0" y="318.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">Implied wage</text>
-<text x="410.0" y="340.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#3b82f6" text-anchor="start">10.04/hr</text>
+<text x="410.0" y="340.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#3b82f6" text-anchor="start">9.86/hr</text>
 <rect x="562.0" y="140.0" width="150.0" height="205.0" fill="#eef6f1" stroke="#0d9488" stroke-width="1" rx="16" ry="16" />
 <text x="637.0" y="170.0" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#0d9488" text-anchor="middle">alpha=0.50</text>
 <text x="578.0" y="206.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">Gross price</text>
-<text x="578.0" y="228.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#1e293b" text-anchor="start">8,737</text>
+<text x="578.0" y="228.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#1e293b" text-anchor="start">8,428</text>
 <text x="578.0" y="262.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">Direct-care</text>
-<text x="578.0" y="284.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#0d9488" text-anchor="start">6,984</text>
+<text x="578.0" y="284.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#0d9488" text-anchor="start">6,691</text>
 <text x="578.0" y="318.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">Implied wage</text>
-<text x="578.0" y="340.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#3b82f6" text-anchor="start">10.39/hr</text>
+<text x="578.0" y="340.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#3b82f6" text-anchor="start">9.95/hr</text>
 <rect x="730.0" y="140.0" width="150.0" height="205.0" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" rx="16" ry="16" />
 <text x="805.0" y="170.0" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#1e293b" text-anchor="middle">alpha=1.00</text>
 <text x="746.0" y="206.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">Gross price</text>
-<text x="746.0" y="228.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#1e293b" text-anchor="start">9,125</text>
+<text x="746.0" y="228.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#1e293b" text-anchor="start">8,618</text>
 <text x="746.0" y="262.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">Direct-care</text>
-<text x="746.0" y="284.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#0d9488" text-anchor="start">7,306</text>
+<text x="746.0" y="284.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#0d9488" text-anchor="start">6,831</text>
 <text x="746.0" y="318.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">Implied wage</text>
-<text x="746.0" y="340.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#3b82f6" text-anchor="start">10.86/hr</text>
+<text x="746.0" y="340.0" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#3b82f6" text-anchor="start">10.16/hr</text>
 </svg>

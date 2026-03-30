@@ -19,6 +19,7 @@ STATE_PRICE_STATUS_PRE_SUPPORT = "pre_ndcp_support_gap"
 STATE_PRICE_STATUS_POST_SUPPORT = "post_ndcp_nowcast"
 CANONICAL_ACTIVE_DEMAND_COLUMNS = [
     "unpaid_childcare_hours",
+    "unpaid_active_childcare_hours",
     "state_price_index",
     "outside_option_wage",
     "parent_employment_rate",
@@ -146,6 +147,7 @@ def _state_sample_support_metadata(county: pd.DataFrame, assumptions: dict[str, 
             "annual_price",
             "provider_density",
             "benchmark_childcare_wage",
+            "specialist_childcare_wage",
             "outside_option_wage",
             "imputed_share",
             "direct_care_price_index",
@@ -166,6 +168,7 @@ def _state_sample_support_metadata(county: pd.DataFrame, assumptions: dict[str, 
             "direct_care_price_index": "state_direct_care_price_index",
             "direct_care_price_index_raw": "state_direct_care_price_index_raw",
             "non_direct_care_price_index": "state_non_direct_care_price_index",
+            "specialist_childcare_wage": "state_specialist_childcare_wage",
             "direct_care_labor_share": "state_direct_care_labor_share",
             "direct_care_price_clip_binding": "state_direct_care_price_clip_binding_share",
             "implied_direct_care_hourly_wage": "state_implied_direct_care_hourly_wage",
@@ -597,7 +600,10 @@ def build_childcare_panels(paths: ProjectPaths) -> tuple[pd.DataFrame, pd.DataFr
     state = atus.merge(state_meta, on=["state_fips", "year"], how="left")
     county, state = _add_laus_controls(county, state, paths)
     state["market_quantity_proxy"] = state["under5_population"] * float(assumptions["market_hours_per_child_per_week"])
-    state["unpaid_quantity_proxy"] = state["unpaid_childcare_hours"] * state["under5_population"] / 52.0
+    state["unpaid_quantity_proxy"] = state["unpaid_active_childcare_hours"] * state["under5_population"] / 52.0
+    state["market_quantity_proxy_basis"] = "under5_population_x_market_hours_per_child_per_week"
+    state["unpaid_quantity_proxy_basis"] = "active_under5_only_lower_bound_bridge"
+    state["childcare_bridge_estimand"] = "marketization_bridge"
     state = _annotate_state_sample_ladder(state, county, float(assumptions["low_impute_threshold"]))
     write_parquet(state, paths.processed / "childcare_state_year_panel.parquet")
     return county, state

@@ -49,13 +49,31 @@ def build_county_labor_panel(paths: ProjectPaths) -> pd.DataFrame:
         oews = read_parquet(oews_path)
         require_columns(
             oews,
-            ["state_fips", "year", "oews_childcare_worker_wage", "oews_outside_option_wage"],
+            [
+                "state_fips",
+                "year",
+                "oews_childcare_worker_wage",
+                "oews_outside_option_wage",
+            ],
             "OEWS",
         )
+        if "oews_preschool_teacher_wage" not in oews.columns:
+            oews["oews_preschool_teacher_wage"] = pd.NA
         panel = panel.merge(
-            oews[["state_fips", "year", "oews_childcare_worker_wage", "oews_outside_option_wage"]],
+            oews[
+                [
+                    "state_fips",
+                    "year",
+                    "oews_childcare_worker_wage",
+                    "oews_preschool_teacher_wage",
+                    "oews_outside_option_wage",
+                ]
+            ],
             on=["state_fips", "year"],
             how="left",
+        )
+        panel["oews_preschool_teacher_wage"] = pd.to_numeric(
+            panel.get("oews_preschool_teacher_wage"), errors="coerce"
         )
         panel["childcare_worker_wage"] = panel["childcare_worker_wage"].fillna(
             panel["oews_childcare_worker_wage"]

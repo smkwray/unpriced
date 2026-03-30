@@ -15,6 +15,10 @@ childcare:
         preschool: 6.0
   fallbacks:
     market_hours_per_child_per_week: 18.24
+  static_account:
+    headline_year_start: 2017
+    headline_year_end: 2019
+    exclude_sensitivity_years: true
   sensitivity:
     staffing_scale_cases:
       low: 0.90

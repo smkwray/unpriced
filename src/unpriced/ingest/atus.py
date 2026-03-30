@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import calendar
 import io
 import re
 import zipfile
@@ -39,10 +40,16 @@ RESPONDENT_REQUIRED_SOURCE_COLUMNS = {
     "TU20FWGT",
     "TUYEAR",
 }
+HOUSEHOLD_CHILDCARE_PREFIXES = ("0301", "0302", "0303")
+NONHOUSEHOLD_CHILDCARE_PREFIXES = ("0401", "0402", "0403")
 REQUIRED_NORMALIZED_COLUMNS = {
     "state_fips",
     "year",
     "subgroup",
+    "active_childcare_hours",
+    "active_household_childcare_hours",
+    "active_nonhousehold_childcare_hours",
+    "supervisory_childcare_hours",
     "childcare_hours",
     "weight",
     "parent_employment_rate",
@@ -115,6 +122,16 @@ def _safe_numeric(series: pd.Series, floor_zero: bool = True) -> pd.Series:
     return values
 
 
+def _atus_weight_days_in_scope(year: pd.Series) -> pd.Series:
+    numeric_year = pd.to_numeric(year, errors="coerce")
+    days = pd.Series(365.0, index=numeric_year.index, dtype="float64")
+    leap_mask = numeric_year.notna() & numeric_year.astype(int).map(calendar.isleap)
+    days.loc[leap_mask] = 366.0
+    # ATUS 2020 weights represent only the observed collection window.
+    days.loc[numeric_year.eq(2020)] = 313.0
+    return days
+
+
 def _empty_atus_frame() -> pd.DataFrame:
     return pd.DataFrame(
         columns=[
@@ -122,6 +139,10 @@ def _empty_atus_frame() -> pd.DataFrame:
             "state_fips",
             "year",
             "subgroup",
+            "active_childcare_hours",
+            "active_household_childcare_hours",
+            "active_nonhousehold_childcare_hours",
+            "supervisory_childcare_hours",
             "childcare_hours",
             "weight",
             "parent_employment_rate",
@@ -160,7 +181,8 @@ def _parse_atus_respondent_weights_zip(path: Path) -> pd.DataFrame:
     weights["weight"] = weights["TUFNWGTP"]
     pandemic_mask = weights["TUYEAR"].eq(2020) & weights["TU20FWGT"].notna()
     weights.loc[pandemic_mask, "weight"] = weights.loc[pandemic_mask, "TU20FWGT"]
-    weights["weight"] = weights["weight"].fillna(1.0)
+    days_in_scope = _atus_weight_days_in_scope(weights["TUYEAR"])
+    weights["weight"] = weights["weight"].div(days_in_scope).fillna(1.0)
     return (
         weights.loc[:, ["TUCASEID", "weight"]]
         .rename(columns={"TUCASEID": "respondent_id"})
@@ -227,19 +249,22 @@ def _parse_atus_activity_zip(
                 activity_code = chunk["TRCODEP"].fillna("").astype(str).str.strip()
                 tier1 = chunk["TRTIER1P"].fillna("").astype(str).str.strip().str.zfill(2)
 
-                primary_childcare = activity_code.str.startswith(("0301", "0302", "0303", "0304"))
+                household_childcare = activity_code.str.startswith(HOUSEHOLD_CHILDCARE_PREFIXES)
+                nonhousehold_childcare = activity_code.str.startswith(NONHOUSEHOLD_CHILDCARE_PREFIXES)
                 worked_any = tier1.eq("05").astype(float)
 
                 grouped = pd.DataFrame(
                     {
                         "respondent_id": chunk["TUCASEID"],
                         "secondary_minutes": secondary_minutes,
-                        "primary_minutes": activity_minutes.where(primary_childcare, 0.0),
+                        "active_household_minutes": activity_minutes.where(household_childcare, 0.0),
+                        "active_nonhousehold_minutes": activity_minutes.where(nonhousehold_childcare, 0.0),
                         "worked_any": worked_any,
                     }
                 ).groupby("respondent_id", as_index=False).agg(
                     secondary_minutes=("secondary_minutes", "sum"),
-                    primary_minutes=("primary_minutes", "sum"),
+                    active_household_minutes=("active_household_minutes", "sum"),
+                    active_nonhousehold_minutes=("active_nonhousehold_minutes", "sum"),
                     worked_any=("worked_any", "max"),
                 )
                 grouped_chunks.append(grouped)
@@ -252,7 +277,8 @@ def _parse_atus_activity_zip(
         .groupby("respondent_id", as_index=False)
         .agg(
             secondary_minutes=("secondary_minutes", "sum"),
-            primary_minutes=("primary_minutes", "sum"),
+            active_household_minutes=("active_household_minutes", "sum"),
+            active_nonhousehold_minutes=("active_nonhousehold_minutes", "sum"),
             worked_any=("worked_any", "max"),
         )
     )
@@ -263,9 +289,17 @@ def _parse_atus_activity_zip(
     respondents["state_fips"] = respondents["respondent_id"].str.slice(10, 12).str.zfill(2)
     respondents = respondents.dropna(subset=["year"]).copy()
 
-    childcare_minutes = respondents[["secondary_minutes", "primary_minutes"]].max(axis=1)
-    # Convert diary-day childcare into a weekly-equivalent respondent measure.
-    respondents["childcare_hours"] = childcare_minutes / 60.0 * 7.0
+    respondents["active_childcare_minutes"] = (
+        respondents["active_household_minutes"] + respondents["active_nonhousehold_minutes"]
+    )
+    # Convert diary-day measures into weekly-equivalent respondent measures.
+    respondents["active_household_childcare_hours"] = respondents["active_household_minutes"] / 60.0 * 7.0
+    respondents["active_nonhousehold_childcare_hours"] = (
+        respondents["active_nonhousehold_minutes"] / 60.0 * 7.0
+    )
+    respondents["active_childcare_hours"] = respondents["active_childcare_minutes"] / 60.0 * 7.0
+    respondents["supervisory_childcare_hours"] = respondents["secondary_minutes"] / 60.0 * 7.0
+    respondents["childcare_hours"] = respondents["active_childcare_hours"]
     respondents["subgroup"] = "all"
     respondents["weight"] = 1.0
     if respondent_weights is not None and not respondent_weights.empty:
@@ -283,7 +317,7 @@ def _parse_atus_activity_zip(
 
     state_num = pd.to_numeric(respondents["state_fips"], errors="coerce").fillna(0.0)
     respondents["single_parent_share"] = (
-        0.18 + state_num.mod(7) * 0.01 + respondents["childcare_hours"].gt(0).astype(float) * 0.04
+        0.18 + state_num.mod(7) * 0.01 + respondents["active_childcare_hours"].gt(0).astype(float) * 0.04
     ).clip(0.05, 0.6)
     respondents["median_income"] = (
         32_000.0 + (respondents["year"].astype(float) - 2003.0) * 1_200.0 + state_num * 350.0
@@ -296,7 +330,7 @@ def _parse_atus_activity_zip(
         respondents.groupby(["state_fips", "year"], as_index=False)
         .agg(
             respondent_count=("respondent_id", "size"),
-            childcare_case_count=("childcare_hours", lambda s: int((s > 0).sum())),
+            childcare_case_count=("active_childcare_hours", lambda s: int((s > 0).sum())),
         )
         .assign(births=lambda d: d["respondent_count"] * 12.0 + d["childcare_case_count"] * 250.0)
         [["state_fips", "year", "births"]]
@@ -310,6 +344,10 @@ def _parse_atus_activity_zip(
             "state_fips",
             "year",
             "subgroup",
+            "active_childcare_hours",
+            "active_household_childcare_hours",
+            "active_nonhousehold_childcare_hours",
+            "supervisory_childcare_hours",
             "childcare_hours",
             "weight",
             "parent_employment_rate",

@@ -146,6 +146,10 @@ def build_state_year_panel(paths: ProjectPaths) -> pd.DataFrame:
             "state_fips",
             "year",
             "subgroup",
+            "active_childcare_hours",
+            "active_household_childcare_hours",
+            "active_nonhousehold_childcare_hours",
+            "supervisory_childcare_hours",
             "childcare_hours",
             "weight",
             "parent_employment_rate",
@@ -157,14 +161,60 @@ def build_state_year_panel(paths: ProjectPaths) -> pd.DataFrame:
         "ATUS",
     )
     frame = annualize(frame)
+    for column in (
+        "active_childcare_hours",
+        "active_household_childcare_hours",
+        "active_nonhousehold_childcare_hours",
+        "supervisory_childcare_hours",
+        "weight",
+    ):
+        frame[column] = pd.to_numeric(frame[column], errors="coerce")
+
     grouped = (
         frame.groupby(["state_fips", "year", "subgroup"], as_index=False)
         .apply(
             lambda g: pd.Series(
                 {
                     # The normalized ATUS respondent file stores weekly-equivalent childcare hours.
-                    # Annualize here so replacement-cost outputs are on the same annual scale as NDCP prices.
-                    "unpaid_childcare_hours": _weighted_mean(g, "childcare_hours", "weight") * WEEKS_PER_YEAR,
+                    # Annualize here so benchmark outputs stay on a yearly basis.
+                    "unpaid_active_childcare_hours": _weighted_mean(g, "active_childcare_hours", "weight") * WEEKS_PER_YEAR,
+                    "unpaid_active_household_childcare_hours": _weighted_mean(
+                        g, "active_household_childcare_hours", "weight"
+                    ) * WEEKS_PER_YEAR,
+                    "unpaid_active_nonhousehold_childcare_hours": _weighted_mean(
+                        g, "active_nonhousehold_childcare_hours", "weight"
+                    ) * WEEKS_PER_YEAR,
+                    "unpaid_supervisory_childcare_hours": _weighted_mean(
+                        g, "supervisory_childcare_hours", "weight"
+                    ) * WEEKS_PER_YEAR,
+                    "unpaid_active_childcare_hours_total": float(
+                        (
+                            pd.to_numeric(g["active_childcare_hours"], errors="coerce")
+                            * pd.to_numeric(g["weight"], errors="coerce")
+                            * WEEKS_PER_YEAR
+                        ).sum()
+                    ),
+                    "unpaid_active_household_childcare_hours_total": float(
+                        (
+                            pd.to_numeric(g["active_household_childcare_hours"], errors="coerce")
+                            * pd.to_numeric(g["weight"], errors="coerce")
+                            * WEEKS_PER_YEAR
+                        ).sum()
+                    ),
+                    "unpaid_active_nonhousehold_childcare_hours_total": float(
+                        (
+                            pd.to_numeric(g["active_nonhousehold_childcare_hours"], errors="coerce")
+                            * pd.to_numeric(g["weight"], errors="coerce")
+                            * WEEKS_PER_YEAR
+                        ).sum()
+                    ),
+                    "unpaid_supervisory_childcare_hours_total": float(
+                        (
+                            pd.to_numeric(g["supervisory_childcare_hours"], errors="coerce")
+                            * pd.to_numeric(g["weight"], errors="coerce")
+                            * WEEKS_PER_YEAR
+                        ).sum()
+                    ),
                     "parent_employment_rate": _weighted_mean(
                         g, "parent_employment_rate", "weight"
                     ),
@@ -178,7 +228,9 @@ def build_state_year_panel(paths: ProjectPaths) -> pd.DataFrame:
         )
         .reset_index(drop=True)
     )
+    grouped["unpaid_childcare_hours"] = grouped["unpaid_active_childcare_hours"]
     grouped = _merge_observed_state_controls(grouped, paths)
     grouped = add_sensitivity_flag(grouped)
+    write_parquet(grouped, paths.processed / "childcare_state_year_static_hours.parquet")
     write_parquet(grouped, paths.processed / "atus_state_year_childcare.parquet")
     return grouped

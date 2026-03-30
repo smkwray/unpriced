@@ -7,41 +7,41 @@
 <line x1="120.0" y1="120.0" x2="120.0" y2="500.0" stroke="#1e293b" stroke-width="2" />
 <text x="52.0" y="310.0" font-family="Arial, sans-serif" font-size="16" font-weight="400" fill="#1e293b" text-anchor="middle">Price</text>
 <line x1="120.0" y1="120.0" x2="120.0" y2="500.0" stroke="#e2e8f0" stroke-width="1" />
-<text x="120.0" y="518.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">1.62M</text>
+<text x="120.0" y="518.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">3.26M</text>
 <line x1="310.0" y1="120.0" x2="310.0" y2="500.0" stroke="#e2e8f0" stroke-width="1" />
-<text x="310.0" y="518.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">2.40M</text>
+<text x="310.0" y="518.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">4.41M</text>
 <line x1="500.0" y1="120.0" x2="500.0" y2="500.0" stroke="#e2e8f0" stroke-width="1" />
-<text x="500.0" y="518.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">3.18M</text>
+<text x="500.0" y="518.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">5.56M</text>
 <line x1="690.0" y1="120.0" x2="690.0" y2="500.0" stroke="#e2e8f0" stroke-width="1" />
-<text x="690.0" y="518.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">3.97M</text>
+<text x="690.0" y="518.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">6.71M</text>
 <line x1="880.0" y1="120.0" x2="880.0" y2="500.0" stroke="#e2e8f0" stroke-width="1" />
-<text x="880.0" y="518.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">4.75M</text>
+<text x="880.0" y="518.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="middle">7.86M</text>
 <line x1="120.0" y1="500.0" x2="880.0" y2="500.0" stroke="#e2e8f0" stroke-width="1" />
-<text x="108.0" y="504.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">7,410</text>
+<text x="108.0" y="504.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">7,443</text>
 <line x1="120.0" y1="405.0" x2="880.0" y2="405.0" stroke="#e2e8f0" stroke-width="1" />
-<text x="108.0" y="409.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">7,954</text>
+<text x="108.0" y="409.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">7,889</text>
 <line x1="120.0" y1="310.0" x2="880.0" y2="310.0" stroke="#e2e8f0" stroke-width="1" />
-<text x="108.0" y="314.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">8,498</text>
+<text x="108.0" y="314.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">8,334</text>
 <line x1="120.0" y1="215.0" x2="880.0" y2="215.0" stroke="#e2e8f0" stroke-width="1" />
-<text x="108.0" y="219.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">9,042</text>
+<text x="108.0" y="219.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">8,780</text>
 <line x1="120.0" y1="120.0" x2="880.0" y2="120.0" stroke="#e2e8f0" stroke-width="1" />
-<text x="108.0" y="124.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">9,586</text>
+<text x="108.0" y="124.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="end">9,225</text>
 <text x="500.0" y="538.0" font-family="Arial, sans-serif" font-size="14" font-weight="400" fill="#64748b" text-anchor="middle">Quantity of paid childcare</text>
-<polyline points="172.4,473.8 180.1,468.2 187.9,462.7 195.8,457.1 203.8,451.6 211.9,446.0 220.1,440.5 228.4,434.9 236.8,429.4 245.4,423.8 254.0,418.3 262.7,412.7 271.6,407.2 280.5,401.6 289.6,396.1 298.8,390.5 308.1,385.0 317.5,379.4 327.0,373.9 336.6,368.3 346.4,362.7 356.2,357.2 366.2,351.6 376.3,346.1 386.5,340.5 396.9,335.0 407.3,329.4 417.9,323.9 428.6,318.3 439.5,312.8 450.4,307.2 461.5,301.7 472.7,296.1 484.1,290.6 495.6,285.0 507.2,279.5 518.9,273.9 530.8,268.4 542.8,262.8 554.9,257.3 567.2,251.7 579.6,246.1 592.2,240.6 604.8,235.0 617.7,229.5 630.6,223.9 643.8,218.4 657.0,212.8 670.4,207.3 683.9,201.7 697.6,196.2 711.5,190.6 725.5,185.1 739.6,179.5 753.9,174.0 768.3,168.4 782.9,162.9 797.6,157.3 812.5,151.8 827.6,146.2" fill="none" stroke="#0d9488" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-<polyline points="354.1,473.8 354.1,468.2 354.0,462.7 354.0,457.1 353.9,451.6 353.9,446.0 353.8,440.5 353.8,434.9 353.7,429.4 353.6,423.8 353.6,418.3 353.5,412.7 353.5,407.2 353.4,401.6 353.4,396.1 353.3,390.5 353.3,385.0 353.2,379.4 353.2,373.9 353.1,368.3 353.1,362.7 353.0,357.2 353.0,351.6 352.9,346.1 352.9,340.5 352.8,335.0 352.8,329.4 352.7,323.9 352.7,318.3 352.6,312.8 352.6,307.2 352.5,301.7 352.5,296.1 352.4,290.6 352.4,285.0 352.3,279.5 352.3,273.9 352.2,268.4 352.2,262.8 352.2,257.3 352.1,251.7 352.1,246.1 352.0,240.6 352.0,235.0 351.9,229.5 351.9,223.9 351.8,218.4 351.8,212.8 351.7,207.3 351.7,201.7 351.6,196.2 351.6,190.6 351.6,185.1 351.5,179.5 351.5,174.0 351.4,168.4 351.4,162.9 351.3,157.3 351.3,151.8 351.3,146.2" fill="none" stroke="#3b82f6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-<circle cx="353.0" cy="359.0" r="6.0" fill="#ffffff" stroke="#1e293b" stroke-width="2" />
-<line x1="353.0" y1="359.0" x2="353.0" y2="500.0" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 6" />
-<line x1="120.0" y1="359.0" x2="353.0" y2="359.0" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 6" />
-<rect x="366.1" y="452.8" width="62.8" height="23.0" fill="#ffffff" stroke="#3b82f6" stroke-width="1" rx="11.5" ry="11.5" />
-<text x="374.1" y="469.8" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#3b82f6" text-anchor="start">Demand</text>
+<polyline points="172.4,473.8 180.7,468.2 189.0,462.7 197.4,457.1 205.9,451.6 214.5,446.0 223.2,440.5 232.0,434.9 240.9,429.4 249.8,423.8 258.9,418.3 268.0,412.7 277.3,407.2 286.6,401.6 296.0,396.1 305.5,390.5 315.1,385.0 324.9,379.4 334.7,373.9 344.6,368.3 354.6,362.7 364.6,357.2 374.8,351.6 385.1,346.1 395.5,340.5 406.0,335.0 416.6,329.4 427.3,323.9 438.1,318.3 449.0,312.8 460.0,307.2 471.1,301.7 482.4,296.1 493.7,290.6 505.1,285.0 516.7,279.5 528.3,273.9 540.1,268.4 551.9,262.8 563.9,257.3 576.0,251.7 588.2,246.1 600.5,240.6 612.9,235.0 625.5,229.5 638.1,223.9 650.9,218.4 663.7,212.8 676.7,207.3 689.9,201.7 703.1,196.2 716.4,190.6 729.9,185.1 743.5,179.5 757.2,174.0 771.0,168.4 785.0,162.9 799.1,157.3 813.3,151.8 827.6,146.2" fill="none" stroke="#0d9488" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+<polyline points="418.8,473.8 418.4,468.2 418.0,462.7 417.6,457.1 417.2,451.6 416.8,446.0 416.4,440.5 416.0,434.9 415.6,429.4 415.2,423.8 414.8,418.3 414.4,412.7 414.0,407.2 413.6,401.6 413.2,396.1 412.8,390.5 412.4,385.0 412.0,379.4 411.6,373.9 411.3,368.3 410.9,362.7 410.5,357.2 410.1,351.6 409.7,346.1 409.4,340.5 409.0,335.0 408.6,329.4 408.2,323.9 407.9,318.3 407.5,312.8 407.1,307.2 406.7,301.7 406.4,296.1 406.0,290.6 405.6,285.0 405.3,279.5 404.9,273.9 404.6,268.4 404.2,262.8 403.8,257.3 403.5,251.7 403.1,246.1 402.8,240.6 402.4,235.0 402.1,229.5 401.7,223.9 401.4,218.4 401.0,212.8 400.7,207.3 400.3,201.7 400.0,196.2 399.6,190.6 399.3,185.1 398.9,179.5 398.6,174.0 398.3,168.4 397.9,162.9 397.6,157.3 397.3,151.8 396.9,146.2" fill="none" stroke="#3b82f6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+<circle cx="408.9" cy="333.5" r="6.0" fill="#ffffff" stroke="#1e293b" stroke-width="2" />
+<line x1="408.9" y1="333.5" x2="408.9" y2="500.0" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 6" />
+<line x1="120.0" y1="333.5" x2="408.9" y2="333.5" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 6" />
+<rect x="430.8" y="452.8" width="62.8" height="23.0" fill="#ffffff" stroke="#3b82f6" stroke-width="1" rx="11.5" ry="11.5" />
+<text x="438.8" y="469.8" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#3b82f6" text-anchor="start">Demand</text>
 <rect x="829.6" y="125.2" width="62.8" height="23.0" fill="#ffffff" stroke="#0d9488" stroke-width="1" rx="11.5" ry="11.5" />
 <text x="837.6" y="142.2" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#0d9488" text-anchor="start">Supply</text>
-<rect x="268.6" y="324.0" width="78.4" height="23.0" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" rx="11.5" ry="11.5" />
-<text x="339.0" y="341.0" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="end">Baseline</text>
-<text x="120.0" y="558.0" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#3b82f6" text-anchor="start">Demand elasticity = -0.021</text>
-<text x="380.0" y="558.0" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#0d9488" text-anchor="start">Supply elasticity = 4.078</text>
-<text x="620.0" y="558.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#64748b" text-anchor="start">Baseline = 8,218</text>
-<text x="120.0" y="576.0" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#d97706" text-anchor="start">α=0.50: 8,737 (+519.3)</text>
-<text x="380.0" y="576.0" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#0d9488" text-anchor="start">α=1.00: 9,125 (+907.4)</text>
+<rect x="324.5" y="298.5" width="78.4" height="23.0" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" rx="11.5" ry="11.5" />
+<text x="394.9" y="315.5" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="end">Baseline</text>
+<text x="120.0" y="558.0" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#3b82f6" text-anchor="start">Demand elasticity = -0.143</text>
+<text x="380.0" y="558.0" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#0d9488" text-anchor="start">Supply elasticity = 4.035</text>
+<text x="620.0" y="558.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#64748b" text-anchor="start">Baseline = 8,224</text>
+<text x="120.0" y="576.0" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#d97706" text-anchor="start">α=0.50: 8,428 (+203.9)</text>
+<text x="380.0" y="576.0" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#0d9488" text-anchor="start">α=1.00: 8,618 (+394.4)</text>
 <text x="70.0" y="598.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#64748b" text-anchor="start">Solver-implied from canonical elasticities, not empirical curves.</text>
 </svg>
