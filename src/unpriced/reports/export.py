@@ -1017,7 +1017,7 @@ def build_childcare_satellite_account(
         "marketization_bridge_note": "The marketization solver remains a separate active-care bridge scaled to the under-5 population and is not the annual-hours account quantity object.",
         "annual": annual_hours_annual,
         "headline_window": headline_summary,
-        "latest_year": annual.iloc[-1].loc[annual_hours_table_columns].to_dict() if not annual.empty else {},
+        "latest_year": annual_hours_latest,
         "benchmark_methodologies": {
             "active_care_bridge_benchmark": {
                 "label": "Active-care bridge benchmark (scaled to under-5 population)",

@@ -310,13 +310,16 @@ def test_build_childcare_satellite_account_nationalizes_from_person_equivalent_w
     bridge = methodologies["active_care_bridge_benchmark"]
     annual_hours = methodologies["annual_hours_childcare_account"]
 
-    assert latest["national_active_childcare_hours_total"] == 200_000.0
-    assert latest["national_active_household_childcare_hours_total"] == 150_000.0
-    assert latest["national_active_nonhousehold_childcare_hours_total"] == 50_000.0
-    assert latest["national_supervisory_childcare_hours_total"] == 100_000.0
-    assert latest["national_total_childcare_hours_total"] == 300_000.0
+    assert latest == annual_hours["latest_year"]
+    assert latest["active_hours_total"] == 200_000.0
+    assert latest["active_household_hours_total"] == 150_000.0
+    assert latest["active_nonhousehold_hours_total"] == 50_000.0
+    assert latest["supervisory_hours_total"] == 100_000.0
+    assert latest["total_hours_total"] == 300_000.0
+    assert latest["preferred_value"] == pytest.approx(1_500_000.0)
+    assert latest["gross_market_value"] == pytest.approx(3_000_000.0)
     assert latest["price_support_population_share"] == 1.0
-    assert latest["national_total_childcare_hours_total"] < 24.0 * 366.0 * 1_000.0
+    assert latest["total_hours_total"] < 24.0 * 366.0 * 1_000.0
     assert summary["headline_window"]["window_years"] == [2018, 2019]
     assert summary["headline_window"]["excludes_sensitivity_years"] is True
     assert summary["headline_window"]["preferred_value_mean"] == 1_462_500.0

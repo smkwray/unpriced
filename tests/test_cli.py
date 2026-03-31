@@ -3418,6 +3418,8 @@ def test_report_writes_figure_assets(project_paths):
     assert satellite["default_methodology"] == "annual_hours_childcare_account"
     assert satellite["preferred_series"] == "direct_care_total_value"
     assert "Top-level preferred_series" in satellite["compatibility_note"]
+    assert satellite["latest_year"] == satellite["benchmark_methodologies"]["annual_hours_childcare_account"]["latest_year"]
+    assert satellite["latest_year"]["preferred_value"] > 0.0
     assert satellite["latest_year"]["price_support_population_share"] < 1.0
     assert "active_care_bridge_benchmark" in satellite["benchmark_methodologies"]
     assert "annual" in satellite["benchmark_methodologies"]["active_care_bridge_benchmark"]
