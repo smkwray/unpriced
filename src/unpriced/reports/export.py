@@ -496,10 +496,11 @@ def build_markdown_report(
             )
         lines.append("")
     if satellite_account is not None:
-        latest = satellite_account.get("latest_year", {})
         methodologies = satellite_account.get("benchmark_methodologies", {})
         bridge_method = methodologies.get("active_care_bridge_benchmark", {})
         under5_latest = bridge_method.get("latest_year", {})
+        annual_hours_method = methodologies.get("annual_hours_childcare_account", {})
+        annual_hours_latest = annual_hours_method.get("latest_year", {}) or satellite_account.get("latest_year", {})
         lines.extend(
             [
                 "## National childcare benchmarks",
@@ -508,11 +509,11 @@ def build_markdown_report(
                 f"- active-care bridge identity: {bridge_method.get('valuation_identity', 'annual replacement price x active-care bridge quantity')}",
                 f"- support years: {satellite_account.get('support_years', [])}",
                 (
-                    f"- latest annual-hours account year ({latest.get('year')}): preferred benchmark {latest.get('preferred_value', 0):.2f}, "
-                    f"gross-market upper benchmark {latest.get('gross_market_total_value', 0):.2f}, "
-                    f"specialist-wage benchmark {latest.get('specialist_total_value', 0):.2f}"
+                    f"- latest annual-hours account year ({annual_hours_latest.get('year')}): preferred benchmark {annual_hours_latest.get('preferred_value', 0):.2f}, "
+                    f"gross-market upper benchmark {annual_hours_latest.get('gross_market_value', annual_hours_latest.get('gross_market_total_value', 0)):.2f}, "
+                    f"specialist-wage benchmark {annual_hours_latest.get('specialist_value', annual_hours_latest.get('specialist_total_value', 0)):.2f}"
                 )
-                if latest
+                if annual_hours_latest
                 else "- latest annual-hours account year: n/a",
                 (
                     f"- latest active-care bridge year ({under5_latest.get('year')}): preferred benchmark {under5_latest.get('preferred_value', 0):.2f}, "
@@ -522,21 +523,21 @@ def build_markdown_report(
                 if under5_latest
                 else "- latest active-care bridge year: n/a",
                 (
-                    f"- latest-year price-support population share: {latest.get('price_support_population_share', 0):.1%}"
-                    if latest
+                    f"- latest-year price-support population share: {annual_hours_latest.get('price_support_population_share', 0):.1%}"
+                    if annual_hours_latest
                     else "- latest-year price-support population share: n/a"
                 ),
                 (
                     f"- latest-year active household / nonhousehold / supervisory hours: "
-                    f"{latest.get('national_active_household_childcare_hours_total', 0):.2f} / "
-                    f"{latest.get('national_active_nonhousehold_childcare_hours_total', 0):.2f} / "
-                    f"{latest.get('national_supervisory_childcare_hours_total', 0):.2f}"
+                    f"{annual_hours_latest.get('active_household_hours_total', annual_hours_latest.get('national_active_household_childcare_hours_total', 0)):.2f} / "
+                    f"{annual_hours_latest.get('active_nonhousehold_hours_total', annual_hours_latest.get('national_active_nonhousehold_childcare_hours_total', 0)):.2f} / "
+                    f"{annual_hours_latest.get('supervisory_hours_total', annual_hours_latest.get('national_supervisory_childcare_hours_total', 0)):.2f}"
                 )
-                if latest
+                if annual_hours_latest
                 else "- latest-year active household / nonhousehold / supervisory hours: n/a",
                 "- The direct-care benchmark nets out a pooled residual bucket that can include facilities, administration, meals, transport, advertising, profits, and market power, but those pieces are not separately identified.",
                 "- The annual-hours account is broader because it keeps active household, active nonhousehold, and supervisory care explicit; supervisory care is still additive and not yet overlap-adjusted.",
-                "- Travel is still excluded in this first repair wave, so the broader annual-hours account remains conservative relative to some household-production accounts even while it is much larger than the child-equivalent bridge.",
+                "- Travel is still excluded in this first repair wave, so the broader annual-hours account remains conservative relative to some household-production accounts even while it is much larger than the active-care bridge benchmark.",
                 "",
             ]
         )

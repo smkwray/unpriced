@@ -472,3 +472,135 @@ def test_build_markdown_report_adds_dual_shift_section_only_when_artifact_exists
     assert "## Dual-shift marketization sensitivity" in markdown_with
     assert "Short-run fixed-supply benchmark" in markdown_with
     assert "Medium-run dual-shift sensitivity" in markdown_with
+
+
+def test_build_markdown_report_reads_annual_hours_latest_from_methodology_block(tmp_path: Path) -> None:
+    price_surface_path = tmp_path / "price_surface.json"
+    demand_iv_path = tmp_path / "demand_iv.json"
+    scenario_diagnostics_path = tmp_path / "scenario_diagnostics.json"
+    satellite_account_path = tmp_path / "satellite.json"
+    output_path = tmp_path / "report.md"
+
+    write_json({"holdout_year": 2022, "rmse_test": 12.5}, price_surface_path)
+    write_json(
+        {
+            "mode": "observed_core",
+            "n_obs": 120,
+            "n_states": 20,
+            "year_min": 2012,
+            "year_max": 2022,
+            "instrument": "outside_option_wage",
+            "specification_profile": "household_parsimonious",
+            "price_coefficient": -0.02,
+            "elasticity_at_mean": -0.03,
+            "economically_admissible": True,
+            "first_stage_r2": 0.4,
+            "loo_state_fips_r2": 0.1,
+            "loo_year_r2": 0.2,
+        },
+        demand_iv_path,
+    )
+    write_json(
+        {
+            "current_mode": "real",
+            "demand_sample_name": "observed_core",
+            "scenario_rows": 2,
+            "scenario_price_observed_support_rows": 2,
+            "scenario_price_nowcast_rows": 0,
+            "baseline_price_p50": 100.0,
+            "baseline_direct_care_price_p50": 70.0,
+            "baseline_non_direct_care_price_p50": 30.0,
+            "baseline_implied_wage_p50": 18.0,
+            "baseline_direct_care_labor_share_p50": 0.7,
+            "baseline_direct_care_clip_binding_row_share": 0.1,
+            "alpha_50_price_p50": 110.0,
+            "alpha_50_direct_care_price_p50": 77.0,
+            "alpha_50_implied_wage_p50": 20.0,
+            "skipped_state_rows": 0,
+            "bootstrap_resampling_unit": "state_fips_cluster",
+            "bootstrap_draws_requested": 100,
+            "bootstrap_draws_accepted": 90,
+            "bootstrap_draws_rejected": 10,
+            "bootstrap_acceptance_rate": 0.9,
+            "bootstrap_failed": False,
+            "demand_sample_selection_reason": "observed_core_passes_minimum_support",
+            "shadow_width_p10": 1.0,
+            "shadow_width_p50": 2.0,
+            "shadow_width_p90": 3.0,
+            "alpha_width_p10": 1.5,
+            "alpha_width_p50": 2.5,
+            "alpha_width_p90": 3.5,
+            "zero_width_shadow_count": 0,
+            "zero_width_alpha_count": 0,
+            "zero_unpaid_quantity_count": 0,
+            "demand_first_stage_r2": 0.4,
+            "demand_loo_state_fips_r2": 0.1,
+            "demand_loo_year_r2": 0.2,
+            "solver_demand_elasticity_magnitude": 0.03,
+            "supply_elasticity": 0.6,
+            "supply_estimation_method": "within_state_year_positive_weighted_median",
+            "supply_within_state_year_weighted_median_positive_slope": 0.6,
+            "supply_within_state_year_weighted_median_all_slope": 0.3,
+            "supply_within_state_year_weighted_median_gap": 0.3,
+            "demand_fit_quarantined": False,
+        },
+        scenario_diagnostics_path,
+    )
+    write_json(
+        {
+            "valuation_identity": "hourly replacement price x unpaid annual childcare hours",
+            "support_years": [2022],
+            "latest_year": {
+                "year": 2022,
+                "national_active_household_childcare_hours_total": 150.0,
+                "national_active_nonhousehold_childcare_hours_total": 50.0,
+                "national_supervisory_childcare_hours_total": 100.0,
+                "price_support_population_share": 0.5,
+            },
+            "benchmark_methodologies": {
+                "active_care_bridge_benchmark": {
+                    "valuation_identity": "annual replacement price x active-care bridge quantity",
+                    "latest_year": {
+                        "year": 2022,
+                        "preferred_value": 12.0,
+                        "gross_market_value": 14.0,
+                        "quantity_slots": 3.0,
+                    },
+                },
+                "annual_hours_childcare_account": {
+                    "latest_year": {
+                        "year": 2022,
+                        "preferred_value": 123.0,
+                        "gross_market_value": 150.0,
+                        "specialist_value": 175.0,
+                        "price_support_population_share": 0.5,
+                        "active_household_hours_total": 150.0,
+                        "active_nonhousehold_hours_total": 50.0,
+                        "supervisory_hours_total": 100.0,
+                    }
+                },
+            },
+        },
+        satellite_account_path,
+    )
+    scenarios = pd.DataFrame(
+        [
+            {"state_fips": "06", "year": 2022, "alpha": 0.5, "p_alpha": 110.0},
+            {"state_fips": "12", "year": 2022, "alpha": 1.0, "p_alpha": 120.0},
+        ]
+    )
+
+    build_markdown_report(
+        price_surface_path=price_surface_path,
+        demand_iv_path=demand_iv_path,
+        scenario_diagnostics_path=scenario_diagnostics_path,
+        scenarios=scenarios,
+        output_path=output_path,
+        satellite_account_path=satellite_account_path,
+    )
+
+    markdown = output_path.read_text(encoding="utf-8")
+    assert "latest annual-hours account year (2022): preferred benchmark 123.00" in markdown
+    assert "gross-market upper benchmark 150.00" in markdown
+    assert "specialist-wage benchmark 175.00" in markdown
+    assert "much larger than the active-care bridge benchmark" in markdown
