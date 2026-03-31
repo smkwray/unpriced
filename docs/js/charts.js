@@ -301,12 +301,12 @@
     if (!canvas) return;
 
     var labels = ['Baseline', '\u03B1=0.10', '\u03B1=0.25', '\u03B1=0.50', '\u03B1=1.00'];
-    var gross = [8218, 8330, 8490, 8737, 9125];
-    var directCare = [6564, 6643, 6753, 6984, 7306];
+    var gross = [8224, 8266, 8328, 8428, 8618];
+    var directCare = [6551, 6594, 6631, 6691, 6831];
     var residual = gross.map(function (value, index) {
       return value - directCare[index];
     });
-    var wages = ['$9.75/hr', '$9.88/hr', '$10.04/hr', '$10.39/hr', '$10.86/hr'];
+    var wages = ['$9.73/hr', '$9.81/hr', '$9.86/hr', '$9.95/hr', '$10.16/hr'];
 
     charts.push(new Chart(canvas, {
       type: 'bar',
@@ -411,9 +411,9 @@
     if (!canvas) return;
 
     var labels = ['Marginal', '\u03B1=0.10', '\u03B1=0.25', '\u03B1=0.50', '\u03B1=1.00'];
-    var medians = [8218, 8330, 8490, 8737, 9125];
-    var lo = [8218, 8280, 8380, 8520, 8750];
-    var hi = [8218, 8380, 8600, 8960, 9500];
+    var medians = [8224, 8266, 8328, 8428, 8618];
+    var lo = [8224, 8265, 8326, 8425, 8612];
+    var hi = [8224, 8291, 8390, 8551, 8917];
 
     charts.push(new Chart(canvas, {
       type: 'line',
@@ -494,7 +494,7 @@
         beforeDraw: function (chart) {
           var yScale = chart.scales.y;
           var ctx = chart.ctx;
-          var yPx = yScale.getPixelForValue(8218);
+          var yPx = yScale.getPixelForValue(8224);
           ctx.save();
           ctx.setLineDash([5, 4]);
           ctx.strokeStyle = C.textMuted;
@@ -508,7 +508,7 @@
           ctx.font = '500 11px ' + Chart.defaults.font.family;
           ctx.fillStyle = C.textMuted;
           ctx.textAlign = 'right';
-          ctx.fillText('Baseline $8,218', chart.chartArea.right - 4, yPx - 6);
+          ctx.fillText('Baseline $8,224', chart.chartArea.right - 4, yPx - 6);
           ctx.restore();
         }
       }]
@@ -581,22 +581,22 @@
     var canvas = document.getElementById('solverCurvesChart');
     if (!canvas) return;
 
-    var P0 = 8218, Q0 = 3.18e6;
-    var ed = -0.021, es = 4.078;
-    var pMin = 7400, pMax = 9600;
+    var P0 = 8224, Q0 = 3.18e6;
+    var ed = -0.143, es = 4.035;
+    var pMin = 7400, pMax = 9000;
 
     var supply = generateCurve(P0, Q0, es, pMin, pMax, 200);
     var demand = generateCurve(P0, Q0, ed, pMin, pMax, 200);
 
-    var pA50 = 8737, qA50 = Q0 * Math.pow(pA50 / P0, es);
-    var pA100 = 9125, qA100 = Q0 * Math.pow(pA100 / P0, es);
+    var pA50 = 8428, qA50 = Q0 * Math.pow(pA50 / P0, es);
+    var pA100 = 8618, qA100 = Q0 * Math.pow(pA100 / P0, es);
 
     charts.push(new Chart(canvas, {
       type: 'scatter',
       data: {
         datasets: [
           {
-            label: 'Supply (\u03B5 = 4.078)',
+            label: 'Supply (\u03B5 = 4.035)',
             data: supply,
             showLine: true,
             borderColor: C.teal,
@@ -606,7 +606,7 @@
             tension: 0.4
           },
           {
-            label: 'Demand (\u03B5 = \u22120.021)',
+            label: 'Demand (\u03B5 = \u22120.143)',
             data: demand,
             showLine: true,
             borderColor: C.slateBlue,
@@ -625,7 +625,7 @@
             showLine: false
           },
           {
-            label: '\u03B1 = 0.50 (+$519)',
+            label: '\u03B1 = 0.50 (+$204)',
             data: [{ x: qA50, y: pA50 }],
             pointRadius: 7,
             pointBackgroundColor: C.amber,
@@ -635,7 +635,7 @@
             showLine: false
           },
           {
-            label: '\u03B1 = 1.00 (+$907)',
+            label: '\u03B1 = 1.00 (+$394)',
             data: [{ x: qA100, y: pA100 }],
             pointRadius: 7,
             pointBackgroundColor: C.red,
@@ -665,13 +665,13 @@
           x: {
             type: 'linear',
             title: { display: true, text: 'Quantity of paid childcare', color: C.textSec },
-            min: 1.5e6, max: 5e6,
+            min: 1.5e6, max: 4.0e6,
             ticks: { callback: function (v) { return fmtM(v); }, color: C.textSec },
             grid: { color: C.grid }
           },
           y: {
             title: { display: true, text: 'Price per child-year ($)', color: C.textSec },
-            min: 7400, max: 9600,
+            min: 7400, max: 9000,
             ticks: { callback: function (v) { return fmtDollar(v); }, color: C.textSec },
             grid: { color: C.grid }
           }
@@ -685,8 +685,8 @@
     var canvas = document.getElementById('piecewiseChart');
     if (!canvas) return;
 
-    var P0 = 8218, Q0 = 3.18e6;
-    var etaBelow = 5.955, etaAbove = 2.595, etaConst = 4.078;
+    var P0 = 8224, Q0 = 3.18e6;
+    var etaBelow = 5.776, etaAbove = 2.595, etaConst = 3.906;
     var pMin = 6500, pMax = 11000;
 
     // Constant-elasticity supply
@@ -706,7 +706,7 @@
       data: {
         datasets: [
           {
-            label: 'Constant supply (\u03B5 = 4.078)',
+            label: 'Constant supply (\u03B5 = 3.91)',
             data: constSupply,
             showLine: true,
             borderColor: C.teal,
@@ -716,7 +716,7 @@
             tension: 0.4
           },
           {
-            label: 'Piecewise supply (\u03B7\u2093 = 5.96 / \u03B7\u2090 = 2.60)',
+            label: 'Piecewise supply (\u03B7\u2093 = 5.78 / \u03B7\u2090 = 2.60)',
             data: pwSupply,
             showLine: true,
             borderColor: C.amber,
@@ -784,7 +784,7 @@
           ctx.font = '500 11px ' + Chart.defaults.font.family;
           ctx.fillStyle = C.textMuted;
           ctx.textAlign = 'left';
-          ctx.fillText('Kink at P\u2080 = $8,218', chart.chartArea.left + 6, yPx - 6);
+          ctx.fillText('Kink at P\u2080 = $8,224', chart.chartArea.left + 6, yPx - 6);
           ctx.restore();
         }
       }]

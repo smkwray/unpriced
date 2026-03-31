@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
-  <meta name="description" content="Reproducible estimates of what unpaid household work would cost at market prices. National satellite-account benchmark and counterfactual marketization price for childcare, with a home-maintenance preview.">
+  <meta name="description" content="Reproducible estimates of what unpaid household work would cost at market prices. Side-by-side childcare benchmarks and a counterfactual marketization price, with a home-maintenance preview.">
   <title>Unpriced &mdash; Valuing Unpaid Household Work</title>
   <script src="js/theme.js"></script>
   <link rel="stylesheet" href="css/style.css">
@@ -36,10 +36,11 @@
     <div class="hero-inner">
       <h1>Unpriced</h1>
       <p class="hero-subtitle">What would unpaid household work cost at market prices?</p>
-      <p class="hero-desc">Reproducible estimates pairing a national satellite-account benchmark with a counterfactual marketization price&mdash;what the childcare sector would clear at if unpaid care entered the paid market at scale. The flagship module is childcare; a home-maintenance preview demonstrates the framework&rsquo;s generality. This site is a proof-of-concept demo: it shows the current results together with their caveats rather than hiding them behind a publication-only threshold.</p>
+      <p class="hero-desc">Reproducible estimates pairing two national childcare accounting benchmarks with a counterfactual marketization price&mdash;what the childcare sector would clear at if unpaid care entered the paid market at scale. The flagship module is childcare; a home-maintenance preview demonstrates the framework&rsquo;s generality. This site is a proof-of-concept demo: it shows the current results together with their caveats rather than hiding them behind a publication-only threshold.</p>
       <div class="stats-row">
-        <div class="stat-chip"><div class="stat-value">$41.38B</div><div class="stat-label">Preferred benchmark</div></div>
-        <div class="stat-chip"><div class="stat-value">$8,737</div><div class="stat-label">Short-run pooled marketization price (&alpha;=0.50)</div></div>
+        <div class="stat-chip"><div class="stat-value">$28.36B</div><div class="stat-label">Active-care bridge benchmark (2022)</div></div>
+        <div class="stat-chip"><div class="stat-value">$1.47T</div><div class="stat-label">Annual-hours account (2022)</div></div>
+        <div class="stat-chip"><div class="stat-value">$8,428</div><div class="stat-label">Short-run pooled marketization price (&alpha;=0.50)</div></div>
         <div class="stat-chip"><div class="stat-value">21</div><div class="stat-label">States in headline sample</div></div>
       </div>
     </div>
@@ -52,7 +53,7 @@
       <div class="read-guide-grid">
         <article class="read-guide-item">
           <h3>Benchmark</h3>
-          <p>What is unpaid childcare worth at today&rsquo;s marginal replacement price?</p>
+          <p>What are unpaid childcare quantities worth at today&rsquo;s replacement-price layers: the narrower active-care bridge and the broader annual-hours account?</p>
         </article>
         <article class="read-guide-item">
           <h3>Short-run canonical</h3>
@@ -69,22 +70,23 @@
       </div>
     </section>
 
-    <!-- ══════════════════ SATELLITE ACCOUNT BENCHMARK ══════════════════ -->
+    <!-- ══════════════════ CHILDCARE BENCHMARKS ══════════════════ -->
     <section class="section" id="benchmark">
-      <div class="section-header"><h2>National Satellite Account Benchmark</h2><span class="section-tag">2022</span></div>
-      <p>A partial-equilibrium accounting identity that values unpaid childcare at the current marginal replacement price. The preferred benchmark uses the <strong>direct-care-equivalent</strong> price, isolating the labor component. The gross-market figure is retained as an upper bound.</p>
+      <div class="section-header"><h2>National Childcare Benchmarks</h2><span class="section-tag">2022</span></div>
+      <p>This demo now shows two descriptive childcare benchmarks side by side. The narrower <strong>active-care bridge benchmark</strong> scales respondent-level active childcare time to the under-5 population. The broader <strong>annual-hours childcare account</strong> keeps active household care, active nonhousehold care, and supervisory care explicit in annual hours. Both preferred benchmarks use the <strong>direct-care-equivalent</strong> price layer, while the gross-market figure is retained as an upper bound.</p>
       <div class="table-wrap">
         <table class="data-table">
-          <thead><tr><th>Measure</th><th class="num">Value</th><th>Unit</th></tr></thead>
+          <thead><tr><th>Measure</th><th class="num">Active-care bridge</th><th class="num">Annual-hours account</th><th>Unit</th></tr></thead>
           <tbody>
-            <tr class="highlight"><td>Preferred benchmark: direct-care value</td><td class="num">$41.38B</td><td>annual national value</td></tr>
-            <tr><td>Gross-market upper benchmark</td><td class="num">$50.35B</td><td>annual national value</td></tr>
-            <tr><td>Excluded non-direct residual</td><td class="num">$8.97B</td><td>annual national value</td></tr>
-            <tr><td>Direct-care-equivalent price</td><td class="num">$8,762</td><td>per child-equivalent year</td></tr>
-            <tr><td>Gross market price</td><td class="num">$10,660</td><td>per child-equivalent year</td></tr>
-            <tr><td>Unpaid child-equivalent quantity</td><td class="num">4.72M</td><td>annual slots</td></tr>
-            <tr><td>Average unpaid childcare hours</td><td class="num">457.9</td><td>per child-year</td></tr>
-            <tr><td>Price-support population share</td><td class="num">89.0%</td><td>of national under-5 pop.</td></tr>
+            <tr class="highlight"><td>Preferred benchmark</td><td class="num">$28.36B</td><td class="num">$1.47T</td><td>annual national value</td></tr>
+            <tr><td>Gross-market upper benchmark</td><td class="num">$34.16B</td><td class="num">$1.77T</td><td>annual national value</td></tr>
+            <tr><td>Excluded non-direct residual</td><td class="num">$5.80B</td><td class="num">$300.17B</td><td>annual national value</td></tr>
+            <tr><td>Direct-care-equivalent price</td><td class="num">$9,217</td><td class="num">$9.72</td><td>bridge: per slot-year; annual-hours: per hour</td></tr>
+            <tr><td>Gross market price</td><td class="num">$11,102</td><td class="num">$11.70</td><td>bridge: per slot-year; annual-hours: per hour</td></tr>
+            <tr><td>Quantity</td><td class="num">3.08M</td><td class="num">151.06B</td><td>bridge: annual slots; annual-hours: annual hours</td></tr>
+            <tr><td>Active childcare hours</td><td class="num">152.7</td><td class="num">40.97B</td><td>bridge: per respondent-year; annual-hours: annual national hours</td></tr>
+            <tr><td>Supervisory childcare hours</td><td class="num">&mdash;</td><td class="num">110.09B</td><td>annual national hours</td></tr>
+            <tr><td>Price-support population share</td><td class="num">41.1%</td><td class="num">41.1%</td><td>of national under-5 pop.</td></tr>
           </tbody>
         </table>
       </div>
@@ -109,12 +111,12 @@
               </tbody>
             </table>
           </div>
-          <p>This is <strong>not cost accounting</strong>&mdash;it is a transparent assumption-based decomposition. The non-direct-care residual (gross minus direct-care) covers facilities, administration, meals, and other overhead. Sensitivity: direct-care price ranges from $5,371&ndash;$7,787 under &plusmn;10% stress on staffing and fringe, but the implied wage is stable at $9.56&ndash;$9.75.</p>
+          <p>This is <strong>not cost accounting</strong>&mdash;it is a transparent assumption-based decomposition. The non-direct-care residual (gross minus direct-care) is a pooled bucket that can cover facilities, administration, meals, advertising, transport, profits, and market power rather than a separately identified markup. The annual-hours account is broader because it keeps active household care, active nonhousehold care, and supervisory care explicit; supervisory care is still additive and not yet overlap-adjusted.</p>
         </div></div>
       </div>
 
       <div class="insight-box">
-        <p><strong>Interpretation:</strong> Replacement cost is useful for saying what unpaid care is worth if purchased one unit at a time at current prices. But policy does not operate one unit at a time&mdash;that is why the marketization price exists below.</p>
+        <p><strong>Interpretation:</strong> Read both as accounting benchmarks, not as predictions of what would happen if all unpaid care were marketized. The active-care bridge is a population-scaled bridge quantity, not an under-5-only ATUS time slice. The annual-hours account is much broader and should not be read as interchangeable with the bridge benchmark.</p>
       </div>
     </section>
 
@@ -126,22 +128,22 @@
         <table class="data-table">
           <thead><tr><th>Measure</th><th class="num">Value</th><th>Unit</th></tr></thead>
           <tbody>
-            <tr><td>Gross market price</td><td class="num">$8,218</td><td>per child per year</td></tr>
-            <tr><td>Direct-care-equivalent price</td><td class="num">$6,564</td><td>per child per year</td></tr>
-            <tr><td>Displayed non-direct-care remainder</td><td class="num">$1,654</td><td>per child per year</td></tr>
-            <tr><td>Implied direct-care wage</td><td class="num">$9.75</td><td>per hour</td></tr>
-            <tr class="highlight"><td>Marketization price (&alpha; = 0.50)</td><td class="num">$8,737</td><td>per child per year</td></tr>
-            <tr><td>Marketization price (&alpha; = 1.00)</td><td class="num">$9,125</td><td>per child per year</td></tr>
-            <tr><td>Demand elasticity</td><td class="num">&minus;0.021</td><td>at mean</td></tr>
-            <tr><td>Supply elasticity</td><td class="num">4.078</td><td>weighted median</td></tr>
-            <tr><td>LOO state R&sup2;</td><td class="num">&minus;0.097</td><td>held-out fit</td></tr>
-            <tr><td>LOO year R&sup2;</td><td class="num">&minus;0.000</td><td>held-out fit</td></tr>
+            <tr><td>Gross market price</td><td class="num">$8,224</td><td>per child per year</td></tr>
+            <tr><td>Direct-care-equivalent price</td><td class="num">$6,551</td><td>per child per year</td></tr>
+            <tr><td>Displayed non-direct-care remainder</td><td class="num">$1,673</td><td>per child per year</td></tr>
+            <tr><td>Implied direct-care wage</td><td class="num">$9.73</td><td>per hour</td></tr>
+            <tr class="highlight"><td>Marketization price (&alpha; = 0.50)</td><td class="num">$8,428</td><td>per child per year</td></tr>
+            <tr><td>Demand elasticity</td><td class="num">&minus;0.143</td><td>at mean</td></tr>
+            <tr><td>Supply elasticity</td><td class="num">4.035</td><td>weighted median</td></tr>
+            <tr><td>LOO state R&sup2;</td><td class="num">&minus;0.085</td><td>held-out fit</td></tr>
+            <tr><td>LOO year R&sup2;</td><td class="num">&minus;1.621</td><td>held-out fit</td></tr>
+            <tr><td>Bootstrap acceptance rate</td><td class="num">92.0%</td><td>92 / 100 draws</td></tr>
           </tbody>
         </table>
       </div>
       <p class="table-note">Displayed non-direct-care remainders are the arithmetic remainder from displayed gross and direct-care medians so decomposition displays read cleanly. The separate report artifacts still retain component medians.</p>
       <div class="status-line-box">
-        <p><strong>Status:</strong> proof-of-concept headline. The selected <code>observed_core</code> run is economically admissible, and the latest checked-in real-mode audit accepted <strong>78 / 100</strong> bootstrap draws.</p>
+        <p><strong>Status:</strong> proof-of-concept headline. The selected <code>observed_core</code> run is economically admissible, and the latest checked-in real-mode audit accepted <strong>92 / 100</strong> bootstrap draws.</p>
       </div>
     </section>
 
@@ -153,7 +155,7 @@
       <!-- Stylized Econ-101 diagram -->
       <div class="chart-container">
         <h3>The Outsourcing Shift</h3>
-        <p class="chart-subtitle">A stylized supply-and-demand diagram. The steep demand curve reflects very inelastic demand (&epsilon;&nbsp;=&nbsp;&minus;0.021): families need childcare regardless of price. The flatter supply curve reflects elastic supply (&epsilon;&nbsp;=&nbsp;4.078): providers expand when prices rise. When unpaid care enters the market, demand shifts right (D&nbsp;&rarr;&nbsp;D&prime;), moving the equilibrium from E&#x2080; to E&prime; with a modest price increase.</p>
+        <p class="chart-subtitle">A stylized supply-and-demand diagram. The current canonical fit still implies inelastic demand (&epsilon;&nbsp;=&nbsp;&minus;0.143) and elastic supply (&epsilon;&nbsp;=&nbsp;4.035), so outsourcing shifts move mostly through quantity rather than explosive price increases. When unpaid care enters the market, demand shifts right (D&nbsp;&rarr;&nbsp;D&prime;), moving the equilibrium from E&#x2080; to E&prime; with a modest price increase.</p>
         <div class="chart-canvas-wrap tall"><canvas id="econ101Chart"></canvas></div>
         <p class="chart-note">This is a conceptual diagram illustrating the model logic. For the actual estimated curves with real data, see Solver-Implied Curves below.</p>
       </div>
@@ -167,7 +169,7 @@
           <div class="chart-legend-item"><span class="chart-legend-swatch" style="background:var(--color-teal);"></span> Direct-care component</div>
           <div class="chart-legend-item"><span class="chart-legend-swatch" style="background:var(--color-amber);"></span> Displayed non-direct-care remainder</div>
         </div>
-        <p class="chart-note">Gross price is labeled above each bar. The amber segment is the displayed remainder from the rounded gross and direct-care medians so the bars close visually. The wage stability ($9.75&ndash;$10.86 across the full alpha range) still makes it a useful anchor.</p>
+        <p class="chart-note">Gross price is labeled above each bar. The amber segment is the displayed remainder from the rounded gross and direct-care medians so the bars close visually. The wage stability ($9.73&ndash;$10.16 across the full alpha range) still makes it a useful anchor.</p>
       </div>
 
       <!-- Scenario Intervals -->
@@ -175,7 +177,7 @@
       <p>Each point is the median marketization price across canonical scenario rows at a given alpha. Shaded bands are bootstrap 10th-to-90th percentile intervals from resampling the demand and supply elasticities.</p>
       <div class="chart-container">
         <div class="chart-canvas-wrap" style="min-height:380px;"><canvas id="alphaIntervalsChart"></canvas></div>
-        <p class="chart-note">The <strong>marginal</strong> point is the shadow price at an infinitesimal outsourcing increment. Intervals widen as alpha grows because larger demand shifts amplify elasticity uncertainty. At &alpha;&nbsp;=&nbsp;1.00, the median price rises ~11% from the baseline.</p>
+        <p class="chart-note">The <strong>marginal</strong> point is the shadow price at an infinitesimal outsourcing increment. Intervals widen as alpha grows because larger demand shifts amplify elasticity uncertainty. At &alpha;&nbsp;=&nbsp;1.00, the median price rises about 4.8% from the baseline in the current canonical run.</p>
       </div>
 
       <!-- Dual-shift Supply Sensitivity -->
@@ -208,15 +210,15 @@
       <p>The solver constructs constant-elasticity curves through the observed baseline: <code>Qd(P) = Q&#x2080; &times; (P/P&#x2080;)^(&minus;|&epsilon;d|)</code> and <code>Qs(P) = Q&#x2080; &times; (P/P&#x2080;)^(&epsilon;s)</code>. Both curves pass through the baseline point (Q&#x2080;, P&#x2080;) by construction. Unlike the stylized diagram above, these use real estimated elasticities and data-derived baselines.</p>
       <div class="chart-container">
         <div class="chart-canvas-wrap tall"><canvas id="solverCurvesChart"></canvas></div>
-        <p class="chart-note">At &alpha;&nbsp;=&nbsp;0.50, price rises +$519. At &alpha;&nbsp;=&nbsp;1.00, +$907. These are solver-implied curves from the canonical elasticities, not nonparametric empirical schedules.</p>
+        <p class="chart-note">At &alpha;&nbsp;=&nbsp;0.50, price rises about +$204. At &alpha;&nbsp;=&nbsp;1.00, about +$394. These are solver-implied curves from the canonical elasticities, not nonparametric empirical schedules.</p>
       </div>
 
       <!-- Piecewise Supply Demo -->
       <h3>Piecewise Supply Extension</h3>
-      <p>The constant-elasticity assumption can be relaxed. This demo estimates separate reduced-form slopes <strong>below</strong> and <strong>above</strong> the baseline price, creating a one-kink supply curve. Below the baseline, supply is more elastic (&eta;&nbsp;=&nbsp;5.96); above, it is stiffer (&eta;&nbsp;=&nbsp;2.60). This raises predicted marketization prices: <strong>+$291</strong> at &alpha;&nbsp;=&nbsp;0.50 and <strong>+$565</strong> at &alpha;&nbsp;=&nbsp;1.00 vs. the constant benchmark.</p>
+      <p>The constant-elasticity assumption can be relaxed. This demo estimates separate reduced-form slopes <strong>below</strong> and <strong>above</strong> the baseline price, creating a one-kink supply curve. Below the baseline, supply is more elastic (&eta;&nbsp;=&nbsp;5.78); above, it is stiffer (&eta;&nbsp;=&nbsp;2.60). This raises predicted marketization prices by about <strong>+$92</strong> at &alpha;&nbsp;=&nbsp;0.50 and <strong>+$182</strong> at &alpha;&nbsp;=&nbsp;1.00 vs. the constant benchmark.</p>
       <div class="chart-container">
         <div class="chart-canvas-wrap tall"><canvas id="piecewiseChart"></canvas></div>
-        <p class="chart-note">Only 22 of 107 eligible state-years have directly estimated positive slopes on both sides of the baseline. Most rows (79.4%) borrow a pooled fallback on at least one side. This is a methodology demonstration, not a richly estimated piecewise supply system.</p>
+        <p class="chart-note">Only 21 of 107 eligible state-years have directly estimated positive slopes on both sides of the baseline. Most rows (80.4%) borrow a pooled fallback on at least one side. This is a methodology demonstration, not a richly estimated piecewise supply system.</p>
       </div>
     </section>
 
@@ -234,25 +236,25 @@
 
       <!-- Sample ladder -->
       <h3>Sample Ladder</h3>
-      <p>Three samples are tested. The <strong>observed core</strong> is the main demo headline: 139 state-year rows, 21 states, restricted to years with observed NDCP prices and QCEW labor coverage above 94%. A stricter internal review can still flag it as fragile without removing it from the proof-of-concept site.</p>
+      <p>Three samples are tested. The <strong>observed core</strong> is the main demo headline: 209 retained demand rows, 21 states, restricted to years with observed NDCP prices and strong labor support. A stricter internal review can still flag it as fragile without removing it from the proof-of-concept site.</p>
       <div class="ladder-grid">
         <div class="ladder-card">
           <div class="lc-name">Broad Complete</div>
           <div class="lc-rows">228</div>
           <div class="lc-detail">22 states, 2008&ndash;2022 (unbalanced panel)</div>
           <div class="lc-badges">
-            <span class="badge badge-amber">LOO state R&sup2;: &minus;0.092</span>
-            <span class="badge badge-red">LOO year R&sup2;: &minus;2.592</span>
+            <span class="badge badge-amber">LOO state R&sup2;: &minus;0.077</span>
+            <span class="badge badge-red">LOO year R&sup2;: &minus;1.920</span>
           </div>
         </div>
         <div class="ladder-card headline">
           <div class="lc-name">Observed Core</div>
-          <div class="lc-rows">139</div>
-          <div class="lc-detail">21 states, 2014&ndash;2022 (headline, unbalanced)</div>
+          <div class="lc-rows">209</div>
+          <div class="lc-detail">21 states, 2008&ndash;2022 (headline, unbalanced)</div>
           <div class="lc-badges">
-            <span class="badge badge-amber">LOO state R&sup2;: &minus;0.097</span>
-            <span class="badge badge-teal">LOO year R&sup2;: &minus;0.000</span>
-            <span class="badge badge-red">Real bootstrap accept: 78%</span>
+            <span class="badge badge-amber">LOO state R&sup2;: &minus;0.085</span>
+            <span class="badge badge-red">LOO year R&sup2;: &minus;1.621</span>
+            <span class="badge badge-teal">Real bootstrap accept: 92%</span>
           </div>
         </div>
         <div class="ladder-card">
@@ -260,8 +262,8 @@
           <div class="lc-rows">55</div>
           <div class="lc-detail">13 states, 2014&ndash;2022 (unbalanced panel)</div>
           <div class="lc-badges">
-            <span class="badge badge-amber">LOO state R&sup2;: &minus;0.248</span>
-            <span class="badge badge-amber">LOO year R&sup2;: &minus;0.107</span>
+            <span class="badge badge-red">LOO state R&sup2;: &minus;0.396</span>
+            <span class="badge badge-amber">LOO year R&sup2;: &minus;0.164</span>
           </div>
         </div>
       </div>
@@ -284,19 +286,19 @@
           <thead><tr><th>Specification</th><th class="num">Elasticity</th><th class="num">LOO State R&sup2;</th><th class="num">LOO Year R&sup2;</th><th>Status</th></tr></thead>
           <tbody>
             <tr class="highlight">
-              <td>household_parsimonious</td><td class="num">&minus;0.021</td><td class="num">&minus;0.097</td><td class="num">&minus;0.000</td>
+              <td>household_parsimonious</td><td class="num">&minus;0.143</td><td class="num">&minus;0.085</td><td class="num">&minus;1.621</td>
               <td><span class="badge badge-teal">canonical</span></td>
             </tr>
             <tr>
-              <td>instrument_only</td><td class="num" style="color:var(--color-red);">+0.007</td><td class="num">&minus;0.074</td><td class="num">&minus;0.038</td>
-              <td><span class="badge badge-red">quarantined</span></td>
-            </tr>
-            <tr>
-              <td>labor_parsimonious</td><td class="num">&minus;0.020</td><td class="num">&minus;0.083</td><td class="num">+0.012</td>
+              <td>instrument_only</td><td class="num">&minus;0.139</td><td class="num">&minus;0.034</td><td class="num">+0.003</td>
               <td><span class="badge badge-amber">sensitivity</span></td>
             </tr>
             <tr>
-              <td>full_controls</td><td class="num" style="color:var(--color-red);">+0.797</td><td class="num">&minus;0.041</td><td class="num">+0.130</td>
+              <td>labor_parsimonious</td><td class="num">&minus;0.137</td><td class="num">&minus;0.054</td><td class="num">&minus;0.505</td>
+              <td><span class="badge badge-amber">sensitivity</span></td>
+            </tr>
+            <tr>
+              <td>full_controls</td><td class="num">&minus;0.489</td><td class="num">&minus;0.114</td><td class="num">&minus;2.705</td>
               <td><span class="badge badge-red">quarantined</span></td>
             </tr>
           </tbody>
@@ -416,7 +418,7 @@
         </div>
         <div class="limitation-item">
           <strong>Sample size.</strong>
-          <p>139 state-year rows is sufficient for demonstration, not robust inference. The site intentionally keeps that demo visible and labels the weakness instead of hiding the output.</p>
+          <p>209 retained observed-core demand rows are sufficient for demonstration, not robust inference. The site intentionally keeps that demo visible and labels the weakness instead of hiding the output.</p>
         </div>
         <div class="limitation-item">
           <strong>No behavioral response.</strong>
