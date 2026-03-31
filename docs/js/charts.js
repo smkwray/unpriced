@@ -37,6 +37,7 @@
     buildSolverCurves(C);
     buildPiecewiseSupply(C);
     buildDualShiftFrontier(C);
+    buildDualShiftLines(C);
   }
 
   /* ── 1. Stylized Econ-101 Supply & Demand Diagram ── */
@@ -997,6 +998,174 @@
             ctx.fillStyle = Math.abs(point.pct) >= 0.05 ? '#fff' : C.heading;
             ctx.fillText(fmtPct(point.pct), element.x, element.y);
           });
+          ctx.restore();
+        }
+      }]
+    }));
+  }
+
+  /* ── 8. Dual-shift Lines (capacity expansion vs price change) ── */
+  function buildDualShiftLines(C) {
+    var canvas = document.getElementById('dualShiftLinesChart');
+    if (!canvas) return;
+    var headlineAlpha = 0.50;
+
+    var rawPoints = [
+      { kappaC: 0.00, kappaQ: 0.00, pct: 0.054941500406918704, price: 8726.578698035715 },
+      { kappaC: 0.05, kappaQ: 0.00, pct: 0.08099622257993914, price: 8942.249864276215 },
+      { kappaC: 0.10, kappaQ: 0.00, pct: 0.1076948430111881, price: 9163.254801422605 },
+      { kappaC: 0.15, kappaQ: 0.00, pct: 0.13505328531029068, price: 9389.72551482762 },
+      { kappaC: 0.20, kappaQ: 0.00, pct: 0.1630878671629812, price: 9621.79727936487 },
+      { kappaC: 0.00, kappaQ: 0.25, pct: 0.02385369198823952, price: 8469.250483636068 },
+      { kappaC: 0.05, kappaQ: 0.25, pct: 0.04914014561587713, price: 8678.557780774307 },
+      { kappaC: 0.10, kappaQ: 0.25, pct: 0.0750514985822997, price: 8893.041352855675 },
+      { kappaC: 0.15, kappaQ: 0.25, pct: 0.10160320432324998, price: 9112.82930444388 },
+      { kappaC: 0.20, kappaQ: 0.25, pct: 0.1288110987060361, price: 9338.052912931602 },
+      { kappaC: 0.00, kappaQ: 0.50, pct: -0.006317454742134933, price: 8219.515181110375 },
+      { kappaC: 0.05, kappaQ: 0.50, pct: 0.018223398513271954, price: 8422.646518139401 },
+      { kappaC: 0.10, kappaQ: 0.50, pct: 0.043370713154811655, price: 8630.801288091963 },
+      { kappaC: 0.15, kappaQ: 0.50, pct: 0.06913948633720368, price: 8844.103810101053 },
+      { kappaC: 0.20, kappaQ: 0.50, pct: 0.09554508634653812, price: 9062.681482298554 },
+      { kappaC: 0.00, kappaQ: 0.75, pct: -0.03559898586754299, price: 7977.14859543913 },
+      { kappaC: 0.05, kappaQ: 0.75, pct: -0.011781734103867694, price: 8174.286328834152 },
+      { kappaC: 0.10, kappaQ: 0.75, pct: 0.012624085484792219, price: 8376.299169448022 },
+      { kappaC: 0.15, kappaQ: 0.75, pct: 0.03763302725416548, price: 8583.307762927026 },
+      { kappaC: 0.20, kappaQ: 0.75, pct: 0.06326000572531515, price: 8795.435742863374 },
+      { kappaC: 0.00, kappaQ: 1.00, pct: -0.06401714893399774, price: 7741.93315619452 },
+      { kappaC: 0.05, kappaQ: 1.00, pct: -0.04090214929856241, price: 7933.2542541105195 },
+      { kappaC: 0.10, kappaQ: 1.00, pct: -0.017215947092932886, price: 8129.306516300609 },
+      { kappaC: 0.15, kappaQ: 1.00, pct: 0.0070555823229907924, price: 8330.207023555253 },
+      { kappaC: 0.20, kappaQ: 1.00, pct: 0.0319269131128765, price: 8536.075756252707 },
+      { kappaC: 0.00, kappaQ: 1.25, pct: -0.09159741654413969, price: 7513.657721644142 },
+      { kappaC: 0.05, kappaQ: 1.25, pct: -0.06916394999957386, price: 7699.333923253931 },
+      { kappaC: 0.10, kappaQ: 1.25, pct: -0.04617613344276039, price: 7889.601599350652 },
+      { kappaC: 0.15, kappaQ: 1.25, pct: -0.022620259252736568, price: 8084.574371284845 },
+      { kappaC: 0.20, kappaQ: 1.25, pct: 0.0015177193879351647, price: 8284.368674251695 },
+      { kappaC: 0.00, kappaQ: 1.50, pct: -0.1183645092535323, price: 7292.117388652263 },
+      { kappaC: 0.05, kappaQ: 1.50, pct: -0.09659246846515691, price: 7472.315358768932 },
+      { kappaC: 0.10, kappaQ: 1.50, pct: -0.07428243267359438, price: 7656.969240976212 },
+      { kappaC: 0.15, kappaQ: 1.50, pct: -0.051421098955947465, price: 7846.189299480853 },
+      { kappaC: 0.20, kappaQ: 1.50, pct: -0.027994835214578337, price: 8040.088529128645 }
+    ];
+
+    function multiplierFromKappa(kappa) {
+      return Math.exp(headlineAlpha * kappa) - 1;
+    }
+
+    var kappaCValues = [0.00, 0.05, 0.10, 0.15, 0.20];
+    var lineColors = [C.teal, C.slateBlue, C.amber, '#ea580c', C.red];
+
+    var datasets = kappaCValues.map(function (kc, i) {
+      var pts = rawPoints
+        .filter(function (p) { return p.kappaC === kc; })
+        .map(function (p) {
+          return {
+            x: multiplierFromKappa(p.kappaQ),
+            y: p.pct,
+            price: p.price
+          };
+        })
+        .sort(function (a, b) { return a.x - b.x; });
+
+      var costPct = Math.round(multiplierFromKappa(kc) * 100);
+      return {
+        label: costPct + '% cost pressure',
+        data: pts,
+        borderColor: lineColors[i],
+        backgroundColor: lineColors[i],
+        borderWidth: 2.5,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1.5,
+        tension: 0.3,
+        fill: false,
+        showLine: true
+      };
+    });
+
+    charts.push(new Chart(canvas, {
+      type: 'scatter',
+      data: { datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: 'How much capacity expansion offsets the price increase?',
+            font: { size: 15, weight: '700' },
+            color: C.heading,
+            padding: { bottom: 12 }
+          },
+          subtitle: {
+            display: true,
+            text: 'Each line is a cost-pressure scenario. Where it crosses zero, price stays roughly flat.',
+            color: C.textSec,
+            font: { size: 11.5, weight: '400' },
+            padding: { bottom: 8 }
+          },
+          legend: {
+            position: 'bottom',
+            labels: { usePointStyle: true, padding: 16, font: { size: 12 } }
+          },
+          tooltip: {
+            callbacks: {
+              label: function (ctx) {
+                return [
+                  ctx.dataset.label,
+                  'Capacity expansion: +' + Math.round(ctx.raw.x * 100) + '%',
+                  'Price change: ' + fmtPct(ctx.raw.y),
+                  'Median price: ' + fmtDollar(Math.round(ctx.raw.price))
+                ];
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            type: 'linear',
+            min: -0.02,
+            max: 1.18,
+            title: { display: true, text: 'Paid-care capacity expansion at \u03B1 = 0.50', color: C.textSec },
+            ticks: {
+              stepSize: 0.25,
+              color: C.textSec,
+              callback: function (v) { return Math.round(v * 100) + '%'; }
+            },
+            grid: { color: C.grid }
+          },
+          y: {
+            title: { display: true, text: 'Median price change', color: C.textSec },
+            ticks: {
+              color: C.textSec,
+              callback: function (v) { return (v >= 0 ? '+' : '') + Math.round(v * 100) + '%'; }
+            },
+            grid: { color: C.grid }
+          }
+        }
+      },
+      plugins: [{
+        id: 'zeroLine',
+        beforeDraw: function (chart) {
+          var yScale = chart.scales.y;
+          var ctx = chart.ctx;
+          var yPx = yScale.getPixelForValue(0);
+          if (yPx < chart.chartArea.top || yPx > chart.chartArea.bottom) return;
+          ctx.save();
+          ctx.setLineDash([6, 4]);
+          ctx.strokeStyle = C.textMuted;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(chart.chartArea.left, yPx);
+          ctx.lineTo(chart.chartArea.right, yPx);
+          ctx.stroke();
+          ctx.restore();
+          ctx.save();
+          ctx.font = '500 11px ' + Chart.defaults.font.family;
+          ctx.fillStyle = C.textMuted;
+          ctx.textAlign = 'right';
+          ctx.fillText('Price flat', chart.chartArea.right - 4, yPx - 6);
           ctx.restore();
         }
       }]
