@@ -123,7 +123,7 @@
     <!-- ══════════════════ MARKETIZATION PRICE ══════════════════ -->
     <section class="section" id="marketization">
       <div class="section-header"><h2>Counterfactual Marketization Price</h2><span class="section-tag">Headline</span></div>
-      <p>If some share (&alpha;) of currently unpaid childcare entered the paid market, what price would the sector clear at? &alpha; is the outsourcing share: &alpha;&nbsp;=&nbsp;0 is the status quo, &alpha;&nbsp;=&nbsp;0.50 means half of unpaid hours enter the market, and &alpha;&nbsp;=&nbsp;1.00 means full outsourcing. Canonical scenario outputs use <code>observed_core</code> and <code>household_parsimonious</code>: 556 scenario rows across observed price-support years 2014&ndash;2022. The separate real-mode demand-fit sample for <code>observed_core</code> is used only for the audit status below.</p>
+      <p>If some share (&alpha;) of currently unpaid childcare entered the paid market, what price would the sector clear at? &alpha; is the outsourcing share: &alpha;&nbsp;=&nbsp;0 is the status quo, &alpha;&nbsp;=&nbsp;0.50 means half of unpaid hours enter the market, and &alpha;&nbsp;=&nbsp;1.00 means full outsourcing. The headline shown here uses the observed-price core sample and the project&rsquo;s parsimonious household-controls demand setup: 556 scenario rows across observed price-support years 2014&ndash;2022. The separate demand-fit audit reported below is a quality check, not a second headline.</p>
       <div class="table-wrap">
         <table class="data-table">
           <thead><tr><th>Measure</th><th class="num">Value</th><th>Unit</th></tr></thead>
@@ -143,7 +143,19 @@
       </div>
       <p class="table-note">Displayed non-direct-care remainders are the arithmetic remainder from displayed gross and direct-care medians so decomposition displays read cleanly. The separate report artifacts still retain component medians.</p>
       <div class="status-line-box">
-        <p><strong>Status:</strong> proof-of-concept headline. The selected <code>observed_core</code> run is economically admissible, and the latest checked-in real-mode audit accepted <strong>92 / 100</strong> bootstrap draws.</p>
+        <p><strong>Status:</strong> proof-of-concept headline. The selected observed-price core run is economically admissible, and the latest checked-in real-mode audit accepted <strong>92 / 100</strong> bootstrap draws.</p>
+      </div>
+      <div class="collapsible">
+        <div class="collapsible-header">
+          <h4>How the supply curve is estimated in this demo</h4>
+          <span class="collapsible-arrow">&#9654;</span>
+        </div>
+        <div class="collapsible-body"><div class="collapsible-inner">
+          <p>The headline supply curve is built from county differences in childcare prices and provider availability, not from a national causal instrument. The first step keeps only county observations with a positive annual price and a positive provider presence.</p>
+          <p>Then the model looks within each state-year. A state-year counts as a direct estimate only if it has at least five county observations and enough variation in both prices and provider availability to trace a usable upward-sloping relationship. Each usable state-year produces one slope.</p>
+          <p>Those positive state-year slopes are then summarized with a population-weighted median, using the under-5 population when that information is available. If the within-state-year evidence is not usable, the demo falls back in order to a year-adjusted national slope, then a pooled national slope, and only then to a conservative default of 0.5.</p>
+          <p>The current headline uses a supply elasticity of <strong>4.035</strong>. Read that as a local benchmark around today&rsquo;s market: in the constant-elasticity version of the demo, a 1% higher price is associated with roughly 4% more paid-care capacity.</p>
+        </div></div>
       </div>
     </section>
 
@@ -221,10 +233,22 @@
 
       <!-- Piecewise Supply Demo -->
       <h3>Piecewise Supply Extension</h3>
-      <p>The constant-elasticity assumption can be relaxed. This demo estimates separate reduced-form slopes <strong>below</strong> and <strong>above</strong> the baseline price, creating a one-kink supply curve. Below the baseline, supply is more elastic (&eta;&nbsp;=&nbsp;5.78); above, it is stiffer (&eta;&nbsp;=&nbsp;2.60). This raises predicted marketization prices by about <strong>+$92</strong> at &alpha;&nbsp;=&nbsp;0.50 and <strong>+$182</strong> at &alpha;&nbsp;=&nbsp;1.00 vs. the constant benchmark.</p>
+      <p>Maybe supply is easier to expand when prices are below today&rsquo;s level and harder once prices rise above it. This demo allows exactly one kink in the supply curve. Below today&rsquo;s baseline price, supply is more elastic (&eta;&nbsp;=&nbsp;5.78); above it, supply is stiffer (&eta;&nbsp;=&nbsp;2.60). That pushes predicted marketization prices up by about <strong>+$92</strong> at &alpha;&nbsp;=&nbsp;0.50 and <strong>+$182</strong> at &alpha;&nbsp;=&nbsp;1.00 relative to the constant benchmark.</p>
       <div class="chart-container">
         <div class="chart-canvas-wrap tall"><canvas id="piecewiseChart"></canvas></div>
         <p class="chart-note">Only 21 of 107 eligible state-years have directly estimated positive slopes on both sides of the baseline. Most rows (80.4%) borrow a pooled fallback on at least one side. This is a methodology demonstration, not a richly estimated piecewise supply system.</p>
+      </div>
+      <div class="collapsible">
+        <div class="collapsible-header">
+          <h4>How the one-kink supply version is estimated</h4>
+          <span class="collapsible-arrow">&#9654;</span>
+        </div>
+        <div class="collapsible-body"><div class="collapsible-inner">
+          <p>The piecewise version keeps the current statewide price as the bend in the curve. Within each state-year, county observations are split into counties at or below that baseline price and counties above it.</p>
+          <p>A separate price-responsiveness slope is estimated on each side when there is enough usable positive variation. If one side cannot be estimated cleanly, the demo borrows a pooled positive slope from the same side of the market in the broader sample.</p>
+          <p>The two branches are forced to meet at today&rsquo;s price, so the curve is continuous but changes steepness at the baseline.</p>
+          <p>Only <strong>21 of 107</strong> eligible state-years have directly estimated positive slopes on both sides, and <strong>80.4%</strong> borrow a pooled fallback on at least one side. That is why this is labeled as a method demonstration rather than a state-by-state structural system.</p>
+        </div></div>
       </div>
     </section>
 
@@ -286,25 +310,25 @@
 
       <!-- Specification Comparison -->
       <h3>Specification Comparison</h3>
-      <p>The demand elasticity is the most consequential parameter in the model. It determines how much price rises when outsourced care enters the market. The four checked-in specification profiles all use the same current instrument, <code>outside_option_wage</code>, while varying which demographic controls are included. A separate births-based IV sensitivity was tested and quarantined because it produced a positive elasticity and weak first-stage fit in the observed-core sample.</p>
+      <p>The demand elasticity is the most consequential parameter in the model. It determines how much price rises when outsourced care enters the market. The checked-in variants all use the same current instrument: wages available outside childcare. They differ mainly in which control variables are included. A separate births-based sensitivity was tested and set aside because it produced the wrong sign and weak first-stage fit in the headline sample.</p>
       <div class="table-wrap">
         <table class="data-table">
           <thead><tr><th>Specification</th><th class="num">Elasticity</th><th class="num">LOO State R&sup2;</th><th class="num">LOO Year R&sup2;</th><th>Status</th></tr></thead>
           <tbody>
             <tr class="highlight">
-              <td>household_parsimonious</td><td class="num">&minus;0.143</td><td class="num">&minus;0.085</td><td class="num">&minus;1.621</td>
+              <td>Household controls</td><td class="num">&minus;0.143</td><td class="num">&minus;0.085</td><td class="num">&minus;1.621</td>
               <td><span class="badge badge-teal">canonical</span></td>
             </tr>
             <tr>
-              <td>instrument_only</td><td class="num">&minus;0.139</td><td class="num">&minus;0.034</td><td class="num">+0.003</td>
+              <td>Instrument only</td><td class="num">&minus;0.139</td><td class="num">&minus;0.034</td><td class="num">+0.003</td>
               <td><span class="badge badge-amber">sensitivity</span></td>
             </tr>
             <tr>
-              <td>labor_parsimonious</td><td class="num">&minus;0.137</td><td class="num">&minus;0.054</td><td class="num">&minus;0.505</td>
+              <td>Labor controls</td><td class="num">&minus;0.137</td><td class="num">&minus;0.054</td><td class="num">&minus;0.505</td>
               <td><span class="badge badge-amber">sensitivity</span></td>
             </tr>
             <tr>
-              <td>full_controls</td><td class="num">&minus;0.489</td><td class="num">&minus;0.114</td><td class="num">&minus;2.705</td>
+              <td>Full controls</td><td class="num">&minus;0.489</td><td class="num">&minus;0.114</td><td class="num">&minus;2.705</td>
               <td><span class="badge badge-red">quarantined</span></td>
             </tr>
           </tbody>
@@ -314,7 +338,31 @@
         <strong>LOO R&sup2;</strong> (leave-one-out R-squared) measures out-of-sample prediction: each state or year is held out, the model is re-estimated on the rest, and R&sup2; is computed on the held-out data. Negative values mean the model predicts worse than a simple mean&mdash;confirming this is demonstration-grade, not a high-powered empirical design.
       </p>
       <div class="warning-box">
-        <p><strong>Quarantined specifications</strong> produce positive demand elasticities&mdash;economically inadmissible (demand should fall when price rises). In the current checked-in model, the <code>instrument_only</code> specification omits all controls and leaves the wage-based IV to absorb confounders it cannot handle alone. The <code>full_controls</code> specification adds median income, which likely absorbs the price signal rather than controlling for it. Both are retained for diagnostic comparison but excluded from headline results. The canonical <code>household_parsimonious</code> uses parent employment rate and single-parent share. A births-based IV sensitivity was also tested and quarantined because it yielded a positive elasticity (<code>+0.150</code>) with weak first-stage fit (<code>R² = 0.148</code>).</p>
+        <p><strong>Quarantined specifications</strong> produce economically inadmissible demand responses. The instrument-only version leaves the wage-based instrument to absorb confounders it cannot plausibly handle on its own. The full-controls version adds median income, which likely soaks up the price signal rather than clarifying it. Both are kept for diagnostic comparison but excluded from the headline. The canonical version adjusts only for parent employment and single-parent share. A births-based sensitivity was also set aside because it implied a positive elasticity (<code>+0.150</code>) with weak first-stage fit (<code>R² = 0.148</code>).</p>
+      </div>
+      <div class="collapsible">
+        <div class="collapsible-header">
+          <h4>How demand is estimated</h4>
+          <span class="collapsible-arrow">&#9654;</span>
+        </div>
+        <div class="collapsible-body"><div class="collapsible-inner">
+          <p>The model does not take the raw correlation between high childcare prices and low unpaid care at face value, because expensive states may differ in many other ways. Instead it uses an instrumental-variables design at the state-year level.</p>
+          <p>In the first step, the model asks whether wages available outside childcare predict childcare prices after adjusting for parent employment and single-parent prevalence. In the second step, it uses only the price variation explained by that outside wage measure to estimate how unpaid childcare hours respond to price.</p>
+          <p>Survey weights are used when the time-use data provide them; otherwise rows count equally. The reported demand elasticity converts the estimated price coefficient into a percent response at the weighted average price and the weighted average unpaid-care level.</p>
+          <p>For a result to be eligible as a headline candidate, the public pipeline also requires basic support and sign checks: at least <strong>100 observations</strong>, at least <strong>15 states</strong>, at least <strong>6 years</strong>, a first-stage F-statistic of at least <strong>10</strong>, and a demand effect that does not turn positive.</p>
+        </div></div>
+      </div>
+      <div class="collapsible">
+        <div class="collapsible-header">
+          <h4>What the current IV evidence can and cannot support</h4>
+          <span class="collapsible-arrow">&#9654;</span>
+        </div>
+        <div class="collapsible-body"><div class="collapsible-inner">
+          <p>The project has a usable proof of concept, but not a strong causal design yet. On the demand side, the headline still relies on the outside-wage instrument, the leave-one-out diagnostics are negative, the price data are county-based while the causal core is state-based, and the headline fit keeps only <strong>209</strong> rows in the headline sample.</p>
+          <p>Passing the internal admissibility rules therefore means the estimate is coherent enough to display, not that it is ready to treat as a durable national causal parameter.</p>
+          <p>On the supply side, the headline supply elasticity is not instrument-based at all. It is a reduced-form price-versus-provider gradient. The broader licensing-based supply instrument is kept as diagnostics only: its full panel has a first-stage F-statistic of <strong>1.24</strong> across <strong>41 states</strong> and <strong>5,013 county-year observations</strong>.</p>
+          <p>A sharper four-state pilot is much stronger on paper, with a first-stage F-statistic of <strong>83.3</strong>, but it still identifies only a small treated-state setting. It is informative as a local design, not a national replacement for the current headline.</p>
+        </div></div>
       </div>
     </section>
 
@@ -323,6 +371,70 @@
       <div class="section-header"><h2>Evidence Quality &amp; Decomposition Layers</h2></div>
       <p class="section-takeaway">This section is an audit layer: it tracks support quality and decomposition credibility so readers can interpret the canonical pooled headline, not replace it.</p>
       <p>Beyond the pooled headline estimates, the project maintains an <strong>evidence-quality layer</strong> that tracks how much underlying data rests on direct administrative evidence versus inferred, proxy, or fallback sources.</p>
+
+      <h3>IV Designs Tried</h3>
+      <p>The project has tried instrumental-variables designs on both the demand and supply sides. Some are useful as diagnostics or local demonstrations; none currently replace the public headline supply curve, and only one remains in the headline demand workflow.</p>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Use case</th><th>Instrument</th><th>Main source stack</th><th>Status</th><th>Why it is or is not used</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Demand headline</td>
+              <td>Wages available outside childcare</td>
+              <td>BLS OEWS, NDCP, ATUS, ACS</td>
+              <td><span class="badge badge-teal">used with caveats</span></td>
+              <td>It passes the project&rsquo;s admissibility checks, but leave-one-out fit is still weak and the geography is mismatched.</td>
+            </tr>
+            <tr>
+              <td>Demand sensitivity</td>
+              <td>State births</td>
+              <td>CDC WONDER, NDCP, ATUS, ACS</td>
+              <td><span class="badge badge-red">not used</span></td>
+              <td>It implied the wrong sign for demand and fit weakly, so it was quarantined.</td>
+            </tr>
+            <tr>
+              <td>Supply full panel</td>
+              <td>Licensing shock exposure</td>
+              <td>State licensing rules, ICPSR archives, NDCP, CBP, NES, ACS</td>
+              <td><span class="badge badge-red">diagnostics only</span></td>
+              <td>The first stage is weak and the resulting supply estimates are not headline-usable.</td>
+            </tr>
+            <tr>
+              <td>Supply pilot</td>
+              <td>Licensing shock exposure in a four-state reform setting</td>
+              <td>State licensing reforms, NDCP, CBP, NES, ACS</td>
+              <td><span class="badge badge-amber">local demo only</span></td>
+              <td>The design is sharper locally, but it identifies only a small treated-state setting rather than a national parameter.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="collapsible">
+        <div class="collapsible-header">
+          <h4>Demand IV details: what was tried and why only one version remains</h4>
+          <span class="collapsible-arrow">&#9654;</span>
+        </div>
+        <div class="collapsible-body"><div class="collapsible-inner">
+          <p><strong>Current headline demand design.</strong> The instrument is a state-year measure of wages available outside childcare. In practice that comes from BLS occupational wage data for non-childcare jobs, with county and state childcare wage information used to align and fill the series where needed. The endogenous price is the state childcare price index built from county childcare prices. The outcome is unpaid childcare time from the American Time Use Survey.</p>
+          <p>The current headline control set is intentionally lean: parent employment rates and single-parent prevalence. Those come from state-year demographic controls. Alternative versions also tried adding unemployment and median income.</p>
+          <p>The main source stack is: county childcare prices from the National Database of Childcare Prices; unpaid childcare time and weights from ATUS; state demographic controls from the American Community Survey; and wage instruments from BLS occupational wage data. Even in this preferred version, the design remains fragile because prices start at the county level while the causal core is estimated at the state-year level, and held-out fit remains negative.</p>
+          <p><strong>Births-based demand sensitivity.</strong> The project also tested state-year birth counts as an alternative instrument, using CDC WONDER natality data. It used the same childcare price measure, the same unpaid-care outcome, and the same control framework. That version was not used because it produced a <strong>positive demand elasticity of +0.150</strong>, had weak fit in the first stage (<strong>R&sup2; = 0.148</strong>), and performed worse in held-out checks. In plain terms: it did not behave like a credible demand instrument in this sample.</p>
+        </div></div>
+      </div>
+
+      <div class="collapsible">
+        <div class="collapsible-header">
+          <h4>Supply IV details: what the licensing designs use and why they are not headline estimates</h4>
+          <span class="collapsible-arrow">&#9654;</span>
+        </div>
+        <div class="collapsible-body"><div class="collapsible-inner">
+          <p><strong>Full multi-state licensing design.</strong> The supply-side instrument is not a simple single variable. It combines two things: a county&rsquo;s pre-existing exposure to center-based providers, and the size of state-year licensing changes that make labor requirements tighter or looser. Intuitively, places that were already more exposed to center care should react more when center staffing rules change.</p>
+          <p>The price variable is county childcare price, and the main supply outcomes are provider density and employer-establishment density. The design uses county and state-year fixed effects so it relies on within-county changes around state-year regulatory shocks. The source stack is: county prices from NDCP; county employer establishments from County Business Patterns; county nonemployer firms from Nonemployer Statistics; county under-5 population from ACS for density scaling; and harmonized state licensing rules from state regulatory documents and ICPSR licensing-study archives.</p>
+          <p>This full-panel version is <strong>diagnostics only</strong> because the first stage is weak: <strong>F = 1.24</strong> across <strong>41 states</strong> and <strong>5,013 county-year observations</strong>. Neither supply outcome yields a headline-usable estimate, so the public site does not use this IV for the canonical supply elasticity.</p>
+          <p><strong>Four-state pilot.</strong> The project also keeps a sharper local pilot built around a smaller set of real licensing reforms. The treated reforms are Virginia&rsquo;s 2018 group-size caps, Montana&rsquo;s 2018 group-size guidance, and Louisiana&rsquo;s post-2017 group-size requirements; South Carolina stays in the panel as overlap support. This pilot is stronger on paper, with a first-stage F-statistic of <strong>83.3</strong>, but it still rests on only <strong>3 treated states</strong> and <strong>4 state clusters</strong>. That makes it useful as a local proof of concept, not as a national replacement for the main supply curve.</p>
+        </div></div>
+      </div>
 
       <h3>CCDF Support Quality</h3>
       <div class="table-wrap">
@@ -404,7 +516,7 @@
         </div>
         <div class="limitation-item">
           <strong>Causal identification is weak.</strong>
-          <p>The current canonical demand elasticity uses <code>outside_option_wage</code> as the instrument, and the demand side remains statistically weak. A births-based IV sensitivity was tested but is not used because it becomes economically inadmissible in the observed-core sample. The negative leave-one-out diagnostics confirm the model does not generalize well out of sample. This is the primary limitation.</p>
+          <p>The current headline demand estimate still relies on wages available outside childcare as the instrument, and the demand side remains statistically weak. A births-based sensitivity was tested but is not used because it becomes economically inadmissible in the headline sample. Negative leave-one-out diagnostics confirm that the fit does not generalize well out of sample. This is the primary limitation.</p>
         </div>
         <div class="limitation-item">
           <strong>Geography mismatch.</strong>
@@ -412,7 +524,7 @@
         </div>
         <div class="limitation-item">
           <strong>Constant-elasticity assumption.</strong>
-          <p>The solver assumes log-linear supply and demand. Real markets have kinks, capacity constraints, and regime changes.</p>
+          <p>The main solver assumes one constant percentage response for supply and one for demand. The piecewise sensitivity relaxes this with a single kink, but real markets can still have additional capacity cliffs, regime changes, and local bottlenecks.</p>
         </div>
         <div class="limitation-item">
           <strong>Price decomposition is benchmark-driven.</strong>
