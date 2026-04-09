@@ -96,9 +96,12 @@
           <span class="collapsible-arrow">&#9654;</span>
         </div>
         <div class="collapsible-body"><div class="collapsible-inner">
-          <p>The direct-care-equivalent price isolates the labor component of the gross market price:</p>
+          <p>The direct-care-equivalent price is derived in two steps. First, the model estimates the labor component of the gross market price:</p>
           <p><code>direct_care_price = (wage &times; fringe_multiplier &times; annual_hours) / children_per_worker</code></p>
           <p>where <strong>wage</strong> is the observed or imputed childcare-worker hourly wage from QCEW, weighted by the state-year provider-type and age mix from ACS. The <strong>implied wage</strong> is back-solved: <code>wage = direct_care_price &times; children_per_worker / (fringe_multiplier &times; annual_hours)</code>. The raw labor-equivalent price is clipped at the gross market price&mdash;direct-care cannot exceed the total.</p>
+          <p>Second, the model nets out the rest of the gross price as a pooled residual:</p>
+          <p><code>non_direct_care_residual = gross_market_price - direct_care_price</code></p>
+          <p>The preferred benchmark keeps the direct-care piece and drops that residual. In other words, it starts from the full market childcare price, backs out the labor-equivalent part implied by wages and staffing, and treats everything left over as non-direct care.</p>
           <div class="table-wrap">
             <table class="data-table">
               <thead><tr><th>Assumption</th><th class="num">Value</th><th>Source</th></tr></thead>
@@ -111,12 +114,12 @@
               </tbody>
             </table>
           </div>
-          <p>This is <strong>not cost accounting</strong>&mdash;it is a transparent assumption-based decomposition. The non-direct-care residual (gross minus direct-care) is a pooled bucket that can cover facilities, administration, meals, advertising, transport, profits, and market power rather than a separately identified markup. The annual-hours account is broader because it keeps active household care, active nonhousehold care, and supervisory care explicit; supervisory care is still additive and not yet overlap-adjusted.</p>
+          <p>This is <strong>not cost accounting</strong>&mdash;it is a transparent assumption-based decomposition. The non-direct-care residual is a pooled bucket that can cover facilities, administration, meals, advertising, transport, profits, and market power rather than a separately identified markup. The annual-hours account is broader because it keeps active household care, active nonhousehold care, and supervisory care explicit; supervisory care is still additive and not yet overlap-adjusted.</p>
         </div></div>
       </div>
 
       <div class="insight-box">
-        <p><strong>Interpretation:</strong> Read both as accounting benchmarks, not as predictions of what would happen if all unpaid care were marketized. The active-care bridge is a population-scaled bridge quantity, not an under-5-only ATUS time slice. The annual-hours account is much broader and should not be read as interchangeable with the bridge benchmark.</p>
+        <p><strong>Interpretation:</strong> Read both as accounting benchmarks, not as predictions of what would happen if all unpaid care were marketized. The active-care bridge is a population-scaled bridge quantity, not an under-5-only ATUS time slice. The annual-hours account is much broader and should not be read as interchangeable with the bridge benchmark. The large gap between the two headline dollar values is expected: one values a narrow slot-equivalent bridge, while the other values the full annual stock of unpaid childcare hours, including supervisory care.</p>
       </div>
     </section>
 
@@ -347,7 +350,7 @@
         </div>
         <div class="collapsible-body"><div class="collapsible-inner">
           <p>The model does not take the raw correlation between high childcare prices and low unpaid care at face value, because expensive states may differ in many other ways. Instead it uses an instrumental-variables design at the state-year level.</p>
-          <p>In the first step, the model asks whether wages available outside childcare predict childcare prices after adjusting for parent employment and single-parent prevalence. In the second step, it uses only the price variation explained by that outside wage measure to estimate how unpaid childcare hours respond to price.</p>
+          <p>In the first step, the model asks whether wages available outside childcare predict childcare prices after adjusting for parent employment and single-parent prevalence. Here, the outside-option wage means wages in non-childcare jobs that compete for similar workers. In the second step, it uses only the price variation explained by that outside wage measure to estimate how unpaid childcare hours respond to price.</p>
           <p>Survey weights are used when the time-use data provide them; otherwise rows count equally. The reported demand elasticity converts the estimated price coefficient into a percent response at the weighted average price and the weighted average unpaid-care level.</p>
           <p>For a result to be eligible as a headline candidate, the public pipeline also requires basic support and sign checks: at least <strong>100 observations</strong>, at least <strong>15 states</strong>, at least <strong>6 years</strong>, a first-stage F-statistic of at least <strong>10</strong>, and a demand effect that does not turn positive.</p>
         </div></div>
@@ -432,7 +435,7 @@
           <p><strong>Full multi-state licensing design.</strong> The supply-side instrument is not a simple single variable. It combines two things: a county&rsquo;s pre-existing exposure to center-based providers, and the size of state-year licensing changes that make labor requirements tighter or looser. Intuitively, places that were already more exposed to center care should react more when center staffing rules change.</p>
           <p>The price variable is county childcare price, and the main supply outcomes are provider density and employer-establishment density. The design uses county and state-year fixed effects so it relies on within-county changes around state-year regulatory shocks. The source stack is: county prices from NDCP; county employer establishments from County Business Patterns; county nonemployer firms from Nonemployer Statistics; county under-5 population from ACS for density scaling; and harmonized state licensing rules from state regulatory documents and ICPSR licensing-study archives.</p>
           <p>This full-panel version is <strong>diagnostics only</strong> because the first stage is weak: <strong>F = 1.24</strong> across <strong>41 states</strong> and <strong>5,013 county-year observations</strong>. Neither supply outcome yields a headline-usable estimate, so the public site does not use this IV for the canonical supply elasticity.</p>
-          <p><strong>Four-state pilot.</strong> The project also keeps a sharper local pilot built around a smaller set of real licensing reforms. The treated reforms are Virginia&rsquo;s 2018 group-size caps, Montana&rsquo;s 2018 group-size guidance, and Louisiana&rsquo;s post-2017 group-size requirements; South Carolina stays in the panel as overlap support. This pilot is stronger on paper, with a first-stage F-statistic of <strong>83.3</strong>, but it still rests on only <strong>3 treated states</strong> and <strong>4 state clusters</strong>. That makes it useful as a local proof of concept, not as a national replacement for the main supply curve.</p>
+          <p><strong>Four-state pilot.</strong> The project also keeps a sharper local pilot built around a smaller set of real licensing reforms. The treated reforms are Virginia&rsquo;s 2018 group-size caps, Montana&rsquo;s 2018 group-size guidance, and Louisiana&rsquo;s post-2017 group-size requirements; South Carolina stays in the panel as overlap support. This pilot is stronger on paper, with a first-stage F-statistic of <strong>83.3</strong>, but it still rests on only <strong>3 treated states</strong> and <strong>4 state clusters</strong>. In this pilot, tighter regulation raises prices, the reduced-form provider-density effect is <strong>40.03</strong>, the implied local IV supply elasticity for provider density is <strong>22.48</strong>, and employer-establishment density shows essentially no response. That makes it useful as a local proof of concept, not as a national replacement for the main supply curve.</p>
         </div></div>
       </div>
 
